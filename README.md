@@ -1,6 +1,6 @@
 # Matt's Action Bar Fonts
 
-_Add custom fonts and a minimal theme to the Blizzard action bar._
+_Add custom fonts and a minimal theme to the Blizzard action bar. (Now w/ support for Dominoes!)_
 
 👉 [**Download & Install on CurseForge**](https://www.curseforge.com/wow/addons/matts-action-bar-fonts)
 
