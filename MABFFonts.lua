@@ -8,6 +8,54 @@ local function FormatText(text)
 end
 
 -----------------------------------------------------------
+-- Dominos Compatibility
+-----------------------------------------------------------
+local function GetDominosButtons()
+    local buttons = {}
+    if not Dominos or not Dominos.Frame then return buttons end
+    
+    -- Dominos.Frame:GetAll() returns an iterator (pairs(active))
+    for _, frame in Dominos.Frame:GetAll() do
+        if frame and frame.buttons then
+            for _, button in pairs(frame.buttons) do
+                if button then
+                    table.insert(buttons, button)
+                end
+            end
+        end
+    end
+    
+    return buttons
+end
+
+local function GetAllActionButtons()
+    local buttons = {}
+    
+    -- Check for Dominos first
+    if Dominos then
+        return GetDominosButtons()
+    end
+    
+    -- Default Blizzard bars
+    local bars = {
+        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
+        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button",
+        "StanceButton", "PetActionButton", "PossessButton", "ExtraActionButton"
+    }
+    
+    for _, bar in pairs(bars) do
+        for i = 1, 12 do
+            local button = _G[bar .. i]
+            if button then
+                table.insert(buttons, button)
+            end
+        end
+    end
+    
+    return buttons
+end
+
+-----------------------------------------------------------
 -- Font Application & Position Updates
 -----------------------------------------------------------
 function MABF:ApplyFontSettings()
@@ -46,43 +94,44 @@ function MABF:ApplyFontSettings()
 
     local function UpdateActionButton(button)
         if not button then return end
+        
+        -- Handle hotkey (Blizzard uses HotKey, Dominos uses bind or HotKey)
+        local hotKeyFont = button.HotKey or button.bind
+        if hotKeyFont then
+            SafeSetFont(hotKeyFont, true, button)
+            if not hotKeyFont._MABF_Hooked and hotKeyFont.HookScript then
+                local success = pcall(function()
+                    hotKeyFont:HookScript("OnTextChanged", function(self)
+                        local fPath = MABF.availableFonts and MABF.availableFonts[MattActionBarFontDB.fontFamily]
+                        if fPath then
+                            self:SetFont(fPath, MattActionBarFontDB.fontSize, "OUTLINE")
+                            local abXOff = MattActionBarFontDB.abXOffset or 0
+                            local abYOff = MattActionBarFontDB.abYOffset or 0
+                            self:ClearAllPoints()
+                            self:SetPoint("TOPRIGHT", button, "TOPRIGHT", abXOff, abYOff)
+                        end
+                    end)
+                end)
+                if success then
+                    hotKeyFont._MABF_Hooked = true
+                end
+            end
+        end
+        
+        -- Handle other font strings
         for _, region in pairs({ button:GetRegions() }) do
             if region:GetObjectType() == "FontString" then
-                if region == button.HotKey then
-                    SafeSetFont(region, true, button)
-                    if not region._MABF_Hooked then
-                        region:HookScript("OnTextChanged", function(self)
-                            local fPath = MABF.availableFonts and MABF.availableFonts[MattActionBarFontDB.fontFamily]
-                            if fPath then
-                                self:SetFont(fPath, MattActionBarFontDB.fontSize, "OUTLINE")
-                                local abXOff = MattActionBarFontDB.abXOffset or 0
-                                local abYOff = MattActionBarFontDB.abYOffset or 0
-                                self:ClearAllPoints()
-                                self:SetPoint("TOPRIGHT", button, "TOPRIGHT", abXOff, abYOff)
-                            end
-                        end)
-                        region._MABF_Hooked = true
-                    end
-                else
+                if region ~= hotKeyFont and region ~= button.Count and region ~= button.Name then
                     SafeSetFont(region, false, button)
                 end
             end
         end
-        if button.HotKey then
-            SafeSetFont(button.HotKey, true, button)
-        end
     end
 
-    for i = 1, 12 do
-        UpdateActionButton(_G["ActionButton" .. i])
-        UpdateActionButton(_G["MultiBarBottomLeftButton" .. i])
-        UpdateActionButton(_G["MultiBarBottomRightButton" .. i])
-        UpdateActionButton(_G["MultiBarRightButton" .. i])
-        UpdateActionButton(_G["MultiBarLeftButton" .. i])
-    end
-
-    for i = 1, 10 do
-        UpdateActionButton(_G["StanceButton" .. i])
+    -- Use unified button getter (supports Dominos and Blizzard)
+    local allButtons = GetAllActionButtons()
+    for _, button in ipairs(allButtons) do
+        UpdateActionButton(button)
     end
 
     self:UpdateMacroText()
@@ -91,17 +140,15 @@ end
 function MABF:UpdateFontPositions()
     local xOff = MattActionBarFontDB.xOffset or 0
     local yOff = MattActionBarFontDB.yOffset or 0
-    local bars = {
-        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button",
-        "StanceButton", "PetActionButton", "PossessButton", "ExtraActionButton"
-    }
-    for _, bar in pairs(bars) do
-        for i = 1, 12 do
-            local countText = _G[bar .. i .. "Count"]
+    
+    local allButtons = GetAllActionButtons()
+    for _, button in ipairs(allButtons) do
+        if button then
+            -- Try to find Count fontstring
+            local countText = button.Count or _G[(button:GetName() or "") .. "Count"]
             if countText then
                 countText:ClearAllPoints()
-                countText:SetPoint("BOTTOMRIGHT", countText:GetParent(), "BOTTOMRIGHT", xOff, yOff)
+                countText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", xOff, yOff)
             end
         end
     end
@@ -110,17 +157,14 @@ end
 function MABF:UpdateActionBarFontPositions()
     local abXOff = MattActionBarFontDB.abXOffset or 0
     local abYOff = MattActionBarFontDB.abYOffset or 0
-    local bars = {
-        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button",
-        "StanceButton", "PetActionButton", "PossessButton", "ExtraActionButton"
-    }
-    for _, bar in pairs(bars) do
-        for i = 1, 12 do
-            local button = _G[bar .. i]
-            if button and button.HotKey then
-                button.HotKey:ClearAllPoints()
-                button.HotKey:SetPoint("TOPRIGHT", button, "TOPRIGHT", MattActionBarFontDB.abXOffset or 0, MattActionBarFontDB.abYOffset or 0)
+    
+    local allButtons = GetAllActionButtons()
+    for _, button in ipairs(allButtons) do
+        if button then
+            local hotKeyFont = button.HotKey or button.bind
+            if hotKeyFont then
+                hotKeyFont:ClearAllPoints()
+                hotKeyFont:SetPoint("TOPRIGHT", button, "TOPRIGHT", abXOff, abYOff)
             end
         end
     end
@@ -132,28 +176,22 @@ function MABF:UpdateMacroText()
     end
     local fontPath = self.availableFonts[MattActionBarFontDB.fontFamily]
     if not fontPath then return end
-    local bars = {
-        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button",
-        "StanceButton", "PetActionButton", "PossessButton", "ExtraActionButton"
-    }
-    for _, bar in pairs(bars) do
-        for i = 1, 12 do
-            local button = _G[bar .. i]
-            if button and button.Name then
-                if MattActionBarFontDB.hideMacroText then
-                    button.Name:Hide()
-                else
-                    button.Name:Show()
-                    button.Name:ClearAllPoints()
-                    button.Name:SetPoint("BOTTOM", button, "BOTTOM", 0, 2)
-                    button.Name:SetFont(fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
-                    local text = button.Name:GetText()
-                    if text then
-                        button.Name:SetText(FormatText(text)) -- Convert macro text to uppercase
-                    end
-                    button.Name:SetTextColor(1, 1, 1, 1)
+    
+    local allButtons = GetAllActionButtons()
+    for _, button in ipairs(allButtons) do
+        if button and button.Name then
+            if MattActionBarFontDB.hideMacroText then
+                button.Name:Hide()
+            else
+                button.Name:Show()
+                button.Name:ClearAllPoints()
+                button.Name:SetPoint("BOTTOM", button, "BOTTOM", 0, 2)
+                button.Name:SetFont(fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
+                local text = button.Name:GetText()
+                if text then
+                    button.Name:SetText(FormatText(text)) -- Convert macro text to uppercase
                 end
+                button.Name:SetTextColor(1, 1, 1, 1)
             end
         end
     end
@@ -165,10 +203,38 @@ function MABF:UpdatePetBarFontSettings()
     end
     local fontPath = self.availableFonts[MattActionBarFontDB.fontFamily]
     if not fontPath then return end
-    for i = 1, 10 do
-        local button = _G["PetActionButton" .. i]
-        if button and button.HotKey then
-            button.HotKey:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+    
+    -- Handle Dominos pet bar
+    if Dominos and Dominos.Frame then
+        local foundPetBar = false
+        for _, frame in Dominos.Frame:GetAll() do
+            local frameName = frame:GetName()
+            if frame and frame.buttons and frameName and frameName:find("Pet") then
+                for _, button in pairs(frame.buttons) do
+                    local hotKeyFont = button.HotKey or button.bind
+                    if button and hotKeyFont then
+                        hotKeyFont:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+                        foundPetBar = true
+                    end
+                end
+            end
+        end
+        if not foundPetBar then
+            -- Fallback to default Blizzard pet bar
+            for i = 1, 10 do
+                local button = _G["PetActionButton" .. i]
+                if button and button.HotKey then
+                    button.HotKey:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+                end
+            end
+        end
+    else
+        -- Handle default Blizzard pet bar
+        for i = 1, 10 do
+            local button = _G["PetActionButton" .. i]
+            if button and button.HotKey then
+                button.HotKey:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+            end
         end
     end
 end
@@ -181,17 +247,14 @@ function MABF:UpdateSpecificBars()
     local fontPath = self.availableFonts[MattActionBarFontDB.fontFamily]
     if not fontPath then return end
     local flags = "OUTLINE"
-    local bars = {
-        "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-        "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button", "MultiBar6Button",
-        "StanceButton", "PetActionButton", "PossessButton", "ExtraActionButton"
-    }
-    for _, bar in pairs(bars) do
-        for i = 1, 12 do
-            local button = _G[bar .. i .. "Count"]
-            if button then
-                button:SetFont(fontPath, MattActionBarFontDB.countFontSize, flags)
-                button:SetText(FormatText(button:GetText()))
+    
+    local allButtons = GetAllActionButtons()
+    for _, button in ipairs(allButtons) do
+        if button then
+            local countText = button.Count or _G[(button:GetName() or "") .. "Count"]
+            if countText then
+                countText:SetFont(fontPath, MattActionBarFontDB.countFontSize, flags)
+                countText:SetText(FormatText(countText:GetText()))
             end
         end
     end

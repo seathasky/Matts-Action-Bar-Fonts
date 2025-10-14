@@ -12,6 +12,22 @@ events:RegisterEvent("UPDATE_BINDINGS")
 events:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         MABF:Init()
+    elseif event == "ADDON_LOADED" and arg1 == "Dominos" then
+        -- Dominos loaded, hook into its callbacks for bar updates
+        if Dominos then
+            C_Timer.After(1, function()
+                MABF:ApplyFontSettings()
+                MABF:UpdateFontPositions()
+                MABF:UpdateActionBarFontPositions()
+                MABF:UpdateMacroText()
+                MABF:UpdateSpecificBars()
+                MABF:UpdatePetBarFontSettings()
+                if MattActionBarFontDB.minimalTheme then
+                    MABF:SkinActionBars()
+                    MABF:CropAllIcons()
+                end
+            end)
+        end
     elseif event == "PLAYER_LOGIN" then
         MABF:CreateOptionsWindow()
         MABF:ApplyFontSettings()
@@ -20,7 +36,13 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:UpdateMacroText()
         MABF:UpdateSpecificBars()
         MABF:UpdatePetBarFontSettings()
-        print("|cFF00FF00MattActionBarFont|r loaded! Type /mabf to open options.")
+        
+        -- Detect Dominos and notify user
+        if Dominos then
+            print("|cFF00FF00MattActionBarFont|r loaded with |cFFFF8000Dominos|r support! Type /mabf to open options.")
+        else
+            print("|cFF00FF00MattActionBarFont|r loaded! Type /mabf to open options.")
+        end
     elseif event == "ACTIONBAR_SLOT_CHANGED" then
         -- No action needed to preserve settings.
     elseif event == "UPDATE_BINDINGS" then

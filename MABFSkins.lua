@@ -79,15 +79,22 @@ end
 -----------------------------------------------------------
 local function SkinButton(button)
     if not button then return end
-
-    -- Hide Blizzard's default border
-    local normalTexture = button:GetNormalTexture()
-    if normalTexture then
-        normalTexture:SetTexture(nil)
+    
+    -- Skip if not an action button (check for icon property or GetNormalTexture method)
+    if not button.GetNormalTexture and not button.icon then
+        return
     end
 
-    -- Set TexCoord for icon and cache it
-    local icon = _G[button:GetName().."Icon"]
+    -- Hide Blizzard's default border
+    if button.GetNormalTexture then
+        local normalTexture = button:GetNormalTexture()
+        if normalTexture then
+            normalTexture:SetTexture(nil)
+        end
+    end
+
+    -- Set TexCoord for icon and cache it (Dominos uses button.icon, Blizzard uses ButtonNameIcon)
+    local icon = button.icon or _G[(button:GetName() or "") .. "Icon"]
     if icon then
         icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
         button._icon = icon
@@ -155,10 +162,26 @@ local function SkinButton(button)
 end
 
 -----------------------------------------------------------
--- SkinActionBars
--- Calls SkinButton on each default bar button.
+-- GetAllActionButtons (for skinning)
 -----------------------------------------------------------
-function MABF:SkinActionBars()
+local function GetAllActionButtonsForSkinning()
+    local buttons = {}
+    
+    -- Check for Dominos
+    if Dominos and Dominos.Frame then
+        for _, frame in Dominos.Frame:GetAll() do
+            if frame and frame.buttons then
+                for _, button in pairs(frame.buttons) do
+                    if button then
+                        table.insert(buttons, button)
+                    end
+                end
+            end
+        end
+        return buttons
+    end
+    
+    -- Default Blizzard bars
     local buttonSets = {
         { prefix = "ActionButton",             count = 12 },
         { prefix = "MultiBarLeftButton",       count = 12 },
@@ -177,8 +200,23 @@ function MABF:SkinActionBars()
     for _, set in ipairs(buttonSets) do
         for i = 1, set.count do
             local button = _G[set.prefix .. i]
-            SkinButton(button)
+            if button then
+                table.insert(buttons, button)
+            end
         end
+    end
+    
+    return buttons
+end
+
+-----------------------------------------------------------
+-- SkinActionBars
+-- Calls SkinButton on each bar button (Blizzard or Dominos).
+-----------------------------------------------------------
+function MABF:SkinActionBars()
+    local buttons = GetAllActionButtonsForSkinning()
+    for _, button in ipairs(buttons) do
+        SkinButton(button)
     end
 end
 
@@ -186,30 +224,14 @@ end
 -- RemoveCustomSkins
 -----------------------------------------------------------
 function MABF:RemoveCustomSkins()
-    local buttonSets = {
-        { prefix = "ActionButton",             count = 12 },
-        { prefix = "MultiBarLeftButton",       count = 12 },
-        { prefix = "MultiBarRightButton",      count = 12 },
-        { prefix = "MultiBarBottomLeftButton", count = 12 },
-        { prefix = "MultiBarBottomRightButton",count = 12 },
-        { prefix = "MultiBar5Button",          count = 12 },
-        { prefix = "MultiBar6Button",          count = 12 },
-        { prefix = "MultiBar7Button",          count = 12 },
-        { prefix = "StanceButton",             count = _G.NUM_STANCE_SLOTS or 10 },
-        { prefix = "PetActionButton",          count = _G.NUM_PET_ACTION_SLOTS or 10 },
-        { prefix = "ExtraActionButton",        count = 1 },
-        { prefix = "BonusActionButton",        count = 12 },
-    }
-    for _, set in ipairs(buttonSets) do
-        for i = 1, set.count do
-            local button = _G[set.prefix .. i]
-            if button then
-                if button.customBorder then
-                    button.customBorder:Hide()
-                end
-                if button.backdrop then
-                    button.backdrop:Hide()
-                end
+    local buttons = GetAllActionButtonsForSkinning()
+    for _, button in ipairs(buttons) do
+        if button then
+            if button.customBorder then
+                button.customBorder:Hide()
+            end
+            if button.backdrop then
+                button.backdrop:Hide()
             end
         end
     end
@@ -262,21 +284,25 @@ local barData = {
 
 local function CropIcon(button)
     if not button then return end
-    local icon = button._icon or _G[button:GetName().."Icon"]
+    
+    -- Get icon (Dominos uses button.icon, Blizzard uses ButtonNameIcon)
+    local icon = button._icon or button.icon
+    if not icon and button.GetName then
+        local buttonName = button:GetName()
+        if buttonName then
+            icon = _G[buttonName .. "Icon"]
+        end
+    end
+    
     if icon then
         icon:SetTexCoord(INSET, 1 - INSET, INSET, 1 - INSET)
     end
 end
 
 function MABF:CropAllIcons()
-    for _, bar in ipairs(barData) do
-        for i = 1, bar.count do
-            local btnName = bar.prefix .. i
-            local button  = _G[btnName]
-            if button then
-                CropIcon(button)
-            end
-        end
+    local buttons = GetAllActionButtonsForSkinning()
+    for _, button in ipairs(buttons) do
+        CropIcon(button)
     end
 end
 
