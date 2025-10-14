@@ -39,4 +39,4 @@ _Add custom fonts and a minimal theme to the Blizzard action bar._
 ---
 
 ⚠️ **Note:**  
-This addon only works with WoW’s default action bars & Dominoes. It is not a replacement actionbar addon. Think of it as a skin for the default UI.**.
+This addon only works with WoW’s default action bars & Dominoes. It is not a replacement actionbar addon. Think of it as a skin for the default UI.
