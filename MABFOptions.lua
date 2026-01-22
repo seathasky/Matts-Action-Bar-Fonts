@@ -10,7 +10,7 @@ function MABF:CreateOptionsWindow()
     self.optionsFrame = f
 
     f:Hide()
-    f:SetSize(350, 300)
+    f:SetSize(350, 360)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:EnableMouse(true)
@@ -26,14 +26,21 @@ function MABF:CreateOptionsWindow()
         edgeSize = 16,
         insets   = { left = 4, right = 4, top = 4, bottom = 4 }
     })
-    f:SetBackdropColor(0, 0, 0, 0.8)
+    f:SetBackdropColor(0.05, 0.05, 0.1, 0.95)  -- Midnight theme: very dark blue-black
 
     -- Window Title
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", f, "TOP", 0, -15)
+    title:SetPoint("TOP", f, "TOP", 0, -10)
     title:SetText("MATTS ACTIONBAR FONTS")
-    title:SetTextColor(1, 1, 1)  -- White color
+    title:SetTextColor(0.7, 0.6, 1)  -- Light purple color
     title:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Championship.ttf", 22, "OUTLINE")
+    
+    -- Midnight subtitle
+    local subtitle = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    subtitle:SetPoint("TOP", title, "BOTTOM", 0, -2)
+    subtitle:SetText("Midnight")
+    subtitle:SetTextColor(0.5, 0.4, 0.7, 0.8)  -- Darker purple, semi-transparent
+    subtitle:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
 
     -- Close Button
     local closeButton = CreateFrame("Button", nil, f, "UIPanelCloseButton")
@@ -43,8 +50,8 @@ function MABF:CreateOptionsWindow()
     -- Create Left Panel for Tabs
     ------------------------------------------------------------------------------
     local leftPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    leftPanel:SetSize(100, 250)
-    leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -40)
+    leftPanel:SetSize(100, 310)
+    leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -50)
     leftPanel:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -53,14 +60,14 @@ function MABF:CreateOptionsWindow()
         edgeSize = 16,
         insets   = { left = 2, right = 2, top = 2, bottom = 2 }
     })
-    leftPanel:SetBackdropColor(0.1, 0.1, 0.1, 1)
+    leftPanel:SetBackdropColor(0.08, 0.08, 0.12, 1)  -- Dark midnight gray
 
     ------------------------------------------------------------------------------
     -- Create Right Panel for Content Pages
     ------------------------------------------------------------------------------
     local rightPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    rightPanel:SetSize(220, 250) 
-    rightPanel:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -40)
+    rightPanel:SetSize(220, 310) 
+    rightPanel:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -50)
     rightPanel:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -69,7 +76,7 @@ function MABF:CreateOptionsWindow()
         edgeSize = 16,
         insets   = { left = 2, right = 2, top = 2, bottom = 2 }
     })
-    rightPanel:SetBackdropColor(0.2, 0.2, 0.2, 1)
+    rightPanel:SetBackdropColor(0.12, 0.12, 0.15, 1)  -- Slightly lighter midnight gray
 
     ------------------------------------------------------------------------------
     -- Declare Pages Table (used by tab buttons)
@@ -79,17 +86,48 @@ function MABF:CreateOptionsWindow()
     ------------------------------------------------------------------------------
     -- Create Vertical Tab Buttons in Left Panel
     ------------------------------------------------------------------------------
-    local tabNames = {"General", "Offsets", "Theme"}
+    local tabNames = {"General", "Offsets", "Theme", "Experimental"}
     local tabButtons = {}
     local numTabs = #tabNames
     local tabHeight = 40  -- adjust as needed
 
     for i = 1, numTabs do
-        local btn = CreateFrame("Button", nil, leftPanel, "UIPanelButtonTemplate")
+        local btn = CreateFrame("Button", nil, leftPanel, "BackdropTemplate")
         btn:SetSize(80, tabHeight - 5)
-        btn:SetText(tabNames[i])
         btn:SetPoint("TOP", leftPanel, "TOP", 0, -((i - 1) * tabHeight) - 10)
         btn:SetID(i)
+        
+        -- Purple button style
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            tile = false,
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        btn:SetBackdropColor(0.4, 0.2, 0.6, 1)
+        btn:SetBackdropBorderColor(0.6, 0.4, 0.8, 1)
+        
+        -- Button text
+        local btnText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        btnText:SetPoint("CENTER")
+        btnText:SetText(tabNames[i])
+        btnText:SetTextColor(1, 1, 1, 1)
+        
+        -- Hover effect
+        btn:SetScript("OnEnter", function(self)
+            self:SetBackdropColor(0.6, 0.4, 0.8, 1)
+        end)
+        btn:SetScript("OnLeave", function(self)
+            if self:GetID() == 1 and pages[1]:IsShown() or 
+               self:GetID() == 2 and pages[2]:IsShown() or 
+               self:GetID() == 3 and pages[3]:IsShown() then
+                self:SetBackdropColor(0.5, 0.3, 0.7, 1)
+            else
+                self:SetBackdropColor(0.4, 0.2, 0.6, 1)
+            end
+        end)
+        
         btn:SetScript("OnClick", function(self)
             for j, page in ipairs(pages) do
                 page:Hide()
@@ -97,9 +135,9 @@ function MABF:CreateOptionsWindow()
             pages[self:GetID()]:Show()
             for k, button in ipairs(tabButtons) do
                 if k == self:GetID() then
-                    button:LockHighlight()
+                    button:SetBackdropColor(0.5, 0.3, 0.7, 1)
                 else
-                    button:UnlockHighlight()
+                    button:SetBackdropColor(0.4, 0.2, 0.6, 1)
                 end
             end
         end)
@@ -107,10 +145,32 @@ function MABF:CreateOptionsWindow()
     end
 
     -- Create the "Keybind" button
-    local keybindBtn = CreateFrame("Button", nil, leftPanel, "UIPanelButtonTemplate")
+    local keybindBtn = CreateFrame("Button", nil, leftPanel, "BackdropTemplate")
     keybindBtn:SetSize(80, tabHeight - 5)
-    keybindBtn:SetText("Keybind")
     keybindBtn:SetPoint("TOP", leftPanel, "TOP", 0, -((numTabs) * tabHeight) - 10)
+    
+    -- Purple button style
+    keybindBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        tile = false,
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    keybindBtn:SetBackdropColor(0.4, 0.2, 0.6, 1)
+    keybindBtn:SetBackdropBorderColor(0.6, 0.4, 0.8, 1)
+    
+    local keybindText = keybindBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    keybindText:SetPoint("CENTER")
+    keybindText:SetText("Keybind")
+    keybindText:SetTextColor(1, 1, 1, 1)
+    
+    keybindBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(0.6, 0.4, 0.8, 1)
+    end)
+    keybindBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(0.4, 0.2, 0.6, 1)
+    end)
 
     -- Temporary blocker flag
     local blockWoWSettings = false
@@ -156,10 +216,33 @@ function MABF:CreateOptionsWindow()
     end
 
     -- Create the "Edit Mode" button on the leftPanel
-    local editModeBtn = CreateFrame("Button", nil, leftPanel, "UIPanelButtonTemplate")
+    local editModeBtn = CreateFrame("Button", nil, leftPanel, "BackdropTemplate")
     editModeBtn:SetSize(80, tabHeight - 5)
-    editModeBtn:SetText("Edit Mode")
     editModeBtn:SetPoint("TOP", keybindBtn, "BOTTOM", 0, -5)
+    
+    -- Purple button style
+    editModeBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        tile = false,
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    editModeBtn:SetBackdropColor(0.4, 0.2, 0.6, 1)
+    editModeBtn:SetBackdropBorderColor(0.6, 0.4, 0.8, 1)
+    
+    local editModeText = editModeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    editModeText:SetPoint("CENTER")
+    editModeText:SetText("Edit Mode")
+    editModeText:SetTextColor(1, 1, 1, 1)
+    
+    editModeBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(0.6, 0.4, 0.8, 1)
+    end)
+    editModeBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(0.4, 0.2, 0.6, 1)
+    end)
+    
     editModeBtn:SetScript("OnClick", function()
         if MABFOptionsFrame then
             MABFOptionsFrame:Hide()
@@ -379,11 +462,6 @@ function MABF:CreateOptionsWindow()
     pageTheme:SetAllPoints(rightPanel)
     pages[3] = pageTheme
 
-    -- Ensure cdTextEnabled is on by default if not set
-    if MattActionBarFontDB.cdTextEnabled == nil then
-        MattActionBarFontDB.cdTextEnabled = true
-    end
-
     local themeTitle = pageTheme:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     themeTitle:SetPoint("TOP", pageTheme, "TOP", 0, -10)
     themeTitle:SetText("Action Bar Themes")
@@ -400,21 +478,9 @@ function MABF:CreateOptionsWindow()
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
-    local cdTextCheck = CreateFrame("CheckButton", "MABFCDTextCheck", pageTheme, "InterfaceOptionsCheckButtonTemplate")
-    cdTextCheck:ClearAllPoints()
-    cdTextCheck:SetPoint("TOP", minimalThemeCheck, "BOTTOM", 0, -10)
-    local cdCheckText = _G[cdTextCheck:GetName().."Text"]
-    cdCheckText:SetText("CD Text")
-    cdCheckText:SetTextColor(1, 1, 1)
-    cdTextCheck:SetChecked(MattActionBarFontDB.cdTextEnabled)
-    cdTextCheck:SetScript("OnClick", function(self)
-        MattActionBarFontDB.cdTextEnabled = self:GetChecked()
-        StaticPopup_Show("MABF_RELOAD_UI")
-    end)
-
     -- Add the macro text toggle option to the theme section
     local hideMacroTextCheckbox = CreateFrame("CheckButton", "MABFHideMacroTextCheckbox", pageTheme, "InterfaceOptionsCheckButtonTemplate")
-    hideMacroTextCheckbox:SetPoint("TOPLEFT", cdTextCheck, "BOTTOMLEFT", 0, -15)
+    hideMacroTextCheckbox:SetPoint("TOP", minimalThemeCheck, "BOTTOM", 0, -10)
     hideMacroTextCheckbox.Text:SetText("Hide Macro Text")
     hideMacroTextCheckbox.tooltipText = "Toggle visibility of macro text on action buttons"
     hideMacroTextCheckbox:SetChecked(MattActionBarFontDB.hideMacroText)
@@ -460,6 +526,86 @@ function MABF:CreateOptionsWindow()
     -- Initialize the visibility state
     UpdateMacroTextSizeVisibility()
 
+    -- Page 4: Experimental
+    local pageExperimental = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageExperimental:SetAllPoints(rightPanel)
+    pages[4] = pageExperimental
+
+    local experimentalTitle = pageExperimental:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    experimentalTitle:SetPoint("TOP", pageExperimental, "TOP", 0, -10)
+    experimentalTitle:SetText("Experimental Features")
+
+    -- Add the objective tracker scale checkbox
+    local objectiveTrackerCheck = CreateFrame("CheckButton", "MABFObjectiveTrackerCheck", pageExperimental, "InterfaceOptionsCheckButtonTemplate")
+    objectiveTrackerCheck:ClearAllPoints()
+    objectiveTrackerCheck:SetPoint("TOP", experimentalTitle, "BOTTOM", -60, -10)
+    local objCheckText = _G[objectiveTrackerCheck:GetName().."Text"]
+    objCheckText:SetText("Smaller Objective Tracker")
+    objCheckText:SetTextColor(1, 1, 1)
+    objectiveTrackerCheck:SetChecked(MattActionBarFontDB.scaleObjectiveTracker)
+    objectiveTrackerCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.scaleObjectiveTracker = self:GetChecked()
+        StaticPopup_Show("MABF_RELOAD_UI")
+    end)
+
+    -- Add smaller minimap checkbox
+    local smallerMinimapCheck = CreateFrame("CheckButton", "MABFSmallerMinimapCheck", pageExperimental, "InterfaceOptionsCheckButtonTemplate")
+    smallerMinimapCheck:ClearAllPoints()
+    smallerMinimapCheck:SetPoint("TOP", objectiveTrackerCheck, "BOTTOM", 0, -10)
+    local smallerMinimapText = _G[smallerMinimapCheck:GetName().."Text"]
+    smallerMinimapText:SetText("Smaller Minimap")
+    smallerMinimapText:SetTextColor(1, 1, 1)
+    smallerMinimapCheck:SetChecked(MattActionBarFontDB.smallerMinimap)
+    
+    -- Add bigger minimap checkbox
+    local biggerMinimapCheck = CreateFrame("CheckButton", "MABFBiggerMinimapCheck", pageExperimental, "InterfaceOptionsCheckButtonTemplate")
+    biggerMinimapCheck:ClearAllPoints()
+    biggerMinimapCheck:SetPoint("TOP", smallerMinimapCheck, "BOTTOM", 0, -10)
+    local biggerMinimapText = _G[biggerMinimapCheck:GetName().."Text"]
+    biggerMinimapText:SetText("Bigger Minimap")
+    biggerMinimapText:SetTextColor(1, 1, 1)
+    biggerMinimapCheck:SetChecked(MattActionBarFontDB.biggerMinimap)
+    
+    -- Make them mutually exclusive
+    smallerMinimapCheck:SetScript("OnClick", function(self)
+        if self:GetChecked() then
+            MattActionBarFontDB.smallerMinimap = true
+            MattActionBarFontDB.biggerMinimap = false
+            biggerMinimapCheck:SetChecked(false)
+            biggerMinimapCheck:Disable()
+            biggerMinimapText:SetTextColor(0.5, 0.5, 0.5)
+        else
+            MattActionBarFontDB.smallerMinimap = false
+            biggerMinimapCheck:Enable()
+            biggerMinimapText:SetTextColor(1, 1, 1)
+        end
+        StaticPopup_Show("MABF_RELOAD_UI")
+    end)
+    
+    biggerMinimapCheck:SetScript("OnClick", function(self)
+        if self:GetChecked() then
+            MattActionBarFontDB.biggerMinimap = true
+            MattActionBarFontDB.smallerMinimap = false
+            smallerMinimapCheck:SetChecked(false)
+            smallerMinimapCheck:Disable()
+            smallerMinimapText:SetTextColor(0.5, 0.5, 0.5)
+        else
+            MattActionBarFontDB.biggerMinimap = false
+            smallerMinimapCheck:Enable()
+            smallerMinimapText:SetTextColor(1, 1, 1)
+        end
+        StaticPopup_Show("MABF_RELOAD_UI")
+    end)
+    
+    -- Initialize states
+    if MattActionBarFontDB.smallerMinimap then
+        biggerMinimapCheck:Disable()
+        biggerMinimapText:SetTextColor(0.5, 0.5, 0.5)
+    elseif MattActionBarFontDB.biggerMinimap then
+        smallerMinimapCheck:Disable()
+        smallerMinimapText:SetTextColor(0.5, 0.5, 0.5)
+    end
+
     ------------------------------------------------------------------------------
     -- Initialize: Show first page and highlight first tab
     ------------------------------------------------------------------------------
@@ -470,7 +616,7 @@ function MABF:CreateOptionsWindow()
             page:Hide()
         end
     end
-    tabButtons[1]:LockHighlight()
+    tabButtons[1]:SetBackdropColor(0.5, 0.3, 0.7, 1)
 
     -- Allow the options window to be closed with Escape.
     tinsert(UISpecialFrames, "MABFOptionsFrame")

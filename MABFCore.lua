@@ -23,6 +23,9 @@ function MABF:Init()
             petBarFontSize = 12, -- Default pet bar font size
             hideMacroText = false, -- Default: show macro text
             minimalTheme  = false, -- Default: use Blizzard's default skins
+            scaleObjectiveTracker = false, -- Default: don't scale objective tracker
+            smallerMinimap = false, -- Default: normal minimap size
+            biggerMinimap = false, -- Default: normal minimap size
         }
     else
         -- Preserve existing saved variables, set defaults for missing keys
@@ -37,6 +40,9 @@ function MABF:Init()
         MattActionBarFontDB.petBarFontSize = MattActionBarFontDB.petBarFontSize or 12
         MattActionBarFontDB.hideMacroText  = MattActionBarFontDB.hideMacroText or false
         MattActionBarFontDB.minimalTheme   = MattActionBarFontDB.minimalTheme or false
+        MattActionBarFontDB.scaleObjectiveTracker = MattActionBarFontDB.scaleObjectiveTracker or false
+        MattActionBarFontDB.smallerMinimap = MattActionBarFontDB.smallerMinimap or false
+        MattActionBarFontDB.biggerMinimap = MattActionBarFontDB.biggerMinimap or false
     end
 
     -- Clamp the main font size.
@@ -87,6 +93,44 @@ function MABF:ApplyFontSettings()
     end
     if self.UpdatePetBarFontSettings then
         self:UpdatePetBarFontSettings()
+    end
+    if self.ApplyObjectiveTrackerScale then
+        self:ApplyObjectiveTrackerScale()
+    end
+    if self.ApplyMinimapScale then
+        self:ApplyMinimapScale()
+    end
+end
+
+-----------------------------------------------------------
+-- ApplyObjectiveTrackerScale
+-- Scales the objective tracker to 0.7 if enabled
+-----------------------------------------------------------
+function MABF:ApplyObjectiveTrackerScale()
+    if MattActionBarFontDB.scaleObjectiveTracker then
+        if ObjectiveTrackerFrame then
+            ObjectiveTrackerFrame:SetScale(0.7)
+        end
+    else
+        if ObjectiveTrackerFrame then
+            ObjectiveTrackerFrame:SetScale(1.0)
+        end
+    end
+end
+
+-----------------------------------------------------------
+-- ApplyMinimapScale
+-- Scales the minimap based on user preference
+-----------------------------------------------------------
+function MABF:ApplyMinimapScale()
+    if Minimap then
+        if MattActionBarFontDB.smallerMinimap then
+            Minimap:SetScale(0.7)
+        elseif MattActionBarFontDB.biggerMinimap then
+            Minimap:SetScale(1.3)
+        else
+            Minimap:SetScale(1.0)
+        end
     end
 end
 

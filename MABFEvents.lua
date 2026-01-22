@@ -36,6 +36,8 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:UpdateMacroText()
         MABF:UpdateSpecificBars()
         MABF:UpdatePetBarFontSettings()
+        MABF:ApplyObjectiveTrackerScale()
+        MABF:ApplyMinimapScale()
         
         -- Detect Dominos and notify user
         if Dominos then

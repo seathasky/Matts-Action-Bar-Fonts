@@ -15,14 +15,14 @@ local function UpdateActionButtonState(button)
     if not icon then return end
 
     local action = button.action or button:GetID()
-    if not action or not HasAction(action) then
+    if not action or not C_ActionBar.HasAction(action) then
         icon:SetDesaturated(false)
         return
     end
 
     -- For item actions
-    if IsItemAction(action) then
-        local count = GetActionCount(action) or 0
+    if C_ActionBar.IsItemAction(action) then
+        local count = tonumber(C_ActionBar.GetActionDisplayCount(action)) or 0
         if count > 0 then
             icon:SetDesaturated(false)
         else
@@ -31,21 +31,19 @@ local function UpdateActionButtonState(button)
         return
     end
 
-    -- For charge‑based actions
-    local charges, maxCharges = GetActionCharges(action)
-    if charges and maxCharges and maxCharges > 0 then
-        if charges < 1 then
-            icon:SetDesaturated(true)
-        else
-            icon:SetDesaturated(false)
-        end
+    -- Skip charge-based actions to avoid secret value taint issues
+    -- They are handled by Blizzard's secure code
+    local chargeInfo = C_ActionBar.GetActionCharges(action)
+    if chargeInfo and chargeInfo.maxCharges then
+        -- Don't desaturate charge-based abilities, let Blizzard handle them
+        icon:SetDesaturated(false)
         return
     end
 
     -- For normal cooldowns
-    local start, duration = GetActionCooldown(action)
+    local cooldownInfo = C_ActionBar.GetActionCooldown(action)
     local now = GetTime()
-    if start and duration and start > 0 and duration > 1.5 and (start + duration) > now then
+    if cooldownInfo and cooldownInfo.startTime and cooldownInfo.duration and cooldownInfo.startTime > 0 and cooldownInfo.duration > 1.5 and (cooldownInfo.startTime + cooldownInfo.duration) > now then
         icon:SetDesaturated(true)
     else
         icon:SetDesaturated(false)
@@ -84,6 +82,17 @@ local function SkinButton(button)
     if not button.GetNormalTexture and not button.icon then
         return
     end
+    
+    -- Skip buttons without an action property (menu bar, bags, etc.)
+    if not button.action and not button.GetID then
+        return
+    end
+    
+    -- Additional check: skip if button name contains Menu, Bag, or Micro
+    local buttonName = button:GetName()
+    if buttonName and (buttonName:find("Menu") or buttonName:find("Bag") or buttonName:find("Micro")) then
+        return
+    end
 
     -- Hide Blizzard's default border
     if button.GetNormalTexture then
@@ -113,7 +122,12 @@ local function SkinButton(button)
         for i, region in ipairs({ button:GetRegions() }) do
             if region and region:IsObjectType("Texture") then
                 local texture = region:GetTexture()
-                if type(texture) == "string" and (texture:find("Interface\\Buttons") or texture:find("Interface\\ActionBar")) then
+                -- Only hide specific default action button textures, not all textures
+                if type(texture) == "string" and (
+                    texture:find("UI%-Panel%-Button") or 
+                    texture:find("ActionBar%-Border") or
+                    texture:find("ActionBar%-Background")
+                ) then
                     region:SetTexture(nil)
                 end
             end
@@ -171,9 +185,13 @@ local function GetAllActionButtonsForSkinning()
     if Dominos and Dominos.Frame then
         for _, frame in Dominos.Frame:GetAll() do
             if frame and frame.buttons then
-                for _, button in pairs(frame.buttons) do
-                    if button then
-                        table.insert(buttons, button)
+                -- Skip menu bar frames
+                local frameName = frame:GetName() or ""
+                if not frameName:find("Menu") and not frameName:find("Bag") then
+                    for _, button in pairs(frame.buttons) do
+                        if button then
+                            table.insert(buttons, button)
+                        end
                     end
                 end
             end

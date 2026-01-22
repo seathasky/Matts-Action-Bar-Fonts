@@ -1,9 +1,9 @@
-## Interface: 110207, 120000
+## Interface: 120000
 ## Title: MattActionBarFont
 ## Notes: Customize your action bar fonts
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version 4.0.1
+## Version 5.0.0
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mab
 ## OptionalDeps: Dominos
 
@@ -17,6 +17,5 @@ MABFFonts.lua
 MABFOptions.lua
 MABFEvents.lua
 MABFSkins.lua
-MABFCDText.lua
 MABFDataBroker.lua
 AddYourCustomFonts.lua
