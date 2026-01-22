@@ -13,7 +13,6 @@ _Add custom fonts and a minimal theme to the Blizzard action bar. (Now w/ suppor
 ## Features
 
 * Optional **Minimal Theme** similar to ELVUI’s action bars (includes grayout on actions that are on cooldown).
-* Optional **Cooldown Text** on buttons, similar to OmniCC.
 * **Custom Fonts** – use any font you want and position it anywhere.
 * **Easy Keybinds & Edit Mode** built directly into the addon.
 
