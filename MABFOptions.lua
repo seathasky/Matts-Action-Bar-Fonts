@@ -10,7 +10,7 @@ function MABF:CreateOptionsWindow()
     self.optionsFrame = f
 
     f:Hide()
-    f:SetSize(350, 360)
+    f:SetSize(350, 370)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:EnableMouse(true)
@@ -20,27 +20,30 @@ function MABF:CreateOptionsWindow()
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
     f:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile     = true,
-        tileSize = 16,
-        edgeSize = 16,
-        insets   = { left = 4, right = 4, top = 4, bottom = 4 }
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        tile     = false,
+        tileSize = 0,
+        edgeSize = 1,
+        insets   = { left = 2, right = 2, top = 2, bottom = 2 }
     })
     f:SetBackdropColor(0.05, 0.05, 0.1, 0.95)  -- Midnight theme: very dark blue-black
+    f:SetBackdropBorderColor(0.05, 0.05, 0.05, 0.9) -- Minimal dark border
 
     -- Window Title
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", f, "TOP", 0, -10)
-    title:SetText("MATTS ACTIONBAR FONTS")
-    title:SetTextColor(0.7, 0.6, 1)  -- Light purple color
-    title:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Championship.ttf", 22, "OUTLINE")
+    title:SetPoint("TOPLEFT", f, "TOPLEFT", 20, -10)
+    title:SetText("Matt's Action Bar Fonts")
+    title:SetTextColor(1, 1, 1)  -- White color
+    title:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 18, "OUTLINE")
     
-    -- Midnight subtitle
+    -- Midnight subtitle (to the right of the title)
     local subtitle = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    subtitle:SetPoint("TOP", title, "BOTTOM", 0, -2)
-    subtitle:SetText("Midnight")
-    subtitle:SetTextColor(0.5, 0.4, 0.7, 0.8)  -- Darker purple, semi-transparent
+    subtitle:SetPoint("LEFT", title, "RIGHT", 10, -6)
+    subtitle:SetText("MIDNIGHT")
+    -- More vibrant purple, fully opaque
+    subtitle:SetTextColor(0.7, 0.4, 1.0, 1)  -- Vibrant purple
     subtitle:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+    subtitle:SetJustifyH("LEFT")
 
     -- Close Button
     local closeButton = CreateFrame("Button", nil, f, "UIPanelCloseButton")
@@ -54,13 +57,14 @@ function MABF:CreateOptionsWindow()
     leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -50)
     leftPanel:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
         tile     = false,
-        tileSize = 16,
-        edgeSize = 16,
-        insets   = { left = 2, right = 2, top = 2, bottom = 2 }
+        tileSize = 0,
+        edgeSize = 1,
+        insets   = { left = 1, right = 1, top = 1, bottom = 1 }
     })
     leftPanel:SetBackdropColor(0.08, 0.08, 0.12, 1)  -- Dark midnight gray
+    leftPanel:SetBackdropBorderColor(0.06, 0.06, 0.06, 1) -- Minimal border
 
     ------------------------------------------------------------------------------
     -- Create Right Panel for Content Pages
@@ -70,13 +74,14 @@ function MABF:CreateOptionsWindow()
     rightPanel:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -50)
     rightPanel:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
         tile     = false,
-        tileSize = 16,
-        edgeSize = 16,
-        insets   = { left = 2, right = 2, top = 2, bottom = 2 }
+        tileSize = 0,
+        edgeSize = 1,
+        insets   = { left = 1, right = 1, top = 1, bottom = 1 }
     })
     rightPanel:SetBackdropColor(0.12, 0.12, 0.15, 1)  -- Slightly lighter midnight gray
+    rightPanel:SetBackdropBorderColor(0.06, 0.06, 0.06, 1) -- Minimal border
 
     ------------------------------------------------------------------------------
     -- Declare Pages Table (used by tab buttons)
@@ -105,8 +110,9 @@ function MABF:CreateOptionsWindow()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        btn:SetBackdropColor(0.4, 0.2, 0.6, 1)
-        btn:SetBackdropBorderColor(0.6, 0.4, 0.8, 1)
+        -- Use blood red for all tabs
+        btn:SetBackdropColor(0.5, 0, 0, 1) -- blood red (normal)
+        btn:SetBackdropBorderColor(0.4, 0, 0, 1) -- subtle dark border
         
         -- Button text
         local btnText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -116,18 +122,25 @@ function MABF:CreateOptionsWindow()
         
         -- Hover effect
         btn:SetScript("OnEnter", function(self)
-            self:SetBackdropColor(0.6, 0.4, 0.8, 1)
+            -- Hover: blood-red highlight for all tabs
+            self:SetBackdropColor(0.8, 0, 0, 1)
         end)
         btn:SetScript("OnLeave", function(self)
-            if self:GetID() == 1 and pages[1]:IsShown() or 
-               self:GetID() == 2 and pages[2]:IsShown() or 
-               self:GetID() == 3 and pages[3]:IsShown() then
-                self:SetBackdropColor(0.5, 0.3, 0.7, 1)
+            -- Restore to selected or normal red
+            local isSelected = false
+            for idx, page in ipairs(pages) do
+                if self:GetID() == idx and page:IsShown() then
+                    isSelected = true
+                    break
+                end
+            end
+            if isSelected then
+                self:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
             else
-                self:SetBackdropColor(0.4, 0.2, 0.6, 1)
+                self:SetBackdropColor(0.5, 0, 0, 1) -- normal blood red
             end
         end)
-        
+
         btn:SetScript("OnClick", function(self)
             for j, page in ipairs(pages) do
                 page:Hide()
@@ -135,9 +148,9 @@ function MABF:CreateOptionsWindow()
             pages[self:GetID()]:Show()
             for k, button in ipairs(tabButtons) do
                 if k == self:GetID() then
-                    button:SetBackdropColor(0.5, 0.3, 0.7, 1)
+                    button:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
                 else
-                    button:SetBackdropColor(0.4, 0.2, 0.6, 1)
+                    button:SetBackdropColor(0.5, 0, 0, 1) -- normal blood red
                 end
             end
         end)
@@ -149,7 +162,7 @@ function MABF:CreateOptionsWindow()
     keybindBtn:SetSize(80, tabHeight - 5)
     keybindBtn:SetPoint("TOP", leftPanel, "TOP", 0, -((numTabs) * tabHeight) - 10)
     
-    -- Purple button style
+    -- Blood-red button style
     keybindBtn:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -157,8 +170,8 @@ function MABF:CreateOptionsWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    keybindBtn:SetBackdropColor(0.4, 0.2, 0.6, 1)
-    keybindBtn:SetBackdropBorderColor(0.6, 0.4, 0.8, 1)
+    keybindBtn:SetBackdropColor(0.5, 0, 0, 1)
+    keybindBtn:SetBackdropBorderColor(0.4, 0, 0, 1)
     
     local keybindText = keybindBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     keybindText:SetPoint("CENTER")
@@ -166,10 +179,10 @@ function MABF:CreateOptionsWindow()
     keybindText:SetTextColor(1, 1, 1, 1)
     
     keybindBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(0.6, 0.4, 0.8, 1)
+        self:SetBackdropColor(0.8, 0, 0, 1)
     end)
     keybindBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(0.4, 0.2, 0.6, 1)
+        self:SetBackdropColor(0.5, 0, 0, 1)
     end)
 
     -- Temporary blocker flag
@@ -220,7 +233,7 @@ function MABF:CreateOptionsWindow()
     editModeBtn:SetSize(80, tabHeight - 5)
     editModeBtn:SetPoint("TOP", keybindBtn, "BOTTOM", 0, -5)
     
-    -- Purple button style
+    -- Blood-red button style
     editModeBtn:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -228,8 +241,8 @@ function MABF:CreateOptionsWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    editModeBtn:SetBackdropColor(0.4, 0.2, 0.6, 1)
-    editModeBtn:SetBackdropBorderColor(0.6, 0.4, 0.8, 1)
+    editModeBtn:SetBackdropColor(0.5, 0, 0, 1)
+    editModeBtn:SetBackdropBorderColor(0.4, 0, 0, 1)
     
     local editModeText = editModeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     editModeText:SetPoint("CENTER")
@@ -237,10 +250,10 @@ function MABF:CreateOptionsWindow()
     editModeText:SetTextColor(1, 1, 1, 1)
     
     editModeBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(0.6, 0.4, 0.8, 1)
+        self:SetBackdropColor(0.8, 0, 0, 1)
     end)
     editModeBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(0.4, 0.2, 0.6, 1)
+        self:SetBackdropColor(0.5, 0, 0, 1)
     end)
     
     editModeBtn:SetScript("OnClick", function()
@@ -531,6 +544,22 @@ function MABF:CreateOptionsWindow()
     pageExperimental:SetAllPoints(rightPanel)
     pages[4] = pageExperimental
 
+    -- Initialize pages: show first page and set tab button colors to red
+    for i, page in ipairs(pages) do
+        if i == 1 then
+            page:Show()
+        else
+            page:Hide()
+        end
+    end
+    for k, button in ipairs(tabButtons) do
+        if k == 1 then
+            button:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
+        else
+            button:SetBackdropColor(0.5, 0, 0, 1) -- normal blood red
+        end
+    end
+
     local experimentalTitle = pageExperimental:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     experimentalTitle:SetPoint("TOP", pageExperimental, "TOP", 0, -10)
     experimentalTitle:SetText("Experimental Features")
@@ -616,7 +645,7 @@ function MABF:CreateOptionsWindow()
             page:Hide()
         end
     end
-    tabButtons[1]:SetBackdropColor(0.5, 0.3, 0.7, 1)
+    tabButtons[1]:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
 
     -- Allow the options window to be closed with Escape.
     tinsert(UISpecialFrames, "MABFOptionsFrame")

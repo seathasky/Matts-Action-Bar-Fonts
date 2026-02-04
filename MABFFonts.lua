@@ -4,7 +4,13 @@ local addonName, MABF = ...
 -- Helper function to handle text conversion
 local function FormatText(text)
     if not text then return "" end
-    return string.upper(text)
+    -- Use pcall to safely handle secret values that can't be converted
+    local success, result = pcall(string.upper, text)
+    if success then
+        return result
+    else
+        return text -- Return original if conversion fails (e.g., secret value)
+    end
 end
 
 -----------------------------------------------------------
@@ -187,9 +193,13 @@ function MABF:UpdateMacroText()
                 button.Name:ClearAllPoints()
                 button.Name:SetPoint("BOTTOM", button, "BOTTOM", 0, 2)
                 button.Name:SetFont(fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
-                local text = button.Name:GetText()
-                if text then
-                    button.Name:SetText(FormatText(text)) -- Convert macro text to uppercase
+                -- Safely handle text formatting for macro names
+                local success, text = pcall(button.Name.GetText, button.Name)
+                if success and text and type(text) == "string" then
+                    local formatted = FormatText(text)
+                    if formatted ~= text then
+                        pcall(button.Name.SetText, button.Name, formatted)
+                    end
                 end
                 button.Name:SetTextColor(1, 1, 1, 1)
             end
@@ -254,7 +264,8 @@ function MABF:UpdateSpecificBars()
             local countText = button.Count or _G[(button:GetName() or "") .. "Count"]
             if countText then
                 countText:SetFont(fontPath, MattActionBarFontDB.countFontSize, flags)
-                countText:SetText(FormatText(countText:GetText()))
+                -- Don't modify count text as it can contain secret values
+                -- Just apply the font styling
             end
         end
     end

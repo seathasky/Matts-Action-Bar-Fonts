@@ -5,12 +5,12 @@ local ldb = LibStub("LibDataBroker-1.1", true)
 if ldb then
     local MABF_DataObject = ldb:NewDataObject("MABF", {
         type = "launcher",
-        icon = "Interface\\AddOns\\MattActionBarFont\\Images\\mab.png",
+        icon = "Interface\\AddOns\\MattActionBarFont\\Images\\mabficon.png",
         OnClick = function(self, button)
             SlashCmdList["MABF"]("")
         end,
         OnTooltipShow = function(tooltip)
-            tooltip:AddLine("Matt ActionBar Font")
+            tooltip:AddLine("Matt's Action Bar Fonts")
             tooltip:AddLine("Click to open options", 1, 1, 1)
         end,
     })
