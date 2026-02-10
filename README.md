@@ -1,41 +1,42 @@
-# Matt's Action Bar Fonts
-
-_Add custom fonts and a minimal theme to the Blizzard action bar. (Now w/ support for Dominoes!)_
+# Matt's Action Bar Fonts & UI QoL
 
 👉 [**Download & Install on CurseForge**](https://www.curseforge.com/wow/addons/matts-action-bar-fonts)
 
----
 
 ![Example](https://media.forgecdn.net/attachments/1104/136/example.png)
 
----
+Custom fonts for the Blizzard action bar , minimal themes, and UI QoL tweaks. _(Now w/ Dominos support!)_
+
+***
 
 ## Features
 
-* Optional **Minimal Theme** similar to ELVUI’s action bars (includes grayout on actions that are on cooldown).
-* **Custom Fonts** – use any font you want and position it anywhere.
-* **Easy Keybinds & Edit Mode** built directly into the addon.
+*   **Custom Fonts** – use any font, with full size & position control.
+*   **Minimal Themes** – Black or Translucent action bar skins with adjustable opacity.
+*   **AB Tweaks** – mouseover fade, reverse bar growth, hide macro text & more.
+*   **UI Tweaks** – scale objective tracker / status bar / talking head, hide micro menu & bag bar.
+*   **Performance Monitor** – draggable FPS/MS display with color & layout options.
+*   **Quest Tweaks** – auto accept & auto turn in quests (hold Shift to skip).
+*   **Bag Tweaks** – show item levels in bags & bank, color-coded by rarity.
+*   **Edit Mode Device Manager** – auto-apply an Edit Mode layout on login.
+*   **Quick Commands** – `/kb`, `/rl`, `/edit`, `/pull X` (all toggleable).
 
-![Cooldown Example](https://media.forgecdn.net/attachments/1104/137/cd.png)
-
----
-
-## Instructions
-
-### How do I add and use my own fonts?
-
-1. Place your fonts inside the **CustomFonts** folder in the addon directory.
-2. Edit **addYourCustomFonts.lua** (inside the addon directory) so the addon recognizes your fonts.
-
----
+![feat](https://media.forgecdn.net/attachments/1525/912/ui-qol-png.png)
 
 ## Slash Commands
 
-* `/mabf` — Opens addon options (or use the minimap button).
-* `/rl` — Reloads UI.
-* `/kb` — Opens keybind menu.
+*   `/mabf` — Open addon options
+*   `/rl` — Reload UI
+*   `/kb` — Keybind mode
+*   `/edit` — Edit Mode
+*   `/pull X` — Pull timer
 
----
+## Custom Fonts
 
-⚠️ **Note:**  
-This addon only works with WoW’s default action bars & Dominoes. It is not a replacement actionbar addon. Think of it as a skin for the default UI.
+1.  Drop `.ttf` files into the **CustomFonts** folder.
+2.  Register them in **AddYourCustomFonts.lua**.
+3.  Select from the dropdown in settings.
+
+## Note
+
+The font and theme features work with WoW's default action bars and Dominos. UI QoL tweaks work independently of your action bar setup.
