@@ -20,14 +20,9 @@ local function UpdateActionButtonState(button)
         return
     end
 
-    -- For item actions
+    -- For item actions (consumables, etc.) - never desaturate, always show in color
     if C_ActionBar.IsItemAction(action) then
-        local count = tonumber(C_ActionBar.GetActionDisplayCount(action)) or 0
-        if count > 0 then
-            icon:SetDesaturated(false)
-        else
-            icon:SetDesaturated(true)
-        end
+        icon:SetDesaturated(false)
         return
     end
 
@@ -133,9 +128,20 @@ local function SkinButton(button)
             end
         end
         button.backdrop = button:CreateTexture(nil, "BACKGROUND")
-        button.backdrop:SetTexture("Interface\\AddOns\\MattActionBarFont\\Textures\\Backdrop")
         button.backdrop:SetAllPoints(button)
         button.backdrop:SetDrawLayer("BACKGROUND", -1)
+    end
+    -- Apply backdrop texture, opacity and color based on theme
+    if button.backdrop then
+        local bgAlpha = MattActionBarFontDB.minimalThemeBgOpacity or 0.35
+        button.backdrop:SetAlpha(bgAlpha)
+        if MattActionBarFontDB.minimalTheme == "minimalTranslucent" then
+            button.backdrop:SetTexture("Interface\\Buttons\\WHITE8X8")
+            button.backdrop:SetVertexColor(0.85, 0.85, 0.85)
+        else
+            button.backdrop:SetTexture("Interface\\AddOns\\MattActionBarFont\\Textures\\Backdrop")
+            button.backdrop:SetVertexColor(1, 1, 1)
+        end
     end
 
     -- Re-anchor cooldown frame
@@ -277,7 +283,7 @@ end)
 local skinFrame = CreateFrame("Frame")
 skinFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 skinFrame:SetScript("OnEvent", function()
-    if MattActionBarFontDB.minimalTheme then
+    if MattActionBarFontDB.minimalTheme ~= "blizzard" then
         MABF:SkinActionBars()
         MABF:CropAllIcons()  -- Defined below
     end

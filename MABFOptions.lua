@@ -10,7 +10,7 @@ function MABF:CreateOptionsWindow()
     self.optionsFrame = f
 
     f:Hide()
-    f:SetSize(350, 370)
+    f:SetSize(420, 500)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:EnableMouse(true)
@@ -27,34 +27,49 @@ function MABF:CreateOptionsWindow()
         insets   = { left = 2, right = 2, top = 2, bottom = 2 }
     })
     f:SetBackdropColor(0.05, 0.05, 0.1, 0.95)  -- Midnight theme: very dark blue-black
-    f:SetBackdropBorderColor(0.05, 0.05, 0.05, 0.9) -- Minimal dark border
+    f:SetBackdropBorderColor(0.45, 0.04, 0.04, 0.8) -- Subtle red outline
 
     -- Window Title
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", f, "TOPLEFT", 20, -10)
-    title:SetText("Matt's Action Bar Fonts")
-    title:SetTextColor(1, 1, 1)  -- White color
-    title:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 18, "OUTLINE")
-    
-    -- Midnight subtitle (to the right of the title)
-    local subtitle = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    subtitle:SetPoint("LEFT", title, "RIGHT", 10, -6)
-    subtitle:SetText("MIDNIGHT")
-    -- More vibrant purple, fully opaque
-    subtitle:SetTextColor(0.7, 0.4, 1.0, 1)  -- Vibrant purple
-    subtitle:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
-    subtitle:SetJustifyH("LEFT")
+    title:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -12)
+    title:SetText("MABF")
+    title:SetTextColor(1, 1, 1)
+    title:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 14, "OUTLINE")
+
+    -- Tagline (random on each reload)
+    local taglines = {
+        "\"I swear it was just a font addon at first.\"",
+        "\"It started with fonts. Then I got ideas.\"",
+        "\"Fonts today, auto-repair tomorrow.\"",
+        "\"One slider led to another.\"",
+        "\"Feature creep? I prefer 'feature enthusiasm'.\"",
+        "\"Now with 90% more things that aren't fonts.\"",
+        "\"All I wanted was bigger hotkey text.\"",
+        "\"Scope creep is a feature, not a bug.\"",
+        "\"From Comic Sans to auto-sell junk, somehow.\"",
+        "\"Proudly over-engineered since day one.\"",
+    }
+    local tagline = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    tagline:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    tagline:SetText("|cff666666" .. taglines[math.random(#taglines)] .. "|r")
+    tagline:SetFont("Fonts\\FRIZQT__.TTF", 8)
 
     -- Close Button
     local closeButton = CreateFrame("Button", nil, f, "UIPanelCloseButton")
     closeButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -5, -5)
 
+    -- Full name in tiny text bottom
+    local fullName = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    fullName:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 6)
+    fullName:SetText("|cffFFFFFFMatt's Action Bar Fonts & UI QoL|r")
+    fullName:SetFont("Fonts\\FRIZQT__.TTF", 7)
+
     ------------------------------------------------------------------------------
     -- Create Left Panel for Tabs
     ------------------------------------------------------------------------------
     local leftPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    leftPanel:SetSize(100, 310)
-    leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -50)
+    leftPanel:SetSize(100, 430)
+    leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -45)
     leftPanel:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -64,14 +79,14 @@ function MABF:CreateOptionsWindow()
         insets   = { left = 1, right = 1, top = 1, bottom = 1 }
     })
     leftPanel:SetBackdropColor(0.08, 0.08, 0.12, 1)  -- Dark midnight gray
-    leftPanel:SetBackdropBorderColor(0.06, 0.06, 0.06, 1) -- Minimal border
+    leftPanel:SetBackdropBorderColor(0.35, 0.03, 0.03, 0.7) -- Subtle red outline
 
     ------------------------------------------------------------------------------
     -- Create Right Panel for Content Pages
     ------------------------------------------------------------------------------
     local rightPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    rightPanel:SetSize(220, 310) 
-    rightPanel:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -50)
+    rightPanel:SetSize(295, 430)
+    rightPanel:SetPoint("TOPLEFT", leftPanel, "TOPRIGHT", 6, 0)
     rightPanel:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -80,8 +95,26 @@ function MABF:CreateOptionsWindow()
         edgeSize = 1,
         insets   = { left = 1, right = 1, top = 1, bottom = 1 }
     })
-    rightPanel:SetBackdropColor(0.12, 0.12, 0.15, 1)  -- Slightly lighter midnight gray
-    rightPanel:SetBackdropBorderColor(0.06, 0.06, 0.06, 1) -- Minimal border
+    rightPanel:SetBackdropColor(0.10, 0.10, 0.13, 1)
+    rightPanel:SetBackdropBorderColor(0.35, 0.03, 0.03, 0.7) -- Subtle red outline
+
+    -- Theme variables for a minimal, cohesive look (red accent)
+    local THEME_ACCENT = {0.86, 0, 0}
+    local TAB_NORMAL = {0.35, 0.04, 0.04, 1}
+    local TAB_HOVER = {0.55, 0.08, 0.08, 1}
+    local TAB_SELECTED = {0.75, 0, 0, 1}
+    local PANEL_BORDER = {0.35, 0.03, 0.03, 0.7}
+    -- Unified spacing constants
+    local CONTENT_SPACING = -22
+    local PAGE_WIDTH = 260
+
+    local function CreatePageTitle(page, text)
+        local title = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        title:SetPoint("TOPLEFT", page, "TOPLEFT", 12, -10)
+        title:SetText(text)
+        title:SetTextColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 1)
+        return title
+    end
 
     ------------------------------------------------------------------------------
     -- Declare Pages Table (used by tab buttons)
@@ -89,102 +122,134 @@ function MABF:CreateOptionsWindow()
     local pages = {}
 
     ------------------------------------------------------------------------------
-    -- Create Vertical Tab Buttons in Left Panel
+    -- Create Vertical Tab Buttons in Left Panel (with section headers)
     ------------------------------------------------------------------------------
-    local tabNames = {"General", "Offsets", "Theme", "Experimental"}
-    local tabButtons = {}
-    local numTabs = #tabNames
-    local tabHeight = 40  -- adjust as needed
+    local tabButtons = {}  -- all page-switching buttons (indices match pages[])
+    local allTabButtons = {} -- all buttons for unified deselect
+    local tabHeight = 28
+    local tabGap = 2
+    local sectionGap = 6
+    local TAB_FONT = "Fonts\\FRIZQT__.TTF"
+    local TAB_FONT_SIZE = 9
 
-    for i = 1, numTabs do
-        local btn = CreateFrame("Button", nil, leftPanel, "BackdropTemplate")
-        btn:SetSize(80, tabHeight - 5)
-        btn:SetPoint("TOP", leftPanel, "TOP", 0, -((i - 1) * tabHeight) - 10)
-        btn:SetID(i)
-        
-        -- Purple button style
+    -- Helper: create a section header label in the left panel
+    local function CreateSectionHeader(parent, text, anchorFrame, anchorPoint, yOffset)
+        local header = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        if anchorFrame then
+            header:SetPoint("TOPLEFT", anchorFrame, anchorPoint or "BOTTOMLEFT", 0, yOffset or -sectionGap)
+        else
+            header:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, yOffset or -6)
+        end
+        header:SetText("|cff" .. string.format("%02x%02x%02x", THEME_ACCENT[1]*255, THEME_ACCENT[2]*255, THEME_ACCENT[3]*255) .. text .. "|r")
+        header:SetFont(TAB_FONT, 7, "OUTLINE")
+        return header
+    end
+
+    -- Helper: create a tab button
+    local function CreateTabButton(parent, label, pageIndex, anchorFrame, anchorPoint, yOffset)
+        local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
+        btn:SetSize(86, tabHeight)
+        btn:SetPoint("TOP", anchorFrame, anchorPoint or "BOTTOM", 0, yOffset or -tabGap)
+        btn:SetID(pageIndex or 0)
         btn:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
-            tile = false,
-            edgeSize = 1,
+            tile = false, edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        -- Use blood red for all tabs
-        btn:SetBackdropColor(0.5, 0, 0, 1) -- blood red (normal)
-        btn:SetBackdropBorderColor(0.4, 0, 0, 1) -- subtle dark border
-        
-        -- Button text
+        btn:SetBackdropColor(TAB_NORMAL[1], TAB_NORMAL[2], TAB_NORMAL[3], TAB_NORMAL[4])
+        btn:SetBackdropBorderColor(PANEL_BORDER[1], PANEL_BORDER[2], PANEL_BORDER[3], PANEL_BORDER[4])
         local btnText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         btnText:SetPoint("CENTER")
-        btnText:SetText(tabNames[i])
+        btnText:SetText(label)
         btnText:SetTextColor(1, 1, 1, 1)
-        
-        -- Hover effect
+        btnText:SetFont(TAB_FONT, TAB_FONT_SIZE, "OUTLINE")
         btn:SetScript("OnEnter", function(self)
-            -- Hover: blood-red highlight for all tabs
-            self:SetBackdropColor(0.8, 0, 0, 1)
+            self:SetBackdropColor(TAB_HOVER[1], TAB_HOVER[2], TAB_HOVER[3], TAB_HOVER[4])
         end)
         btn:SetScript("OnLeave", function(self)
-            -- Restore to selected or normal red
-            local isSelected = false
-            for idx, page in ipairs(pages) do
-                if self:GetID() == idx and page:IsShown() then
-                    isSelected = true
-                    break
-                end
-            end
+            local isSelected = pageIndex and pages[pageIndex] and pages[pageIndex]:IsShown()
             if isSelected then
-                self:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
+                self:SetBackdropColor(TAB_SELECTED[1], TAB_SELECTED[2], TAB_SELECTED[3], TAB_SELECTED[4])
             else
-                self:SetBackdropColor(0.5, 0, 0, 1) -- normal blood red
+                self:SetBackdropColor(TAB_NORMAL[1], TAB_NORMAL[2], TAB_NORMAL[3], TAB_NORMAL[4])
             end
         end)
-
-        btn:SetScript("OnClick", function(self)
-            for j, page in ipairs(pages) do
-                page:Hide()
-            end
-            pages[self:GetID()]:Show()
-            for k, button in ipairs(tabButtons) do
-                if k == self:GetID() then
-                    button:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
-                else
-                    button:SetBackdropColor(0.5, 0, 0, 1) -- normal blood red
-                end
-            end
-        end)
-        tabButtons[i] = btn
+        table.insert(allTabButtons, btn)
+        return btn
     end
 
-    -- Create the "Keybind" button
-    local keybindBtn = CreateFrame("Button", nil, leftPanel, "BackdropTemplate")
-    keybindBtn:SetSize(80, tabHeight - 5)
-    keybindBtn:SetPoint("TOP", leftPanel, "TOP", 0, -((numTabs) * tabHeight) - 10)
-    
-    -- Blood-red button style
-    keybindBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        tile = false,
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    keybindBtn:SetBackdropColor(0.5, 0, 0, 1)
-    keybindBtn:SetBackdropBorderColor(0.4, 0, 0, 1)
-    
-    local keybindText = keybindBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    keybindText:SetPoint("CENTER")
-    keybindText:SetText("Keybind")
-    keybindText:SetTextColor(1, 1, 1, 1)
-    
-    keybindBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(0.8, 0, 0, 1)
-    end)
-    keybindBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(0.5, 0, 0, 1)
-    end)
+    -- Unified click handler for any page-tab button
+    local function TabOnClick(btn, pageIndex)
+        for j, page in ipairs(pages) do page:Hide() end
+        pages[pageIndex]:Show()
+        for _, b in ipairs(allTabButtons) do
+            b:SetBackdropColor(TAB_NORMAL[1], TAB_NORMAL[2], TAB_NORMAL[3], TAB_NORMAL[4])
+        end
+        btn:SetBackdropColor(TAB_SELECTED[1], TAB_SELECTED[2], TAB_SELECTED[3], TAB_SELECTED[4])
+    end
 
+    --------------------------------------------------------------------------
+    -- SECTION: ACTION BARS (tabs 1-4)
+    --------------------------------------------------------------------------
+    local abHeader = CreateSectionHeader(leftPanel, "ACTION BARS", nil, nil, -4)
+
+    local btnTextSizes = CreateTabButton(leftPanel, "Text Sizes", 1, leftPanel, "TOP", -14)
+    tabButtons[1] = btnTextSizes
+
+    local btnOffsets = CreateTabButton(leftPanel, "Offsets", 2, btnTextSizes)
+    tabButtons[2] = btnOffsets
+
+    local btnThemes = CreateTabButton(leftPanel, "Themes", 3, btnOffsets)
+    tabButtons[3] = btnThemes
+
+    local btnABFeatures = CreateTabButton(leftPanel, "Features", 4, btnThemes)
+    tabButtons[4] = btnABFeatures
+
+    --------------------------------------------------------------------------
+    -- SECTION: UI / QoL (tabs 5, 8, 9)
+    --------------------------------------------------------------------------
+    local uiHeader = CreateSectionHeader(leftPanel, "UI / QoL", btnABFeatures, "BOTTOMLEFT", -sectionGap)
+
+    local btnUIFeatures = CreateTabButton(leftPanel, "UI Features", 5, btnABFeatures, "BOTTOM", -(sectionGap + 12))
+    tabButtons[5] = btnUIFeatures
+
+    local btnQuests = CreateTabButton(leftPanel, "Quests", 8, btnUIFeatures)
+    tabButtons[8] = btnQuests
+
+    local btnBags = CreateTabButton(leftPanel, "Bags", 9, btnQuests)
+    tabButtons[9] = btnBags
+
+    local btnMerchant = CreateTabButton(leftPanel, "Merchant", 10, btnBags)
+    tabButtons[10] = btnMerchant
+
+    --------------------------------------------------------------------------
+    -- SECTION: SHORTCUTS (Keybind + Edit Mode action buttons)
+    --------------------------------------------------------------------------
+    local shortcutsHeader = CreateSectionHeader(leftPanel, "SHORTCUTS", btnMerchant, "BOTTOMLEFT", -sectionGap)
+
+    local keybindBtn = CreateTabButton(leftPanel, "Keybind", nil, btnMerchant, "BOTTOM", -(sectionGap + 12))
+
+    local editModeBtn = CreateTabButton(leftPanel, "Edit Mode", nil, keybindBtn)
+
+    --------------------------------------------------------------------------
+    -- SECTION: SYSTEM (Quick Commands tab 6 + System tab 7)
+    --------------------------------------------------------------------------
+    local systemHeader = CreateSectionHeader(leftPanel, "SYSTEM", editModeBtn, "BOTTOMLEFT", -sectionGap)
+
+    local qcTabBtn = CreateTabButton(leftPanel, "Quick Cmds", 6, editModeBtn, "BOTTOM", -(sectionGap + 12))
+    tabButtons[6] = qcTabBtn
+
+    local systemTabBtn = CreateTabButton(leftPanel, "System", 7, qcTabBtn)
+    tabButtons[7] = systemTabBtn
+
+    -- Wire up page-switching click handlers
+    for idx, btn in pairs(tabButtons) do
+        local pi = idx
+        btn:SetScript("OnClick", function(self) TabOnClick(self, pi) end)
+    end
+
+    -- Keybind button: action only (no page)
     -- Temporary blocker flag
     local blockWoWSettings = false
 
@@ -228,34 +293,7 @@ function MABF:CreateOptionsWindow()
         SettingsPanel:HookScript("OnShow", BlockWoWOptionsIfNeeded)
     end
 
-    -- Create the "Edit Mode" button on the leftPanel
-    local editModeBtn = CreateFrame("Button", nil, leftPanel, "BackdropTemplate")
-    editModeBtn:SetSize(80, tabHeight - 5)
-    editModeBtn:SetPoint("TOP", keybindBtn, "BOTTOM", 0, -5)
-    
-    -- Blood-red button style
-    editModeBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        tile = false,
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    editModeBtn:SetBackdropColor(0.5, 0, 0, 1)
-    editModeBtn:SetBackdropBorderColor(0.4, 0, 0, 1)
-    
-    local editModeText = editModeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    editModeText:SetPoint("CENTER")
-    editModeText:SetText("Edit Mode")
-    editModeText:SetTextColor(1, 1, 1, 1)
-    
-    editModeBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(0.8, 0, 0, 1)
-    end)
-    editModeBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(0.5, 0, 0, 1)
-    end)
-    
+    -- Edit Mode button: action only (no page)
     editModeBtn:SetScript("OnClick", function()
         if MABFOptionsFrame then
             MABFOptionsFrame:Hide()
@@ -266,19 +304,40 @@ function MABF:CreateOptionsWindow()
     ------------------------------------------------------------------------------
     -- Create Content Pages as Children of Right Panel
     ------------------------------------------------------------------------------
+    -- Helper: style slider text to match addon theme
+    local SLIDER_FONT = "Fonts\\FRIZQT__.TTF"
+    local SLIDER_FONT_SIZE = 9
+    local SLIDER_MINMAX_SIZE = 8
+    local function StyleSlider(slider)
+        local name = slider:GetName()
+        local textLabel = _G[name.."Text"]
+        local lowLabel = _G[name.."Low"]
+        local highLabel = _G[name.."High"]
+        if textLabel then
+            textLabel:SetFont(SLIDER_FONT, SLIDER_FONT_SIZE, "OUTLINE")
+            textLabel:SetTextColor(1, 1, 1)
+        end
+        if lowLabel then
+            lowLabel:SetFont(SLIDER_FONT, SLIDER_MINMAX_SIZE, "OUTLINE")
+            lowLabel:SetTextColor(0.6, 0.6, 0.6)
+        end
+        if highLabel then
+            highLabel:SetFont(SLIDER_FONT, SLIDER_MINMAX_SIZE, "OUTLINE")
+            highLabel:SetTextColor(0.6, 0.6, 0.6)
+        end
+    end
+
     -- Page 1: General Settings (with Macro slider integrated)
     local pageGeneral = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
     pageGeneral:SetAllPoints(rightPanel)
     pages[1] = pageGeneral
 
-    local genLabel = pageGeneral:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    genLabel:SetPoint("TOP", pageGeneral, "TOP", 0, -10)
-    genLabel:SetText("General Settings")
+    local genLabel = CreatePageTitle(pageGeneral, "AB Text Sizes")
 
     -- Main Font Size Slider
     local mainSlider = CreateFrame("Slider", "MABFMainFontSizeSlider", pageGeneral, "OptionsSliderTemplate")
-    mainSlider:SetSize(130, 15)
-    mainSlider:SetPoint("TOP", genLabel, "BOTTOM", 0, -15)
+    mainSlider:SetSize(PAGE_WIDTH, 14)
+    mainSlider:SetPoint("TOPLEFT", genLabel, "BOTTOMLEFT", 0, -18)
     mainSlider:SetMinMaxValues(10, 50)
     mainSlider:SetValue(MattActionBarFontDB.fontSize)
     mainSlider:SetValueStep(1)
@@ -287,6 +346,7 @@ function MABF:CreateOptionsWindow()
     _G[mainSliderName.."Low"]:SetText("10")
     _G[mainSliderName.."High"]:SetText("50")
     _G[mainSliderName.."Text"]:SetText("Main Font Size: " .. MattActionBarFontDB.fontSize)
+    StyleSlider(mainSlider)
     mainSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.fontSize = value
@@ -297,8 +357,8 @@ function MABF:CreateOptionsWindow()
 
     -- Count Font Size Slider
     local countSlider = CreateFrame("Slider", "MABFCountSizeSlider", pageGeneral, "OptionsSliderTemplate")
-    countSlider:SetSize(130, 15)
-    countSlider:SetPoint("TOP", mainSlider, "BOTTOM", 0, -20)
+    countSlider:SetSize(PAGE_WIDTH, 14)
+    countSlider:SetPoint("TOPLEFT", mainSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
     countSlider:SetMinMaxValues(8, 30)
     countSlider:SetValue(MattActionBarFontDB.countFontSize)
     countSlider:SetValueStep(1)
@@ -307,6 +367,7 @@ function MABF:CreateOptionsWindow()
     _G[countSliderName.."Low"]:SetText("8")
     _G[countSliderName.."High"]:SetText("30")
     _G[countSliderName.."Text"]:SetText("Count Font Size: " .. MattActionBarFontDB.countFontSize)
+    StyleSlider(countSlider)
     countSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.countFontSize = value
@@ -317,8 +378,8 @@ function MABF:CreateOptionsWindow()
 
     -- Macro Text Slider (integrated into General settings)
     local macroSlider = CreateFrame("Slider", "MABFMacroTextSizeSlider", pageGeneral, "OptionsSliderTemplate")
-    macroSlider:SetSize(130, 15)
-    macroSlider:SetPoint("TOP", countSlider, "BOTTOM", 0, -20)
+    macroSlider:SetSize(PAGE_WIDTH, 14)
+    macroSlider:SetPoint("TOPLEFT", countSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
     macroSlider:SetMinMaxValues(8, 30)
     macroSlider:SetValue(MattActionBarFontDB.macroTextSize)
     macroSlider:SetValueStep(1)
@@ -327,6 +388,7 @@ function MABF:CreateOptionsWindow()
     _G[macroSliderName.."Low"]:SetText("8")
     _G[macroSliderName.."High"]:SetText("30")
     _G[macroSliderName.."Text"]:SetText("Macro Text Size: " .. MattActionBarFontDB.macroTextSize)
+    StyleSlider(macroSlider)
     macroSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.macroTextSize = value
@@ -336,8 +398,8 @@ function MABF:CreateOptionsWindow()
 
     -- Pet Bar Font Size Slider
     local petBarSlider = CreateFrame("Slider", "MABFPetBarSizeSlider", pageGeneral, "OptionsSliderTemplate")
-    petBarSlider:SetSize(130, 15)
-    petBarSlider:SetPoint("TOP", macroSlider, "BOTTOM", 0, -20)
+    petBarSlider:SetSize(PAGE_WIDTH, 14)
+    petBarSlider:SetPoint("TOPLEFT", macroSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
     petBarSlider:SetMinMaxValues(10, 50)
     petBarSlider:SetValue(MattActionBarFontDB.petBarFontSize)
     petBarSlider:SetValueStep(1)
@@ -345,6 +407,7 @@ function MABF:CreateOptionsWindow()
     _G[petBarSliderName.."Low"]:SetText("10")
     _G[petBarSliderName.."High"]:SetText("50")
     _G[petBarSliderName.."Text"]:SetText("Pet Bar Font Size: " .. MattActionBarFontDB.petBarFontSize)
+    StyleSlider(petBarSlider)
     petBarSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.petBarFontSize = value
@@ -352,12 +415,13 @@ function MABF:CreateOptionsWindow()
         MABF:UpdatePetBarFontSettings()
     end)
 
-    local dropdownTitle = pageGeneral:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    dropdownTitle:SetPoint("TOP", petBarSlider, "BOTTOM", 0, -20)
+    local dropdownTitle = pageGeneral:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    dropdownTitle:SetPoint("TOPLEFT", petBarSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
     dropdownTitle:SetText("Actionbar Font:")
+    dropdownTitle:SetTextColor(1, 1, 1)
     local fontDropDown = CreateFrame("Frame", "MABFFontDropDown", pageGeneral, "UIDropDownMenuTemplate")
-    fontDropDown:SetPoint("TOP", dropdownTitle, "BOTTOM", 0, -5)
-    UIDropDownMenu_SetWidth(fontDropDown, 150)
+    fontDropDown:SetPoint("TOPLEFT", dropdownTitle, "BOTTOMLEFT", -16, -2)
+    UIDropDownMenu_SetWidth(fontDropDown, 130)
     local function InitializeFontDropDown(self, level)
         local fontsList = {}
         for fontName, _ in pairs(MABF.availableFonts or {}) do
@@ -385,18 +449,18 @@ function MABF:CreateOptionsWindow()
     UIDropDownMenu_Initialize(fontDropDown, InitializeFontDropDown)
     UIDropDownMenu_SetSelectedValue(fontDropDown, MattActionBarFontDB.fontFamily)
 
+
+
     -- Page 2: Offsets
     local pageOffsets = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
     pageOffsets:SetAllPoints(rightPanel)
     pages[2] = pageOffsets
 
-    local abOffsetsLabel = pageOffsets:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    abOffsetsLabel:SetPoint("TOP", pageOffsets, "TOP", 0, -10)
-    abOffsetsLabel:SetText("Action Bar Font Offsets")
+    local abOffsetsLabel = CreatePageTitle(pageOffsets, "AB Offsets")
 
     local abXOffsetSlider = CreateFrame("Slider", "MABFABXOffsetSlider", pageOffsets, "OptionsSliderTemplate")
-    abXOffsetSlider:SetSize(130, 15)
-    abXOffsetSlider:SetPoint("TOP", abOffsetsLabel, "BOTTOM", 0, -15)
+    abXOffsetSlider:SetSize(PAGE_WIDTH, 14)
+    abXOffsetSlider:SetPoint("TOPLEFT", abOffsetsLabel, "BOTTOMLEFT", 0, -18)
     abXOffsetSlider:SetMinMaxValues(-100, 100)
     abXOffsetSlider:SetValue(MattActionBarFontDB.abXOffset)
     abXOffsetSlider:SetValueStep(1)
@@ -405,6 +469,7 @@ function MABF:CreateOptionsWindow()
     _G[abXSliderName.."Low"]:SetText("-100")
     _G[abXSliderName.."High"]:SetText("100")
     _G[abXSliderName.."Text"]:SetText("Action Bar Font X Offset: " .. MattActionBarFontDB.abXOffset)
+    StyleSlider(abXOffsetSlider)
     abXOffsetSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.abXOffset = value
@@ -413,8 +478,8 @@ function MABF:CreateOptionsWindow()
     end)
 
     local abYOffsetSlider = CreateFrame("Slider", "MABFABYOffsetSlider", pageOffsets, "OptionsSliderTemplate")
-    abYOffsetSlider:SetSize(130, 15)
-    abYOffsetSlider:SetPoint("TOP", abXOffsetSlider, "BOTTOM", 0, -20)
+    abYOffsetSlider:SetSize(PAGE_WIDTH, 14)
+    abYOffsetSlider:SetPoint("TOPLEFT", abXOffsetSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
     abYOffsetSlider:SetMinMaxValues(-100, 100)
     abYOffsetSlider:SetValue(MattActionBarFontDB.abYOffset)
     abYOffsetSlider:SetValueStep(1)
@@ -423,6 +488,7 @@ function MABF:CreateOptionsWindow()
     _G[abYSliderName.."Low"]:SetText("-100")
     _G[abYSliderName.."High"]:SetText("100")
     _G[abYSliderName.."Text"]:SetText("Action Bar Font Y Offset: " .. MattActionBarFontDB.abYOffset)
+    StyleSlider(abYOffsetSlider)
     abYOffsetSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.abYOffset = value
@@ -431,12 +497,13 @@ function MABF:CreateOptionsWindow()
     end)
 
     local countOffsetsLabel = pageOffsets:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    countOffsetsLabel:SetPoint("TOP", abYOffsetSlider, "BOTTOM", 0, -20)
+    countOffsetsLabel:SetPoint("TOPLEFT", abYOffsetSlider, "BOTTOMLEFT", 0, -28)
     countOffsetsLabel:SetText("Count Text Offsets")
+    countOffsetsLabel:SetTextColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 1)
 
     local xOffsetSlider = CreateFrame("Slider", "MABFXOffsetSlider", pageOffsets, "OptionsSliderTemplate")
-    xOffsetSlider:SetSize(130, 15)
-    xOffsetSlider:SetPoint("TOP", countOffsetsLabel, "BOTTOM", 0, -15)
+    xOffsetSlider:SetSize(PAGE_WIDTH, 14)
+    xOffsetSlider:SetPoint("TOPLEFT", countOffsetsLabel, "BOTTOMLEFT", 0, -18)
     xOffsetSlider:SetMinMaxValues(-100, 100)
     xOffsetSlider:SetValue(MattActionBarFontDB.xOffset)
     xOffsetSlider:SetValueStep(1)
@@ -445,6 +512,7 @@ function MABF:CreateOptionsWindow()
     _G[xSliderName.."Low"]:SetText("-100")
     _G[xSliderName.."High"]:SetText("100")
     _G[xSliderName.."Text"]:SetText("Count Text X Offset: " .. MattActionBarFontDB.xOffset)
+    StyleSlider(xOffsetSlider)
     xOffsetSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.xOffset = value
@@ -453,8 +521,8 @@ function MABF:CreateOptionsWindow()
     end)
 
     local yOffsetSlider = CreateFrame("Slider", "MABFYOffsetSlider", pageOffsets, "OptionsSliderTemplate")
-    yOffsetSlider:SetSize(130, 15)
-    yOffsetSlider:SetPoint("TOP", xOffsetSlider, "BOTTOM", 0, -20)
+    yOffsetSlider:SetSize(PAGE_WIDTH, 14)
+    yOffsetSlider:SetPoint("TOPLEFT", xOffsetSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
     yOffsetSlider:SetMinMaxValues(-100, 100)
     yOffsetSlider:SetValue(MattActionBarFontDB.yOffset)
     yOffsetSlider:SetValueStep(1)
@@ -463,6 +531,7 @@ function MABF:CreateOptionsWindow()
     _G[ySliderName.."Low"]:SetText("-100")
     _G[ySliderName.."High"]:SetText("100")
     _G[ySliderName.."Text"]:SetText("Count Text Y Offset: " .. MattActionBarFontDB.yOffset)
+    StyleSlider(yOffsetSlider)
     yOffsetSlider:SetScript("OnValueChanged", function(self, value)
         value = math.floor(value + 0.5)
         MattActionBarFontDB.yOffset = value
@@ -475,101 +544,190 @@ function MABF:CreateOptionsWindow()
     pageTheme:SetAllPoints(rightPanel)
     pages[3] = pageTheme
 
-    local themeTitle = pageTheme:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    themeTitle:SetPoint("TOP", pageTheme, "TOP", 0, -10)
-    themeTitle:SetText("Action Bar Themes")
+    local themeTitle = CreatePageTitle(pageTheme, "AB Themes")
 
-    local minimalThemeCheck = CreateFrame("CheckButton", "MABFMinimalThemeCheck", pageTheme, "InterfaceOptionsCheckButtonTemplate")
-    minimalThemeCheck:ClearAllPoints()
-    minimalThemeCheck:SetPoint("TOP", themeTitle, "BOTTOM", -45, -10)
-    local checkText = _G[minimalThemeCheck:GetName().."Text"]
-    checkText:SetText("Minimal Theme")
-    checkText:SetTextColor(1, 1, 1)
-    minimalThemeCheck:SetChecked(MattActionBarFontDB.minimalTheme)
-    minimalThemeCheck:SetScript("OnClick", function(self)
-        MattActionBarFontDB.minimalTheme = self:GetChecked()
+    -- Theme dropdown
+    local themeDropdownTitle = pageTheme:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    themeDropdownTitle:SetPoint("TOPLEFT", themeTitle, "BOTTOMLEFT", 0, -14)
+    themeDropdownTitle:SetText("Action Bar Theme:")
+    themeDropdownTitle:SetTextColor(1, 1, 1)
+
+    local themeOptions = {
+        { value = "blizzard",           label = "Blizzard Default" },
+        { value = "minimalBlack",       label = "Minimal Black" },
+        { value = "minimalTranslucent", label = "Minimal Translucent" },
+    }
+
+    local themeDropDown = CreateFrame("Frame", "MABFThemeDropDown", pageTheme, "UIDropDownMenuTemplate")
+    themeDropDown:SetPoint("TOPLEFT", themeDropdownTitle, "BOTTOMLEFT", -16, -2)
+    UIDropDownMenu_SetWidth(themeDropDown, 160)
+
+    local function GetThemeLabel(val)
+        for _, opt in ipairs(themeOptions) do
+            if opt.value == val then return opt.label end
+        end
+        return "Blizzard Default"
+    end
+
+    -- Background Opacity slider (only visible when a minimal theme is selected)
+    local bgOpacitySlider = CreateFrame("Slider", "MABFBgOpacitySlider", pageTheme, "OptionsSliderTemplate")
+    bgOpacitySlider:SetSize(PAGE_WIDTH, 14)
+    bgOpacitySlider:SetPoint("TOPLEFT", themeDropDown, "BOTTOMLEFT", 16, CONTENT_SPACING)
+    bgOpacitySlider:SetMinMaxValues(0, 100)
+    bgOpacitySlider:SetValue((MattActionBarFontDB.minimalThemeBgOpacity or 0.35) * 100)
+    bgOpacitySlider:SetValueStep(5)
+    bgOpacitySlider:SetObeyStepOnDrag(true)
+    local bgOpacityName = bgOpacitySlider:GetName()
+    _G[bgOpacityName.."Low"]:SetText("0%")
+    _G[bgOpacityName.."High"]:SetText("100%")
+    _G[bgOpacityName.."Text"]:SetText("Background Opacity: " .. math.floor((MattActionBarFontDB.minimalThemeBgOpacity or 0.35) * 100) .. "%")
+    StyleSlider(bgOpacitySlider)
+    bgOpacitySlider:SetScript("OnValueChanged", function(self, value)
+        value = math.floor(value)
+        MattActionBarFontDB.minimalThemeBgOpacity = value / 100
+        _G[self:GetName().."Text"]:SetText("Background Opacity: " .. value .. "%")
+        if MattActionBarFontDB.minimalTheme ~= "blizzard" then
+            MABF:SkinActionBars()
+        end
+    end)
+
+    local function UpdateOpacitySliderVisibility()
+        if MattActionBarFontDB.minimalTheme ~= "blizzard" then
+            bgOpacitySlider:Show()
+        else
+            bgOpacitySlider:Hide()
+        end
+    end
+    UpdateOpacitySliderVisibility()
+
+    local function InitializeThemeDropDown(self, level)
+        for _, opt in ipairs(themeOptions) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = opt.label
+            info.value = opt.value
+            info.func = function()
+                MattActionBarFontDB.minimalTheme = opt.value
+                UIDropDownMenu_SetSelectedValue(themeDropDown, opt.value)
+                UIDropDownMenu_SetText(themeDropDown, opt.label)
+                UpdateOpacitySliderVisibility()
+                StaticPopup_Show("MABF_RELOAD_UI")
+            end
+            info.checked = (opt.value == MattActionBarFontDB.minimalTheme)
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
+    UIDropDownMenu_Initialize(themeDropDown, InitializeThemeDropDown)
+    UIDropDownMenu_SetSelectedValue(themeDropDown, MattActionBarFontDB.minimalTheme)
+    UIDropDownMenu_SetText(themeDropDown, GetThemeLabel(MattActionBarFontDB.minimalTheme))
+
+    -- Page 4: AB Features
+    local pageABFeatures = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageABFeatures:SetAllPoints(rightPanel)
+    pages[4] = pageABFeatures
+
+    -- Page 5: UI Features
+    local pageUIFeatures = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageUIFeatures:SetAllPoints(rightPanel)
+    pages[5] = pageUIFeatures
+
+    -- Page 6: QC Features
+    local pageSystem = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageSystem:SetAllPoints(rightPanel)
+    pages[6] = pageSystem
+
+    -- Page 7: System (Edit Mode Device Manager)
+    local pageEDM = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageEDM:SetAllPoints(rightPanel)
+    pages[7] = pageEDM
+
+    -- Page 8: Quests
+    local pageQuests = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageQuests:SetAllPoints(rightPanel)
+    pages[8] = pageQuests
+
+    -- Page 9: Bags
+    local pageBags = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageBags:SetAllPoints(rightPanel)
+    pages[9] = pageBags
+
+    -- Page 10: Merchant
+    local pageMerchant = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
+    pageMerchant:SetAllPoints(rightPanel)
+    pages[10] = pageMerchant
+
+    -- Initialize pages: show first page and set tab button colors
+    for i, page in ipairs(pages) do
+        if i == 1 then page:Show() else page:Hide() end
+    end
+    for _, b in ipairs(allTabButtons) do
+        b:SetBackdropColor(TAB_NORMAL[1], TAB_NORMAL[2], TAB_NORMAL[3], TAB_NORMAL[4])
+    end
+    if tabButtons[1] then
+        tabButtons[1]:SetBackdropColor(TAB_SELECTED[1], TAB_SELECTED[2], TAB_SELECTED[3], TAB_SELECTED[4])
+    end
+
+    local checkSpacing = -4
+
+    --------------------------------------------------------------------------
+    -- AB Features Page
+    --------------------------------------------------------------------------
+    local abFeaturesTitle = CreatePageTitle(pageABFeatures, "AB Features")
+
+    -- Mouseover Fade
+    local mouseoverFadeCheck = CreateFrame("CheckButton", "MABFMouseoverFadeCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
+    mouseoverFadeCheck:ClearAllPoints()
+    mouseoverFadeCheck:SetPoint("TOPLEFT", abFeaturesTitle, "BOTTOMLEFT", 0, -8)
+    local mouseoverFadeText = _G[mouseoverFadeCheck:GetName() .. "Text"]
+    mouseoverFadeText:SetText("Mouseover Fade (Bars 4 & 5)")
+    mouseoverFadeText:SetTextColor(1, 1, 1)
+    mouseoverFadeCheck:SetChecked(MattActionBarFontDB.mouseoverFade)
+    mouseoverFadeCheck:SetScript("OnClick", function(self)
+        local enabled = self:GetChecked() and true or false
+        MattActionBarFontDB.mouseoverFade = enabled
+        MABF:ApplyActionBarMouseover()
+        if enabled then
+            MABF:SetBarsMouseoverState(false)
+            StaticPopup_Show("MABF_RELOAD_UI")
+        end
+    end)
+
+    -- Reverse Bar Growth
+    local reverseBarGrowthCheck = CreateFrame("CheckButton", "MABFReverseBarGrowthCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
+    reverseBarGrowthCheck:ClearAllPoints()
+    reverseBarGrowthCheck:SetPoint("TOPLEFT", mouseoverFadeCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local reverseBarGrowthText = _G[reverseBarGrowthCheck:GetName() .. "Text"]
+    reverseBarGrowthText:SetText("Reverse Bar Growth (Bar 1)")
+    reverseBarGrowthText:SetTextColor(1, 1, 1)
+    reverseBarGrowthCheck:SetChecked(MattActionBarFontDB.reverseBarGrowth)
+    reverseBarGrowthCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.reverseBarGrowth = self:GetChecked() and true or false
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
-    -- Add the macro text toggle option to the theme section
-    local hideMacroTextCheckbox = CreateFrame("CheckButton", "MABFHideMacroTextCheckbox", pageTheme, "InterfaceOptionsCheckButtonTemplate")
-    hideMacroTextCheckbox:SetPoint("TOP", minimalThemeCheck, "BOTTOM", 0, -10)
-    hideMacroTextCheckbox.Text:SetText("Hide Macro Text")
-    hideMacroTextCheckbox.tooltipText = "Toggle visibility of macro text on action buttons"
-    hideMacroTextCheckbox:SetChecked(MattActionBarFontDB.hideMacroText)
-
-    -- Add a macro text size slider that's truly centered in the frame
-    local macroTextSizeSlider = CreateFrame("Slider", "MABFMacroTextSizeSlider", pageTheme, "OptionsSliderTemplate")
-    -- Lower the position by increasing the offset from -130 to -160
-    macroTextSizeSlider:SetPoint("TOP", pageTheme, "TOP", 0, -160)
-    macroTextSizeSlider:SetMinMaxValues(6, 20)
-    macroTextSizeSlider:SetValueStep(1)
-    macroTextSizeSlider:SetObeyStepOnDrag(true)
-    macroTextSizeSlider:SetWidth(140)
-    macroTextSizeSlider.Text:SetText("Macro Text Size")
-    macroTextSizeSlider.Low:SetText("6")
-    macroTextSizeSlider.High:SetText("20")
-    macroTextSizeSlider:SetValue(MattActionBarFontDB.macroTextSize or 8)
-    macroTextSizeSlider:SetScript("OnValueChanged", function(self, value)
-        value = math.floor(value)
-        MattActionBarFontDB.macroTextSize = value
+    -- Hide Macro Text
+    local hideMacroTextCheck = CreateFrame("CheckButton", "MABFHideMacroTextExperimentalCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
+    hideMacroTextCheck:ClearAllPoints()
+    hideMacroTextCheck:SetPoint("TOPLEFT", reverseBarGrowthCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local hideMacroTextLabel = _G[hideMacroTextCheck:GetName() .. "Text"]
+    hideMacroTextLabel:SetText("Hide Macro Text")
+    hideMacroTextLabel:SetTextColor(1, 1, 1)
+    hideMacroTextCheck:SetChecked(MattActionBarFontDB.hideMacroText)
+    hideMacroTextCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.hideMacroText = self:GetChecked() and true or false
         MABF:UpdateMacroText()
     end)
 
-    -- Function to update visibility of macro text size slider
-    -- IMPORTANT: Define the function after creating the slider but before using it
-    local function UpdateMacroTextSizeVisibility()
-        if MattActionBarFontDB.hideMacroText then
-            macroTextSizeSlider:Disable()
-            macroTextSizeSlider:SetAlpha(0.5)
-        else
-            macroTextSizeSlider:Enable()
-            macroTextSizeSlider:SetAlpha(1.0)
-        end
-    end
+    --------------------------------------------------------------------------
+    -- UI Features Page
+    --------------------------------------------------------------------------
+    local uiFeaturesTitle = CreatePageTitle(pageUIFeatures, "UI / QoL")
 
-    -- Now set up the click handler that uses the function
-    hideMacroTextCheckbox:SetScript("OnClick", function(self)
-        local checked = self:GetChecked()
-        MattActionBarFontDB.hideMacroText = checked and true or false
-        MABF:UpdateMacroText()
-        UpdateMacroTextSizeVisibility()
-    end)
-
-    -- Initialize the visibility state
-    UpdateMacroTextSizeVisibility()
-
-    -- Page 4: Experimental
-    local pageExperimental = CreateFrame("Frame", nil, rightPanel, "BackdropTemplate")
-    pageExperimental:SetAllPoints(rightPanel)
-    pages[4] = pageExperimental
-
-    -- Initialize pages: show first page and set tab button colors to red
-    for i, page in ipairs(pages) do
-        if i == 1 then
-            page:Show()
-        else
-            page:Hide()
-        end
-    end
-    for k, button in ipairs(tabButtons) do
-        if k == 1 then
-            button:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
-        else
-            button:SetBackdropColor(0.5, 0, 0, 1) -- normal blood red
-        end
-    end
-
-    local experimentalTitle = pageExperimental:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    experimentalTitle:SetPoint("TOP", pageExperimental, "TOP", 0, -10)
-    experimentalTitle:SetText("Experimental Features")
-
-    -- Add the objective tracker scale checkbox
-    local objectiveTrackerCheck = CreateFrame("CheckButton", "MABFObjectiveTrackerCheck", pageExperimental, "InterfaceOptionsCheckButtonTemplate")
+    -- Scale Objective Tracker
+    local objectiveTrackerCheck = CreateFrame("CheckButton", "MABFObjectiveTrackerCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     objectiveTrackerCheck:ClearAllPoints()
-    objectiveTrackerCheck:SetPoint("TOP", experimentalTitle, "BOTTOM", -60, -10)
+    objectiveTrackerCheck:SetPoint("TOPLEFT", uiFeaturesTitle, "BOTTOMLEFT", 0, -8)
     local objCheckText = _G[objectiveTrackerCheck:GetName().."Text"]
-    objCheckText:SetText("Smaller Objective Tracker")
+    objCheckText:SetText("Scale Objective Tracker (0.7)")
     objCheckText:SetTextColor(1, 1, 1)
     objectiveTrackerCheck:SetChecked(MattActionBarFontDB.scaleObjectiveTracker)
     objectiveTrackerCheck:SetScript("OnClick", function(self)
@@ -577,75 +735,486 @@ function MABF:CreateOptionsWindow()
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
-    -- Add smaller minimap checkbox
-    local smallerMinimapCheck = CreateFrame("CheckButton", "MABFSmallerMinimapCheck", pageExperimental, "InterfaceOptionsCheckButtonTemplate")
-    smallerMinimapCheck:ClearAllPoints()
-    smallerMinimapCheck:SetPoint("TOP", objectiveTrackerCheck, "BOTTOM", 0, -10)
-    local smallerMinimapText = _G[smallerMinimapCheck:GetName().."Text"]
-    smallerMinimapText:SetText("Smaller Minimap")
-    smallerMinimapText:SetTextColor(1, 1, 1)
-    smallerMinimapCheck:SetChecked(MattActionBarFontDB.smallerMinimap)
-    
-    -- Add bigger minimap checkbox
-    local biggerMinimapCheck = CreateFrame("CheckButton", "MABFBiggerMinimapCheck", pageExperimental, "InterfaceOptionsCheckButtonTemplate")
-    biggerMinimapCheck:ClearAllPoints()
-    biggerMinimapCheck:SetPoint("TOP", smallerMinimapCheck, "BOTTOM", 0, -10)
-    local biggerMinimapText = _G[biggerMinimapCheck:GetName().."Text"]
-    biggerMinimapText:SetText("Bigger Minimap")
-    biggerMinimapText:SetTextColor(1, 1, 1)
-    biggerMinimapCheck:SetChecked(MattActionBarFontDB.biggerMinimap)
-    
-    -- Make them mutually exclusive
-    smallerMinimapCheck:SetScript("OnClick", function(self)
-        if self:GetChecked() then
-            MattActionBarFontDB.smallerMinimap = true
-            MattActionBarFontDB.biggerMinimap = false
-            biggerMinimapCheck:SetChecked(false)
-            biggerMinimapCheck:Disable()
-            biggerMinimapText:SetTextColor(0.5, 0.5, 0.5)
-        else
-            MattActionBarFontDB.smallerMinimap = false
-            biggerMinimapCheck:Enable()
-            biggerMinimapText:SetTextColor(1, 1, 1)
-        end
+    -- Scale Status Bar
+    local scaleStatusBarCheck = CreateFrame("CheckButton", "MABFScaleStatusBarCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    scaleStatusBarCheck:ClearAllPoints()
+    scaleStatusBarCheck:SetPoint("TOPLEFT", objectiveTrackerCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local scaleStatusBarText = _G[scaleStatusBarCheck:GetName().."Text"]
+    scaleStatusBarText:SetText("Scale Status Bar (0.7)")
+    scaleStatusBarText:SetTextColor(1, 1, 1)
+    scaleStatusBarCheck:SetChecked(MattActionBarFontDB.scaleStatusBar)
+    scaleStatusBarCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.scaleStatusBar = self:GetChecked()
+        MABF:ApplyStatusBarScale()
+    end)
+
+    -- Scale Talking Head
+    local scaleTalkingHeadCheck = CreateFrame("CheckButton", "MABFScaleTalkingHeadCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    scaleTalkingHeadCheck:ClearAllPoints()
+    scaleTalkingHeadCheck:SetPoint("TOPLEFT", scaleStatusBarCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local scaleTalkingHeadText = _G[scaleTalkingHeadCheck:GetName().."Text"]
+    scaleTalkingHeadText:SetText("Scale Talking Head (0.7)")
+    scaleTalkingHeadText:SetTextColor(1, 1, 1)
+    scaleTalkingHeadCheck:SetChecked(MattActionBarFontDB.scaleTalkingHead)
+    scaleTalkingHeadCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.scaleTalkingHead = self:GetChecked()
+        MABF:ApplyScaleTalkingHead()
+    end)
+
+    -- Hide Micro Menu
+    local hideMicroMenuCheck = CreateFrame("CheckButton", "MABFHideMicroMenuCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    hideMicroMenuCheck:ClearAllPoints()
+    hideMicroMenuCheck:SetPoint("TOPLEFT", scaleTalkingHeadCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local hideMicroMenuText = _G[hideMicroMenuCheck:GetName().."Text"]
+    hideMicroMenuText:SetText("Hide Micro Menu")
+    hideMicroMenuText:SetTextColor(1, 1, 1)
+    local hideMicroDesc = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    hideMicroDesc:SetPoint("TOPLEFT", hideMicroMenuCheck, "BOTTOMLEFT", 26, 2)
+    hideMicroDesc:SetText("|cff888888Keeps Dungeon Finder & Housing|r")
+    hideMicroDesc:SetScale(0.85)
+    hideMicroMenuCheck:SetChecked(MattActionBarFontDB.hideMicroMenu)
+    hideMicroMenuCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.hideMicroMenu = self:GetChecked()
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
-    
-    biggerMinimapCheck:SetScript("OnClick", function(self)
-        if self:GetChecked() then
-            MattActionBarFontDB.biggerMinimap = true
-            MattActionBarFontDB.smallerMinimap = false
-            smallerMinimapCheck:SetChecked(false)
-            smallerMinimapCheck:Disable()
-            smallerMinimapText:SetTextColor(0.5, 0.5, 0.5)
-        else
-            MattActionBarFontDB.biggerMinimap = false
-            smallerMinimapCheck:Enable()
-            smallerMinimapText:SetTextColor(1, 1, 1)
-        end
+
+    -- Hide Bag Bar
+    local hideBagBarCheck = CreateFrame("CheckButton", "MABFHideBagBarCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    hideBagBarCheck:ClearAllPoints()
+    hideBagBarCheck:SetPoint("TOPLEFT", hideMicroMenuCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local hideBagBarText = _G[hideBagBarCheck:GetName().."Text"]
+    hideBagBarText:SetText("Hide Bag Bar")
+    hideBagBarText:SetTextColor(1, 1, 1)
+    hideBagBarCheck:SetChecked(MattActionBarFontDB.hideBagBar)
+    hideBagBarCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.hideBagBar = self:GetChecked()
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
-    
-    -- Initialize states
-    if MattActionBarFontDB.smallerMinimap then
-        biggerMinimapCheck:Disable()
-        biggerMinimapText:SetTextColor(0.5, 0.5, 0.5)
-    elseif MattActionBarFontDB.biggerMinimap then
-        smallerMinimapCheck:Disable()
-        smallerMinimapText:SetTextColor(0.5, 0.5, 0.5)
+
+    -- Performance Monitor
+    local perfMonitorCheck = CreateFrame("CheckButton", "MABFPerfMonitorCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    perfMonitorCheck:ClearAllPoints()
+    perfMonitorCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local perfMonitorText = _G[perfMonitorCheck:GetName().."Text"]
+    perfMonitorText:SetText("Performance Monitor (FPS & MS)")
+    perfMonitorText:SetTextColor(1, 1, 1)
+    perfMonitorCheck:SetChecked(MattActionBarFontDB.enablePerformanceMonitor)
+    perfMonitorCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enablePerformanceMonitor = self:GetChecked()
+        if MattActionBarFontDB.enablePerformanceMonitor then
+            MABF:SetupPerformanceMonitor()
+        else
+            MABF:DisablePerformanceMonitor()
+        end
+    end)
+
+    -- Small helper text describing how to move the monitor
+    local perfMonitorDesc = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    -- nudge description slightly lower to avoid overlapping the slider
+    -- move description up a touch and add spacing
+    perfMonitorDesc:SetPoint("TOPLEFT", perfMonitorCheck, "BOTTOMLEFT", 26, -10)
+    perfMonitorDesc:SetText("|cff888888Shift+LeftClick to move the monitor|r")
+    perfMonitorDesc:SetScale(0.85)
+
+    -- Background Opacity slider (indented, sub-option)
+    local perfBgOpacitySlider = CreateFrame("Slider", "MABFPerfBgOpacitySlider", pageUIFeatures, "OptionsSliderTemplate")
+    perfBgOpacitySlider:SetWidth(140)
+    perfBgOpacitySlider:SetHeight(16)
+    -- anchor the slider further below the description to ensure no overlap
+    perfBgOpacitySlider:SetPoint("TOPLEFT", perfMonitorDesc, "BOTTOMLEFT", -6, -22)
+    perfBgOpacitySlider:SetMinMaxValues(0, 100)
+    perfBgOpacitySlider:SetValueStep(5)
+    perfBgOpacitySlider:SetObeyStepOnDrag(true)
+    _G[perfBgOpacitySlider:GetName().."Low"]:SetText("0%")
+    _G[perfBgOpacitySlider:GetName().."High"]:SetText("100%")
+    local perfBgOpacityTitle = _G[perfBgOpacitySlider:GetName().."Text"]
+    perfBgOpacityTitle:SetText("BG Opacity: " .. math.floor((MattActionBarFontDB.perfMonitorBgOpacity or 0.5) * 100) .. "%")
+    StyleSlider(perfBgOpacitySlider)
+    perfBgOpacitySlider:SetValue((MattActionBarFontDB.perfMonitorBgOpacity or 0.5) * 100)
+    perfBgOpacitySlider:SetScript("OnValueChanged", function(self, value)
+        local alpha = value / 100
+        MattActionBarFontDB.perfMonitorBgOpacity = alpha
+        _G[self:GetName().."Text"]:SetText("BG Opacity: " .. math.floor(value) .. "%")
+        MABF:ApplyPerfMonitorStyle()
+    end)
+
+    -- Text Color dropdown (indented, sub-option)
+    local perfColorLabel = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    perfColorLabel:SetPoint("TOPLEFT", perfBgOpacitySlider, "BOTTOMLEFT", 0, -18)
+    perfColorLabel:SetText("Text Color:")
+    perfColorLabel:SetTextColor(0.8, 0.8, 0.8)
+
+    local perfColorDropdown = CreateFrame("Frame", "MABFPerfColorDropdown", pageUIFeatures, "UIDropDownMenuTemplate")
+    perfColorDropdown:SetPoint("LEFT", perfColorLabel, "RIGHT", -8, -2)
+    UIDropDownMenu_SetWidth(perfColorDropdown, 80)
+
+    local perfColorOptions = {
+        {label = "White",  value = "white"},
+        {label = "Red",    value = "red"},
+        {label = "Green",  value = "green"},
+        {label = "Yellow", value = "yellow"},
+        {label = "Blue",   value = "blue"},
+    }
+
+    local function PerfColorDropdown_Initialize(self, level)
+        for _, opt in ipairs(perfColorOptions) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = opt.label
+            info.value = opt.value
+            info.func = function(btn)
+                MattActionBarFontDB.perfMonitorColor = btn.value
+                UIDropDownMenu_SetText(perfColorDropdown, opt.label)
+                MABF:ApplyPerfMonitorStyle()
+            end
+            info.checked = (MattActionBarFontDB.perfMonitorColor == opt.value)
+            UIDropDownMenu_AddButton(info, level)
+        end
     end
 
-    ------------------------------------------------------------------------------
-    -- Initialize: Show first page and highlight first tab
-    ------------------------------------------------------------------------------
-    for i, page in ipairs(pages) do
-        if i == 1 then
-            page:Show()
-        else
-            page:Hide()
+    UIDropDownMenu_Initialize(perfColorDropdown, PerfColorDropdown_Initialize)
+    -- Set initial display text
+    for _, opt in ipairs(perfColorOptions) do
+        if opt.value == MattActionBarFontDB.perfMonitorColor then
+            UIDropDownMenu_SetText(perfColorDropdown, opt.label)
+            break
         end
     end
-    tabButtons[1]:SetBackdropColor(0.8, 0, 0, 1) -- selected blood red
+
+    -- Vertical / Horizontal layout checkbox
+    local perfVerticalCheck = CreateFrame("CheckButton", "MABFPerfVerticalCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    perfVerticalCheck:ClearAllPoints()
+    perfVerticalCheck:SetPoint("TOPLEFT", perfColorLabel, "BOTTOMLEFT", -4, -20)
+    local perfVerticalText = _G[perfVerticalCheck:GetName().."Text"]
+    perfVerticalText:SetText("Vertical Layout")
+    perfVerticalText:SetTextColor(0.8, 0.8, 0.8)
+    perfVerticalCheck:SetChecked(MattActionBarFontDB.perfMonitorVertical)
+    perfVerticalCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.perfMonitorVertical = self:GetChecked()
+        MABF:ApplyPerfMonitorStyle()
+    end)
+
+    -- Hide MS checkbox
+    local perfHideMSCheck = CreateFrame("CheckButton", "MABFPerfHideMSCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    perfHideMSCheck:ClearAllPoints()
+    perfHideMSCheck:SetPoint("TOPLEFT", perfVerticalCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local perfHideMSText = _G[perfHideMSCheck:GetName().."Text"]
+    perfHideMSText:SetText("Hide MS")
+    perfHideMSText:SetTextColor(0.8, 0.8, 0.8)
+    perfHideMSCheck:SetChecked(MattActionBarFontDB.perfMonitorHideMS)
+    perfHideMSCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.perfMonitorHideMS = self:GetChecked()
+        MABF:ApplyPerfMonitorStyle()
+    end)
+
+    --------------------------------------------------------------------------
+    -- System Page (Edit Mode Device Manager)
+    --------------------------------------------------------------------------
+    local edmTitle = CreatePageTitle(pageEDM, "Edit Mode Device Manager")
+
+    local edmDesc = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    edmDesc:SetPoint("TOPLEFT", edmTitle, "BOTTOMLEFT", 0, -6)
+    edmDesc:SetText("|cff888888Auto-apply an Edit Mode layout on login|r")
+    edmDesc:SetFont("Fonts\\FRIZQT__.TTF", 9)
+
+    -- Enable checkbox
+    local edmEnableCheck = CreateFrame("CheckButton", "MABFEDMEnableCheck", pageEDM, "InterfaceOptionsCheckButtonTemplate")
+    edmEnableCheck:ClearAllPoints()
+    edmEnableCheck:SetPoint("TOPLEFT", edmDesc, "BOTTOMLEFT", -2, -10)
+    local edmEnableText = _G[edmEnableCheck:GetName().."Text"]
+    edmEnableText:SetText("Enable Device Manager")
+    edmEnableText:SetTextColor(1, 1, 1)
+    edmEnableCheck:SetChecked(MattActionBarFontDB.editMode and MattActionBarFontDB.editMode.enabled)
+    edmEnableCheck:SetScript("OnClick", function(self)
+        if not MattActionBarFontDB.editMode then MattActionBarFontDB.editMode = {} end
+        MattActionBarFontDB.editMode.enabled = self:GetChecked()
+        if MattActionBarFontDB.editMode.enabled then
+            MABF:SetupEditModeDeviceManager()
+        end
+    end)
+
+    -- Layout dropdown label
+    local edmLayoutLabel = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    edmLayoutLabel:SetPoint("TOPLEFT", edmEnableCheck, "BOTTOMLEFT", 2, -12)
+    edmLayoutLabel:SetText("Layout on Login:")
+    edmLayoutLabel:SetTextColor(1, 1, 1)
+
+    -- Layout dropdown
+    local edmLayoutDropdown = CreateFrame("Frame", "MABFEDMLayoutDropdown", pageEDM, "UIDropDownMenuTemplate")
+    edmLayoutDropdown:SetPoint("LEFT", edmLayoutLabel, "RIGHT", -8, -2)
+    UIDropDownMenu_SetWidth(edmLayoutDropdown, 140)
+
+    local function InitializeEDMDropdown(self, level)
+        -- Load Blizzard_EditMode if needed
+        if not C_AddOns.IsAddOnLoaded("Blizzard_EditMode") then
+            C_AddOns.LoadAddOn("Blizzard_EditMode")
+        end
+        if not EditModeManagerFrame or not EditModeManagerFrame.GetLayouts then return end
+        local layouts = EditModeManagerFrame:GetLayouts()
+        if not layouts then return end
+        local current = MattActionBarFontDB.editMode and MattActionBarFontDB.editMode.presetIndexOnLogin or 1
+        for i, l in ipairs(layouts) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = l.layoutName
+            info.value = i
+            info.func = function(btn)
+                if not MattActionBarFontDB.editMode then MattActionBarFontDB.editMode = {} end
+                MattActionBarFontDB.editMode.presetIndexOnLogin = i
+                EditModeManagerFrame:SelectLayout(i)
+                UIDropDownMenu_SetSelectedValue(edmLayoutDropdown, i)
+                UIDropDownMenu_SetText(edmLayoutDropdown, l.layoutName)
+                if MABFEDMStatusText then
+                    MABFEDMStatusText:SetText("Selected: |cff90E4C1" .. l.layoutName .. "|r")
+                end
+            end
+            info.checked = (current == i)
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
+
+    -- Delayed init (EditMode may not be loaded yet)
+    C_Timer.After(1.5, function()
+        UIDropDownMenu_Initialize(edmLayoutDropdown, InitializeEDMDropdown)
+        if not C_AddOns.IsAddOnLoaded("Blizzard_EditMode") then
+            C_AddOns.LoadAddOn("Blizzard_EditMode")
+        end
+        if EditModeManagerFrame and EditModeManagerFrame.GetLayouts then
+            local layouts = EditModeManagerFrame:GetLayouts()
+            local idx = MattActionBarFontDB.editMode and MattActionBarFontDB.editMode.presetIndexOnLogin or 1
+            if layouts and layouts[idx] then
+                UIDropDownMenu_SetText(edmLayoutDropdown, layouts[idx].layoutName)
+            end
+        end
+    end)
+
+    -- Status text
+    local edmStatusText = pageEDM:CreateFontString("MABFEDMStatusText", "OVERLAY", "GameFontNormal")
+    edmStatusText:SetPoint("TOPLEFT", edmLayoutLabel, "BOTTOMLEFT", 0, -30)
+    edmStatusText:SetText("Selected: |cff888888loading...|r")
+    edmStatusText:SetTextColor(1, 1, 1)
+
+    -- Divider line
+    local edmDivider = pageEDM:CreateTexture(nil, "ARTWORK")
+    edmDivider:SetColorTexture(0.35, 0.03, 0.03, 0.7)
+    edmDivider:SetSize(260, 1)
+    edmDivider:SetPoint("TOPLEFT", edmStatusText, "BOTTOMLEFT", 0, -16)
+
+    -- Minimap button show/hide checkbox (moved to System page)
+    local minimapCheck = CreateFrame("CheckButton", "MABFMinimapCheck", pageEDM, "InterfaceOptionsCheckButtonTemplate")
+    minimapCheck:ClearAllPoints()
+    minimapCheck:SetPoint("TOPLEFT", edmDivider, "BOTTOMLEFT", -2, -10)
+    local minimapText = _G[minimapCheck:GetName() .. "Text"]
+    minimapText:SetText("Show Minimap Button")
+    minimapText:SetTextColor(1, 1, 1)
+    minimapCheck:SetChecked(not (MattActionBarFontDB.minimap and MattActionBarFontDB.minimap.hide))
+    minimapCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.minimap = MattActionBarFontDB.minimap or {}
+        local show = self:GetChecked()
+        local ldbIcon = LibStub("LibDBIcon-1.0", true)
+        if show then
+            MattActionBarFontDB.minimap.hide = nil
+            if ldbIcon then ldbIcon:Show("MABF") end
+        else
+            MattActionBarFontDB.minimap.hide = true
+            if ldbIcon then ldbIcon:Hide("MABF") end
+        end
+    end)
+
+    --------------------------------------------------------------------------
+    -- Quests Page
+    --------------------------------------------------------------------------
+    local questsTitle = CreatePageTitle(pageQuests, "Quest Tweaks")
+
+    -- Auto Accept Quests
+    local autoAcceptCheck = CreateFrame("CheckButton", "MABFAutoAcceptCheck", pageQuests, "InterfaceOptionsCheckButtonTemplate")
+    autoAcceptCheck:ClearAllPoints()
+    autoAcceptCheck:SetPoint("TOPLEFT", questsTitle, "BOTTOMLEFT", 0, -8)
+    local autoAcceptText = _G[autoAcceptCheck:GetName().."Text"]
+    autoAcceptText:SetText("Auto Accept Quests")
+    autoAcceptText:SetTextColor(1, 1, 1)
+    local autoAcceptDesc = pageQuests:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    autoAcceptDesc:SetPoint("TOPLEFT", autoAcceptCheck, "BOTTOMLEFT", 26, 2)
+    autoAcceptDesc:SetText("|cff888888Hold Shift to skip|r")
+    autoAcceptDesc:SetScale(0.85)
+    autoAcceptCheck:SetChecked(MattActionBarFontDB.autoAcceptQuests)
+    autoAcceptCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.autoAcceptQuests = self:GetChecked()
+        MABF:SetupQuestTweaks()
+    end)
+
+    -- Auto Turn In Quests
+    local autoTurnInCheck = CreateFrame("CheckButton", "MABFAutoTurnInCheck", pageQuests, "InterfaceOptionsCheckButtonTemplate")
+    autoTurnInCheck:ClearAllPoints()
+    autoTurnInCheck:SetPoint("TOPLEFT", autoAcceptCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local autoTurnInText = _G[autoTurnInCheck:GetName().."Text"]
+    autoTurnInText:SetText("Auto Turn In Quests")
+    autoTurnInText:SetTextColor(1, 1, 1)
+    local autoTurnInDesc = pageQuests:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    autoTurnInDesc:SetPoint("TOPLEFT", autoTurnInCheck, "BOTTOMLEFT", 26, 2)
+    autoTurnInDesc:SetText("|cff888888Skips quests with reward choices|r")
+    autoTurnInDesc:SetScale(0.85)
+    autoTurnInCheck:SetChecked(MattActionBarFontDB.autoTurnInQuests)
+    autoTurnInCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.autoTurnInQuests = self:GetChecked()
+        MABF:SetupQuestTweaks()
+    end)
+
+    --------------------------------------------------------------------------
+    -- Bags Page
+    --------------------------------------------------------------------------
+    local bagsTitle = CreatePageTitle(pageBags, "Bag Tweaks")
+
+    -- Bag Item Levels
+    local bagIlvlCheck = CreateFrame("CheckButton", "MABFBagIlvlCheck", pageBags, "InterfaceOptionsCheckButtonTemplate")
+    bagIlvlCheck:ClearAllPoints()
+    bagIlvlCheck:SetPoint("TOPLEFT", bagsTitle, "BOTTOMLEFT", 0, -8)
+    local bagIlvlText = _G[bagIlvlCheck:GetName().."Text"]
+    bagIlvlText:SetText("Show Item Levels in Bags")
+    bagIlvlText:SetTextColor(1, 1, 1)
+    local bagIlvlDesc = pageBags:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    bagIlvlDesc:SetPoint("TOPLEFT", bagIlvlCheck, "BOTTOMLEFT", 26, 2)
+    bagIlvlDesc:SetText("|cff888888Displays ilvl on gear in bags & bank|r")
+    bagIlvlDesc:SetScale(0.85)
+    bagIlvlCheck:SetChecked(MattActionBarFontDB.enableBagItemLevels)
+    bagIlvlCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableBagItemLevels = self:GetChecked()
+        if MattActionBarFontDB.enableBagItemLevels then
+            MABF:EnableBagItemLevels()
+        else
+            MABF:DisableBagItemLevels()
+        end
+    end)
+
+    --------------------------------------------------------------------------
+    -- Merchant Page
+    --------------------------------------------------------------------------
+    local merchantTitle = CreatePageTitle(pageMerchant, "Merchant Tweaks")
+
+    -- Auto Repair
+    local autoRepairCheck = CreateFrame("CheckButton", "MABFAutoRepairCheck", pageMerchant, "InterfaceOptionsCheckButtonTemplate")
+    autoRepairCheck:ClearAllPoints()
+    autoRepairCheck:SetPoint("TOPLEFT", merchantTitle, "BOTTOMLEFT", 0, -8)
+    local autoRepairText = _G[autoRepairCheck:GetName().."Text"]
+    autoRepairText:SetText("Auto Repair")
+    autoRepairText:SetTextColor(1, 1, 1)
+    local autoRepairDesc = pageMerchant:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    autoRepairDesc:SetPoint("TOPLEFT", autoRepairCheck, "BOTTOMLEFT", 26, 2)
+    autoRepairDesc:SetText("|cff888888Automatically repairs gear at merchants|r")
+    autoRepairDesc:SetScale(0.85)
+    autoRepairCheck:SetChecked(MattActionBarFontDB.enableAutoRepair)
+    autoRepairCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableAutoRepair = self:GetChecked()
+        MABF:SetupMerchantTweaks()
+    end)
+
+    -- Funding Source (Guild / Player)
+    local fundingLabel = pageMerchant:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    fundingLabel:SetPoint("TOPLEFT", autoRepairDesc, "BOTTOMLEFT", 0, -6)
+    fundingLabel:SetText("Repair Funding:")
+    fundingLabel:SetTextColor(0.9, 0.9, 0.9)
+    fundingLabel:SetFont("Fonts\\FRIZQT__.TTF", 9)
+
+    local fundingGuild = CreateFrame("CheckButton", "MABFFundingGuild", pageMerchant, "UIRadioButtonTemplate")
+    fundingGuild:SetPoint("TOPLEFT", fundingLabel, "BOTTOMLEFT", 0, -2)
+    local fundingGuildText = fundingGuild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    fundingGuildText:SetPoint("LEFT", fundingGuild, "RIGHT", 2, 0)
+    fundingGuildText:SetText("|cffffffffGuild first, then personal|r")
+    fundingGuildText:SetFont("Fonts\\FRIZQT__.TTF", 9)
+
+    local fundingPlayer = CreateFrame("CheckButton", "MABFFundingPlayer", pageMerchant, "UIRadioButtonTemplate")
+    fundingPlayer:SetPoint("TOPLEFT", fundingGuild, "BOTTOMLEFT", 0, -2)
+    local fundingPlayerText = fundingPlayer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    fundingPlayerText:SetPoint("LEFT", fundingPlayer, "RIGHT", 2, 0)
+    fundingPlayerText:SetText("|cffffffffPersonal only|r")
+    fundingPlayerText:SetFont("Fonts\\FRIZQT__.TTF", 9)
+
+    local function UpdateFundingRadios()
+        local src = MattActionBarFontDB.autoRepairFundingSource or "GUILD"
+        fundingGuild:SetChecked(src == "GUILD")
+        fundingPlayer:SetChecked(src == "PLAYER")
+    end
+    UpdateFundingRadios()
+
+    fundingGuild:SetScript("OnClick", function()
+        MattActionBarFontDB.autoRepairFundingSource = "GUILD"
+        UpdateFundingRadios()
+    end)
+    fundingPlayer:SetScript("OnClick", function()
+        MattActionBarFontDB.autoRepairFundingSource = "PLAYER"
+        UpdateFundingRadios()
+    end)
+
+    -- Auto Sell Junk
+    local autoSellCheck = CreateFrame("CheckButton", "MABFAutoSellJunkCheck", pageMerchant, "InterfaceOptionsCheckButtonTemplate")
+    autoSellCheck:ClearAllPoints()
+    autoSellCheck:SetPoint("TOPLEFT", fundingPlayer, "BOTTOMLEFT", -26, -8)
+    local autoSellText = _G[autoSellCheck:GetName().."Text"]
+    autoSellText:SetText("Auto Sell Junk")
+    autoSellText:SetTextColor(1, 1, 1)
+    local autoSellDesc = pageMerchant:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    autoSellDesc:SetPoint("TOPLEFT", autoSellCheck, "BOTTOMLEFT", 26, 2)
+    autoSellDesc:SetText("|cff888888Sells grey items when visiting a vendor|r")
+    autoSellDesc:SetScale(0.85)
+    autoSellCheck:SetChecked(MattActionBarFontDB.enableAutoSellJunk)
+    autoSellCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableAutoSellJunk = self:GetChecked()
+        MABF:SetupMerchantTweaks()
+    end)
+
+    --------------------------------------------------------------------------
+    -- QC Features Page (Quick Commands)
+    local qcTitle = CreatePageTitle(pageSystem, "Quick Commands")
+
+    -- Keybind Mode (/kb)
+    local quickBindCheck = CreateFrame("CheckButton", "MABFQuickBindCheck", pageSystem, "InterfaceOptionsCheckButtonTemplate")
+    quickBindCheck:ClearAllPoints()
+    quickBindCheck:SetPoint("TOPLEFT", qcTitle, "BOTTOMLEFT", 0, -8)
+    local quickBindText = _G[quickBindCheck:GetName().."Text"]
+    quickBindText:SetText("Keybind Mode |cffffd100(/kb)|r")
+    quickBindText:SetTextColor(1, 1, 1)
+    quickBindCheck:SetChecked(MattActionBarFontDB.enableQuickBind)
+    quickBindCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableQuickBind = self:GetChecked()
+        MABF:SetupSlashCommands()
+    end)
+
+    -- Reload UI (/rl)
+    local reloadAliasCheck = CreateFrame("CheckButton", "MABFReloadAliasCheck", pageSystem, "InterfaceOptionsCheckButtonTemplate")
+    reloadAliasCheck:ClearAllPoints()
+    reloadAliasCheck:SetPoint("TOPLEFT", quickBindCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local reloadAliasText = _G[reloadAliasCheck:GetName().."Text"]
+    reloadAliasText:SetText("Reload UI |cffffd100(/rl)|r")
+    reloadAliasText:SetTextColor(1, 1, 1)
+    reloadAliasCheck:SetChecked(MattActionBarFontDB.enableReloadAlias)
+    reloadAliasCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableReloadAlias = self:GetChecked()
+        MABF:SetupSlashCommands()
+    end)
+
+    -- Edit Mode (/edit)
+    local editModeAliasCheck = CreateFrame("CheckButton", "MABFEditModeAliasCheck", pageSystem, "InterfaceOptionsCheckButtonTemplate")
+    editModeAliasCheck:ClearAllPoints()
+    editModeAliasCheck:SetPoint("TOPLEFT", reloadAliasCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local editModeAliasText = _G[editModeAliasCheck:GetName().."Text"]
+    editModeAliasText:SetText("Edit Mode |cffffd100(/edit)|r")
+    editModeAliasText:SetTextColor(1, 1, 1)
+    editModeAliasCheck:SetChecked(MattActionBarFontDB.enableEditModeAlias)
+    editModeAliasCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableEditModeAlias = self:GetChecked()
+        MABF:SetupSlashCommands()
+    end)
+
+    -- Pull Timer (/pull X)
+    local pullAliasCheck = CreateFrame("CheckButton", "MABFPullAliasCheck", pageSystem, "InterfaceOptionsCheckButtonTemplate")
+    pullAliasCheck:ClearAllPoints()
+    pullAliasCheck:SetPoint("TOPLEFT", editModeAliasCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local pullAliasText = _G[pullAliasCheck:GetName().."Text"]
+    pullAliasText:SetText("Pull Timer |cffffd100(/pull X)|r")
+    pullAliasText:SetTextColor(1, 1, 1)
+    pullAliasCheck:SetChecked(MattActionBarFontDB.enablePullAlias)
+    pullAliasCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enablePullAlias = self:GetChecked()
+        MABF:SetupSlashCommands()
+    end)
 
     -- Allow the options window to be closed with Escape.
     tinsert(UISpecialFrames, "MABFOptionsFrame")

@@ -22,7 +22,7 @@ events:SetScript("OnEvent", function(self, event, arg1)
                 MABF:UpdateMacroText()
                 MABF:UpdateSpecificBars()
                 MABF:UpdatePetBarFontSettings()
-                if MattActionBarFontDB.minimalTheme then
+                if MattActionBarFontDB.minimalTheme ~= "blizzard" then
                     MABF:SkinActionBars()
                     MABF:CropAllIcons()
                 end
@@ -31,6 +31,10 @@ events:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_LOGIN" then
         MABF:CreateOptionsWindow()
         MABF:ApplyFontSettings()
+        MABF:ApplyReverseBarGrowth()
+        C_Timer.After(0.5, function()
+            MABF:ApplyReverseBarGrowth()
+        end)
         MABF:UpdateFontPositions()
         MABF:UpdateActionBarFontPositions()
         MABF:UpdateMacroText()
@@ -38,7 +42,35 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:UpdatePetBarFontSettings()
         MABF:ApplyObjectiveTrackerScale()
         MABF:ApplyMinimapScale()
-        
+        MABF:ApplyStatusBarScale()
+        MABF:ApplyHideMicroMenu()
+        MABF:ApplyHideBagBar()
+        MABF:ApplyScaleTalkingHead()
+        MABF:SetupSlashCommands()
+        MABF:SetupPerformanceMonitor()
+        MABF:SetupEditModeDeviceManager()
+        MABF:SetupQuestTweaks()
+        MABF:SetupMerchantTweaks()
+        if MattActionBarFontDB.enableBagItemLevels then
+            MABF:EnableBagItemLevels()
+        end
+
+        -- Ensure mouseover hooks & initial alpha are applied after a short delay
+        -- (some bar frames may not be available immediately on PLAYER_LOGIN)
+        C_Timer.After(0.2, function()
+            MABF:ApplyActionBarMouseover()
+            if MattActionBarFontDB.mouseoverFade then
+                MABF:SetBarsMouseoverState(false)
+            end
+        end)
+        -- Retry once after 1s to handle late-initialized bar frames
+        C_Timer.After(1.0, function()
+            MABF:ApplyActionBarMouseover()
+            if MattActionBarFontDB.mouseoverFade then
+                MABF:SetBarsMouseoverState(false)
+            end
+        end)
+
         -- Detect Dominos and notify user
         if Dominos then
             print("|cFF00FF00MattActionBarFont|r loaded with |cFFFF8000Dominos|r support! Type /mabf to open options.")
@@ -236,5 +268,6 @@ f:SetScript("OnEvent", function(self, event)
     end
 end)
 ]]
+
 
 

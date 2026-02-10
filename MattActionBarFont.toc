@@ -1,17 +1,19 @@
 ## Interface: 120000
-## Title: Matt's Action Bar Fonts
-## Notes: Customize your action bar fonts
+## Title: Matt's Action Bar Fonts & UI QoL
+## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version 5.0.2
+## Version 6.0.0
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## OptionalDeps: Dominos
 
 Libs/LibStub.lua
 Libs/CallbackHandler-1.0.lua
+Libs/LibSharedMedia-3.0.lua
 Libs/LibDataBroker-1.1.lua
 Libs/LibDBIcon-1.0.lua
 
+MABFDefaults.lua
 MABFCore.lua
 MABFFonts.lua
 MABFOptions.lua

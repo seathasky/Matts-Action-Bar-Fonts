@@ -37,4 +37,13 @@ local function InitializeDefaults()
     if MattActionBarFontDB.macroTextSize == nil then
         MattActionBarFontDB.macroTextSize = 8
     end
+
+    -- Initialize minimap button saved settings
+    MattActionBarFontDB = MattActionBarFontDB or {}
+    if MattActionBarFontDB.minimap == nil then
+        MattActionBarFontDB.minimap = {}
+    end
+    if MattActionBarFontDB.minimap.hide == nil then
+        MattActionBarFontDB.minimap.hide = false
+    end
 end
