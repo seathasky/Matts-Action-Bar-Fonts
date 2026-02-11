@@ -31,6 +31,7 @@ MABF.defaults = {
     scaleStatusBar    = false,    -- Scale status/exp bar to 0.7
     hideMicroMenu     = false,    -- Hide micro menu buttons
     hideBagBar        = false,    -- Hide bag bar buttons
+    petBarMouseoverFade = false,  -- Mouseover fade on pet action bar
     scaleTalkingHead  = false,    -- Scale talking head frame to 0.7
 
     -- Slash commands

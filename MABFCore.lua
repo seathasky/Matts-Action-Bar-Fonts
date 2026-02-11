@@ -112,6 +112,64 @@ function MABF:ApplyHideMicroMenu()
 end
 
 -----------------------------------------------------------
+-- Pet Bar Mouseover Fade
+-----------------------------------------------------------
+do
+    local petBarHooked = false
+
+    local function IsPetBarMouseOver()
+        local bar = _G["PetActionBar"]
+        if bar and MouseIsOver(bar) then return true end
+        for i = 1, 10 do
+            local btn = _G["PetActionButton" .. i]
+            if btn and MouseIsOver(btn) then return true end
+        end
+        return false
+    end
+
+    local function UpdatePetBarAlpha()
+        local bar = _G["PetActionBar"]
+        if not bar then return end
+        if not MattActionBarFontDB or not MattActionBarFontDB.petBarMouseoverFade then
+            bar:SetAlpha(1)
+            return
+        end
+        if MABF._inQuickKeybindMode then
+            bar:SetAlpha(1)
+            return
+        end
+        bar:SetAlpha(IsPetBarMouseOver() and 1 or 0)
+    end
+
+    function MABF:ApplyPetBarMouseoverFade()
+        if not MattActionBarFontDB.petBarMouseoverFade then
+            local bar = _G["PetActionBar"]
+            if bar then bar:SetAlpha(1) end
+            return
+        end
+
+        local bar = _G["PetActionBar"]
+        if not bar then return end
+
+        if not petBarHooked then
+            bar:EnableMouse(true)
+            bar:HookScript("OnEnter", UpdatePetBarAlpha)
+            bar:HookScript("OnLeave", UpdatePetBarAlpha)
+            for i = 1, 10 do
+                local btn = _G["PetActionButton" .. i]
+                if btn then
+                    btn:HookScript("OnEnter", UpdatePetBarAlpha)
+                    btn:HookScript("OnLeave", UpdatePetBarAlpha)
+                end
+            end
+            petBarHooked = true
+        end
+
+        UpdatePetBarAlpha()
+    end
+end
+
+-----------------------------------------------------------
 -- ApplyHideBagBar
 -----------------------------------------------------------
 function MABF:ApplyHideBagBar()
@@ -856,10 +914,14 @@ do
                 for _,button in ipairs(_G.ContainerFrameCombinedBags.Items) do ClearItemLevelText(button) end
             end
         end
-        if _G.BankFrame and _G.BankFrame:IsShown() and _G.BankSlotsFrame then
-            for id = 1, NUM_BANKGENERIC_SLOTS do
-                local button = _G.BankSlotsFrame["Item"..id]
-                if button and not button.isBag then ClearItemLevelText(button) end
+        if _G.BankFrame and _G.BankFrame:IsShown() then
+            if _G.BankSlotsFrame and NUM_BANKGENERIC_SLOTS then
+                for id = 1, NUM_BANKGENERIC_SLOTS do
+                    local button = _G.BankSlotsFrame["Item"..id]
+                    if button and not button.isBag then ClearItemLevelText(button) end
+                end
+            elseif _G.BankFrame.BankPanel and _G.BankFrame.BankPanel.EnumerateValidItems then
+                for button in _G.BankFrame.BankPanel:EnumerateValidItems() do ClearItemLevelText(button) end
             end
         end
     end
@@ -969,13 +1031,20 @@ do
 
     local function UpdateBank()
         if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then return end
-        local BankSlotsFrame = _G.BankSlotsFrame
-        if not BankSlotsFrame then return end
-        local bag = BankSlotsFrame:GetID()
-        for id = 1, NUM_BANKGENERIC_SLOTS do
-            local button = BankSlotsFrame["Item"..id]
-            if button and not button.isBag then
-                if button.hasItem then UpdateButton(button, bag, button:GetID()) else ClearItemLevelText(button) end
+        if _G.BankSlotsFrame and NUM_BANKGENERIC_SLOTS then
+            local bag = _G.BankSlotsFrame:GetID()
+            for id = 1, NUM_BANKGENERIC_SLOTS do
+                local button = _G.BankSlotsFrame["Item"..id]
+                if button and not button.isBag then
+                    if button.hasItem then UpdateButton(button, bag, button:GetID()) else ClearItemLevelText(button) end
+                end
+            end
+        elseif _G.BankFrame and _G.BankFrame.BankPanel and _G.BankFrame.BankPanel.EnumerateValidItems then
+            for button in _G.BankFrame.BankPanel:EnumerateValidItems() do
+                local bankTabID = button:GetBankTabID()
+                local slotID = button:GetContainerSlotID()
+                local info = C_Container_GetContainerItemInfo and C_Container_GetContainerItemInfo(bankTabID, slotID)
+                if info then UpdateButton(button, bankTabID, slotID) else ClearItemLevelText(button) end
             end
         end
     end
@@ -1018,14 +1087,24 @@ do
                     else ClearItemLevelText(button) end
                 end)
             end
+            if BankPanelItemButtonMixin and BankPanelItemButtonMixin.Refresh then
+                hooksecurefunc(BankPanelItemButtonMixin, "Refresh", function(button)
+                    if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then ClearItemLevelText(button); return end
+                    local bankTabID = button.GetBankTabID and button:GetBankTabID()
+                    local slotID = button.GetContainerSlotID and button:GetContainerSlotID()
+                    if bankTabID and slotID then UpdateButton(button, bankTabID, slotID) end
+                end)
+            end
             hooksApplied = true
         end
         bagEventFrame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
         bagEventFrame:SetScript("OnEvent", function(_, _, slot)
             if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then return end
-            if slot and slot <= NUM_BANKGENERIC_SLOTS and _G.BankSlotsFrame then
+            if NUM_BANKGENERIC_SLOTS and slot and slot <= NUM_BANKGENERIC_SLOTS and _G.BankSlotsFrame then
                 local button = _G.BankSlotsFrame["Item"..slot]
                 if button and not button.isBag then UpdateButton(button, _G.BankSlotsFrame:GetID(), button:GetID()) end
+            elseif _G.BankFrame and _G.BankFrame:IsShown() then
+                UpdateBank()
             end
         end)
         UpdateAllVisible()

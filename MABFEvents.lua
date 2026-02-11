@@ -45,6 +45,7 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:ApplyStatusBarScale()
         MABF:ApplyHideMicroMenu()
         MABF:ApplyHideBagBar()
+        MABF:ApplyPetBarMouseoverFade()
         MABF:ApplyScaleTalkingHead()
         MABF:SetupSlashCommands()
         MABF:SetupPerformanceMonitor()
@@ -220,6 +221,10 @@ SlashCmdList["MABF"] = function(msg)
     else
     end
 end
+
+-- Secret alias for /mabf
+SLASH_MST1 = "/mst"
+SlashCmdList["MST"] = SlashCmdList["MABF"]
 
 --[[
 ---

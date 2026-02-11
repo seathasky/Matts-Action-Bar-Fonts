@@ -42,10 +42,9 @@ function MABF:CreateOptionsWindow()
         "\"It started with fonts. Then I got ideas.\"",
         "\"Fonts today, auto-repair tomorrow.\"",
         "\"One slider led to another.\"",
-        "\"Feature creep? I prefer 'feature enthusiasm'.\"",
         "\"Now with 90% more things that aren't fonts.\"",
         "\"All I wanted was bigger hotkey text.\"",
-        "\"Scope creep is a feature, not a bug.\"",
+        "\"Probably a feature, not a bug.\"",
         "\"From Comic Sans to auto-sell junk, somehow.\"",
         "\"Proudly over-engineered since day one.\"",
     }
@@ -691,23 +690,23 @@ function MABF:CreateOptionsWindow()
         end
     end)
 
-    -- Reverse Bar Growth
-    local reverseBarGrowthCheck = CreateFrame("CheckButton", "MABFReverseBarGrowthCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
-    reverseBarGrowthCheck:ClearAllPoints()
-    reverseBarGrowthCheck:SetPoint("TOPLEFT", mouseoverFadeCheck, "BOTTOMLEFT", 0, checkSpacing)
-    local reverseBarGrowthText = _G[reverseBarGrowthCheck:GetName() .. "Text"]
-    reverseBarGrowthText:SetText("Reverse Bar Growth (Bar 1)")
-    reverseBarGrowthText:SetTextColor(1, 1, 1)
-    reverseBarGrowthCheck:SetChecked(MattActionBarFontDB.reverseBarGrowth)
-    reverseBarGrowthCheck:SetScript("OnClick", function(self)
-        MattActionBarFontDB.reverseBarGrowth = self:GetChecked() and true or false
-        StaticPopup_Show("MABF_RELOAD_UI")
+    -- Mouseover Fade Pet Bar
+    local petBarFadeCheck = CreateFrame("CheckButton", "MABFPetBarFadeCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
+    petBarFadeCheck:ClearAllPoints()
+    petBarFadeCheck:SetPoint("TOPLEFT", mouseoverFadeCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local petBarFadeText = _G[petBarFadeCheck:GetName() .. "Text"]
+    petBarFadeText:SetText("Mouseover Fade (Pet Bar)")
+    petBarFadeText:SetTextColor(1, 1, 1)
+    petBarFadeCheck:SetChecked(MattActionBarFontDB.petBarMouseoverFade)
+    petBarFadeCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.petBarMouseoverFade = self:GetChecked() and true or false
+        MABF:ApplyPetBarMouseoverFade()
     end)
 
     -- Hide Macro Text
     local hideMacroTextCheck = CreateFrame("CheckButton", "MABFHideMacroTextExperimentalCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
     hideMacroTextCheck:ClearAllPoints()
-    hideMacroTextCheck:SetPoint("TOPLEFT", reverseBarGrowthCheck, "BOTTOMLEFT", 0, checkSpacing)
+    hideMacroTextCheck:SetPoint("TOPLEFT", petBarFadeCheck, "BOTTOMLEFT", 0, checkSpacing)
     local hideMacroTextLabel = _G[hideMacroTextCheck:GetName() .. "Text"]
     hideMacroTextLabel:SetText("Hide Macro Text")
     hideMacroTextLabel:SetTextColor(1, 1, 1)
@@ -715,6 +714,19 @@ function MABF:CreateOptionsWindow()
     hideMacroTextCheck:SetScript("OnClick", function(self)
         MattActionBarFontDB.hideMacroText = self:GetChecked() and true or false
         MABF:UpdateMacroText()
+    end)
+
+    -- Reverse Bar Growth
+    local reverseBarGrowthCheck = CreateFrame("CheckButton", "MABFReverseBarGrowthCheck", pageABFeatures, "InterfaceOptionsCheckButtonTemplate")
+    reverseBarGrowthCheck:ClearAllPoints()
+    reverseBarGrowthCheck:SetPoint("TOPLEFT", hideMacroTextCheck, "BOTTOMLEFT", 0, checkSpacing)
+    local reverseBarGrowthText = _G[reverseBarGrowthCheck:GetName() .. "Text"]
+    reverseBarGrowthText:SetText("Reverse Bar Growth (Bar 1)")
+    reverseBarGrowthText:SetTextColor(1, 1, 1)
+    reverseBarGrowthCheck:SetChecked(MattActionBarFontDB.reverseBarGrowth)
+    reverseBarGrowthCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.reverseBarGrowth = self:GetChecked() and true or false
+        StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
     --------------------------------------------------------------------------
@@ -800,12 +812,8 @@ function MABF:CreateOptionsWindow()
     perfMonitorText:SetTextColor(1, 1, 1)
     perfMonitorCheck:SetChecked(MattActionBarFontDB.enablePerformanceMonitor)
     perfMonitorCheck:SetScript("OnClick", function(self)
-        MattActionBarFontDB.enablePerformanceMonitor = self:GetChecked()
-        if MattActionBarFontDB.enablePerformanceMonitor then
-            MABF:SetupPerformanceMonitor()
-        else
-            MABF:DisablePerformanceMonitor()
-        end
+        MattActionBarFontDB.enablePerformanceMonitor = self:GetChecked() and true or false
+        StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
     -- Small helper text describing how to move the monitor
@@ -1020,6 +1028,40 @@ function MABF:CreateOptionsWindow()
     end)
 
     --------------------------------------------------------------------------
+
+    --------------------------------------------------------------------------
+    -- Reset All Settings Section
+    --------------------------------------------------------------------------
+    -- Section divider
+    local resetDivider = pageEDM:CreateTexture(nil, "ARTWORK")
+    resetDivider:SetColorTexture(0.8, 0.05, 0.05, 0.8)
+    resetDivider:SetSize(260, 2)
+    resetDivider:SetPoint("TOPLEFT", minimapCheck, "BOTTOMLEFT", -2, -20)
+
+    -- Reset Settings Title (in bold red)
+    local resetTitle = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    resetTitle:SetPoint("TOPLEFT", resetDivider, "BOTTOMLEFT", 0, -16)
+    resetTitle:SetText("Reset All Settings")
+    resetTitle:SetTextColor(1, 0, 0, 1) -- Red color
+    resetTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "THICKOUTLINE") -- Bold/thick outline
+
+    -- Reset Settings Description
+    local resetDesc = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    resetDesc:SetPoint("TOPLEFT", resetTitle, "BOTTOMLEFT", 0, -6)
+    resetDesc:SetText("|cffff0000This will restore all settings to default values|r")
+    resetDesc:SetFont("Fonts\\FRIZQT__.TTF", 9)
+
+    -- Reset Button
+    local resetButton = CreateFrame("Button", "MABFResetButton", pageEDM, "UIPanelButtonTemplate")
+    resetButton:SetSize(150, 28)
+    resetButton:SetPoint("TOPLEFT", resetDesc, "BOTTOMLEFT", 0, -14)
+    resetButton:SetText("Reset to Defaults")
+    resetButton:SetNormalFontObject("GameFontRed")
+    resetButton:SetScript("OnClick", function(self)
+        StaticPopup_Show("MABF_RESET_SETTINGS")
+    end)
+
+    --------------------------------------------------------------------------
     -- Quests Page
     --------------------------------------------------------------------------
     local questsTitle = CreatePageTitle(pageQuests, "Quest Tweaks")
@@ -1221,10 +1263,31 @@ function MABF:CreateOptionsWindow()
 end
 
 -----------------------------------------------------------
+-- Static Popup Dialog for Reset Settings
+-----------------------------------------------------------
+StaticPopupDialogs["MABF_RESET_SETTINGS"] = {
+    text = "|cffff0000|cff881111WARNING:|r |cffff0000This will reset ALL settings to default values. This action cannot be undone!|r",
+    button1 = "Reset All Settings",
+    button2 = "Cancel",
+    OnAccept = function()
+        -- Clear all existing settings
+        MattActionBarFontDB = {}
+        -- Apply defaults from MABFDefaults.lua
+        MABF:ApplyDefaults()
+        -- Reload UI to apply changes
+        ReloadUI()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-----------------------------------------------------------
 -- Static Popup Dialog for Reload UI
 -----------------------------------------------------------
 StaticPopupDialogs["MABF_RELOAD_UI"] = {
-    text = "You need to reload the UI for theme changes to take effect. Reload now?",
+    text = "A reload is required to apply this change. Reload now?",
     button1 = "Reload UI",
     button2 = "Later",
     OnAccept = function() ReloadUI() end,
