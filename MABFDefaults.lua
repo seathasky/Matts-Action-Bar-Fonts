@@ -18,6 +18,8 @@ MABF.defaults = {
     yOffset           = 0,        -- Count text Y offset
     abXOffset         = 0,        -- Action bar font X offset
     abYOffset         = 0,        -- Action bar font Y offset
+    extraXOffset      = 0,        -- Extra action ability font X offset
+    extraYOffset      = 0,        -- Extra action ability font Y offset
 
     -- Theme
     minimalTheme      = "blizzard", -- "blizzard", "minimalBlack", "minimalTranslucent"

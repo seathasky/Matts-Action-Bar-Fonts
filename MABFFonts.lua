@@ -111,8 +111,17 @@ function MABF:ApplyFontSettings()
                         local fPath = MABF.availableFonts and MABF.availableFonts[MattActionBarFontDB.fontFamily]
                         if fPath then
                             self:SetFont(fPath, MattActionBarFontDB.fontSize, "OUTLINE")
-                            local abXOff = MattActionBarFontDB.abXOffset or 0
-                            local abYOff = MattActionBarFontDB.abYOffset or 0
+                            -- Decide whether to use the main action bar offsets or the
+                            -- extra-ability offsets (covers ExtraActionButton1,
+                            -- ExtraAbilityContainer children, and Dominos Extra frames).
+                            local bName = button and (button.GetName and button:GetName() or "") or ""
+                            local parentName = button and (button.GetParent and (button:GetParent():GetName() or "") or "") or ""
+                            local isExtra = false
+                            if (bName and bName:find("Extra")) or (parentName and parentName:find("Extra")) or (button == _G["ExtraActionButton1"]) then
+                                isExtra = true
+                            end
+                            local abXOff = isExtra and (MattActionBarFontDB.extraXOffset or 0) or (MattActionBarFontDB.abXOffset or 0)
+                            local abYOff = isExtra and (MattActionBarFontDB.extraYOffset or 0) or (MattActionBarFontDB.abYOffset or 0)
                             self:ClearAllPoints()
                             self:SetPoint("TOPRIGHT", button, "TOPRIGHT", abXOff, abYOff)
                         end
@@ -140,6 +149,32 @@ function MABF:ApplyFontSettings()
         UpdateActionButton(button)
     end
 
+    local extraBtn = _G["ExtraActionButton1"]
+    if extraBtn then
+        UpdateActionButton(extraBtn)
+    end
+
+    local extraContainer = _G["ExtraAbilityContainer"]
+    if extraContainer then
+        for _, child in pairs({ extraContainer:GetChildren() }) do
+            if child and (child.GetObjectType == nil or child:GetObjectType() == "Button" or child.IsObjectType and child:IsObjectType("Button")) then
+                pcall(UpdateActionButton, child)
+            end
+        end
+    end
+
+    -- Also scan Dominos frames for any 'Extra' named frames and update their buttons
+    if Dominos and Dominos.Frame then
+        for _, frame in Dominos.Frame:GetAll() do
+            local fname = frame and frame:GetName()
+            if fname and fname:find("Extra") and frame.buttons then
+                for _, b in pairs(frame.buttons) do
+                    pcall(UpdateActionButton, b)
+                end
+            end
+        end
+    end
+
     self:UpdateMacroText()
 end
 
@@ -163,14 +198,60 @@ end
 function MABF:UpdateActionBarFontPositions()
     local abXOff = MattActionBarFontDB.abXOffset or 0
     local abYOff = MattActionBarFontDB.abYOffset or 0
+    local extraXOff = MattActionBarFontDB.extraXOffset or 0
+    local extraYOff = MattActionBarFontDB.extraYOffset or 0
     
     local allButtons = GetAllActionButtons()
     for _, button in ipairs(allButtons) do
         if button then
             local hotKeyFont = button.HotKey or button.bind
             if hotKeyFont then
+                -- Detect if this is an Extra / ExtraAbility button and apply
+                -- dedicated offsets when appropriate.
+                local bName = (button.GetName and (button:GetName() or "") or "")
+                local parentName = (button.GetParent and (button:GetParent():GetName() or "") or "")
+                local isExtra = (bName:find("Extra") or parentName:find("Extra") or button == _G["ExtraActionButton1"])
+                local xOff = isExtra and extraXOff or abXOff
+                local yOff = isExtra and extraYOff or abYOff
                 hotKeyFont:ClearAllPoints()
-                hotKeyFont:SetPoint("TOPRIGHT", button, "TOPRIGHT", abXOff, abYOff)
+                hotKeyFont:SetPoint("TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+            end
+        end
+    end
+
+    -- Explicitly position ExtraActionButton1 and ExtraAbilityContainer children
+    local extraBtn = _G["ExtraActionButton1"]
+    if extraBtn then
+        local hk = extraBtn.HotKey or extraBtn.bind
+        if hk then
+            hk:ClearAllPoints()
+            hk:SetPoint("TOPRIGHT", extraBtn, "TOPRIGHT", extraXOff, extraYOff)
+        end
+    end
+
+    local extraContainer = _G["ExtraAbilityContainer"]
+    if extraContainer then
+        for _, child in pairs({ extraContainer:GetChildren() }) do
+            local hk = child and (child.HotKey or child.bind)
+            if hk then
+                hk:ClearAllPoints()
+                hk:SetPoint("TOPRIGHT", child, "TOPRIGHT", extraXOff, extraYOff)
+            end
+        end
+    end
+
+    -- Dominos Extra frames
+    if Dominos and Dominos.Frame then
+        for _, frame in Dominos.Frame:GetAll() do
+            local fname = frame and (frame.GetName and frame:GetName() or "")
+            if fname and fname:find("Extra") and frame.buttons then
+                for _, b in pairs(frame.buttons) do
+                    local hk = b and (b.HotKey or b.bind)
+                    if hk then
+                        hk:ClearAllPoints()
+                        hk:SetPoint("TOPRIGHT", b, "TOPRIGHT", extraXOff, extraYOff)
+                    end
+                end
             end
         end
     end
