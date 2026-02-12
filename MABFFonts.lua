@@ -249,6 +249,74 @@ function MABF:UpdatePetBarFontSettings()
     end
 end
 
+-----------------------------------------------------------
+-- Hook Pet Action Bar Updates
+-- Ensures pet bar font settings persist after UI reload
+-----------------------------------------------------------
+function MABF:HookPetActionBarUpdates()
+    -- Hook Blizzard's PetActionBar_Update function if it exists
+    if PetActionBar_Update then
+        hooksecurefunc("PetActionBar_Update", function()
+            MABF:UpdatePetBarFontSettings()
+        end)
+    end
+    
+    -- Also hook individual button updates for Blizzard pet bar
+    if PetActionButton_Update then
+        hooksecurefunc("PetActionButton_Update", function(self)
+            MABF:UpdatePetBarFontSettings()
+        end)
+    end
+    
+    -- Hook PetActionBar_OnUpdate to catch any font resets
+    local petBar = _G["PetActionBar"]
+    if petBar then
+        -- Debounced OnUpdate handler to catch any animation-driven resets without
+        -- spamming updates every frame.
+        local scheduled = false
+        hooksecurefunc(petBar, "OnUpdate", function()
+            if not scheduled then
+                scheduled = true
+                C_Timer.After(0.05, function()
+                    MABF:UpdatePetBarFontSettings()
+                    scheduled = false
+                end)
+            end
+        end)
+    end
+
+    -- Register for pet action bar events to reapply font settings
+    local petBarEvents = CreateFrame("Frame")
+    local petEvents = {
+        "PET_BAR_UPDATE",
+        "PET_BAR_UPDATE_COOLDOWN",
+        "PET_BAR_SHOWGRID",
+        "PET_BAR_HIDEGRID",
+        "UNIT_PET",
+        "PLAYER_CONTROL_CHANGED",
+        "PLAYER_FARSIGHT_CHANGED",
+    }
+    for _, ev in ipairs(petEvents) do
+        -- Use pcall to avoid attempting to register unknown events on some clients
+        pcall(petBarEvents.RegisterEvent, petBarEvents, ev)
+    end
+    petBarEvents:SetScript("OnEvent", function()
+        C_Timer.After(0.1, function()
+            MABF:UpdatePetBarFontSettings()
+        end)
+    end)
+
+    -- Ensure fonts are applied now and shortly after to guard against other
+    -- addons/Blizzard code resetting the fonts during load or reloadui.
+    MABF:UpdatePetBarFontSettings()
+    C_Timer.After(0.1, function()
+        MABF:UpdatePetBarFontSettings()
+    end)
+    C_Timer.After(0.5, function()
+        MABF:UpdatePetBarFontSettings()
+    end)
+end
+
 -- This function (formerly a local UpdateSpecificBars) is now part of MABF.
 function MABF:UpdateSpecificBars()
     if not self.availableFonts then

@@ -3,7 +3,7 @@
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version 6.0.2
+## Version 6.0.3
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## OptionalDeps: Dominos
 

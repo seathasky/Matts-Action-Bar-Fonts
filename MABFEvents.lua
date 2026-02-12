@@ -12,6 +12,8 @@ events:RegisterEvent("UPDATE_BINDINGS")
 events:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         MABF:Init()
+        -- Hook pet action bar update functions to ensure font settings persist
+        MABF:HookPetActionBarUpdates()
     elseif event == "ADDON_LOADED" and arg1 == "Dominos" then
         -- Dominos loaded, hook into its callbacks for bar updates
         if Dominos then
