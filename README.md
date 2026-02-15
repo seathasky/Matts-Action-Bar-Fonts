@@ -21,7 +21,7 @@ Custom fonts for the Blizzard action bar , minimal themes, and UI QoL tweaks. _(
 *   **Edit Mode Device Manager** – auto-apply an Edit Mode layout on login.
 *   **Quick Commands** – `/kb`, `/rl`, `/edit`, `/pull X` (all toggleable).
 
-![feat](https://i.imgur.com/bqR3ufP.png)
+![feat](https://i.imgur.com/jFA313Z.png)
 
 ## Slash Commands
 
