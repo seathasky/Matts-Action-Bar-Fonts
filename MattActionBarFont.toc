@@ -3,12 +3,13 @@
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version 6.0.4
+## Version: 7.0.0
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## OptionalDeps: Dominos
 
 Libs/LibStub.lua
 Libs/CallbackHandler-1.0.lua
+Libs/LibPixelPerfect-1.0/lib.xml
 Libs/LibSharedMedia-3.0.lua
 Libs/LibDataBroker-1.1.lua
 Libs/LibDBIcon-1.0.lua

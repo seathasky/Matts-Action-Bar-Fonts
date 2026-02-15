@@ -22,8 +22,10 @@ MABF.defaults = {
     extraYOffset      = 0,        -- Extra action ability font Y offset
 
     -- Theme
-    minimalTheme      = "blizzard", -- "blizzard", "minimalBlack", "minimalTranslucent"
+    minimalTheme      = "blizzard", -- "blizzard", "minimalBlack", "minimalTranslucent", "minimalObsidianRed", "minimalFrostMage", "minimalArcane", "minimalFelGreen", "minimalHolyGold", "minimalBloodDK", "minimalStormSteel", "minimalEmerald", "minimalVoid", "minimalMonoLight"
     minimalThemeBgOpacity = 0.35, -- Background opacity for minimal theme (0-1)
+    minimalThemeBorderSize = 1, -- Border thickness in theme pixels (1-4)
+    guiScale          = 1.0,      -- Options window scale (0.5-1.5)
 
     -- Toggles
     hideMacroText     = false,    -- Show macro text by default
@@ -99,4 +101,13 @@ function MABF:ApplyDefaults()
             MattActionBarFontDB.minimalTheme = "blizzard"
         end
     end
+
+    local borderSize = tonumber(MattActionBarFontDB.minimalThemeBorderSize or 1) or 1
+    borderSize = math.floor(borderSize + 0.5)
+    if borderSize < 1 then
+        borderSize = 1
+    elseif borderSize > 4 then
+        borderSize = 4
+    end
+    MattActionBarFontDB.minimalThemeBorderSize = borderSize
 end

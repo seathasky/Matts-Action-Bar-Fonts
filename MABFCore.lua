@@ -1,28 +1,30 @@
 -- MABFCore.lua
 local addonName, MABF = ...
 
--- Constants for font size limits
-local MAX_FONT_SIZE = 50   -- Maximum allowed font size for main fonts
-local MIN_FONT_SIZE = 10   -- Minimum allowed font size for main fonts
+local MAX_FONT_SIZE = 50
+local MIN_FONT_SIZE = 10
+
+local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+local FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
+local MABF_FONT_DEFAULT = "Naowh"
+local MABF_FONT_DEFAULT_PATH = "Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf"
+local fontValidationString = nil
+local fontApplyToken = 0
 
 -----------------------------------------------------------
 -- Initialization & Font Scanning
 -----------------------------------------------------------
 function MABF:Init()
-    -- Apply defaults (handles both fresh installs and missing keys on upgrade)
     self:ApplyDefaults()
 
-    -- Clamp the main font size.
     MattActionBarFontDB.fontSize = math.min(math.max(MattActionBarFontDB.fontSize, MIN_FONT_SIZE), MAX_FONT_SIZE)
 
-    -- Initialize available fonts.
-    MABF.availableFonts = MABF:ScanCustomFonts()
-
-    -- Register all fonts with LibSharedMedia so other addons can use them
     MABF:RegisterFontsWithLSM()
+
+    MABF:EnsureFontSelection()
+    MABF.availableFonts = MABF:ScanCustomFonts()
 end
 
--- Base fonts provided by WoW.
 MABF.basefonts = {
     ["MORPHEUS"] = "Fonts\\MORPHEUS.ttf",
     ["SKURRI"]   = "Fonts\\SKURRI.ttf",
@@ -30,28 +32,84 @@ MABF.basefonts = {
     ["FRIZQT"]   = "Fonts\\FRIZQT__.ttf"
 }
 
-function MABF:ScanCustomFonts()
-    local fonts = {}
-    -- Add base fonts.
-    for name, path in pairs(MABF.basefonts) do
-        fonts[name] = path
+local function NormalizeMediaName(value)
+    if type(value) ~= "string" then
+        return nil
     end
+    local trimmed = value:match("^%s*(.-)%s*$")
+    if not trimmed or trimmed == "" then
+        return nil
+    end
+    return trimmed
+end
 
-    -- Merge user-defined custom fonts if provided.
-    if AddYourCustomFonts then
-        for name, path in pairs(AddYourCustomFonts) do
-            fonts[name] = path
+local function GetFontValidationString()
+    if fontValidationString then
+        return fontValidationString
+    end
+    local parent = UIParent or _G.UIParent
+    if not parent then
+        return nil
+    end
+    local probe = parent:CreateFontString(nil, "OVERLAY")
+    probe:Hide()
+    fontValidationString = probe
+    return fontValidationString
+end
+
+local function IsUsableFontPath(fontPath)
+    if type(fontPath) ~= "string" or fontPath == "" then
+        return false
+    end
+    local probe = GetFontValidationString()
+    if not probe then
+        return false
+    end
+    local ok, applied = pcall(probe.SetFont, probe, fontPath, 12, "OUTLINE")
+    if ok and applied ~= false then
+        return true
+    end
+    ok, applied = pcall(probe.SetFont, probe, fontPath, 12, "")
+    return ok and applied ~= false
+end
+
+function MABF:GetLocalFontRegistry()
+    local fonts = {}
+
+    for name, path in pairs(MABF.basefonts) do
+        local normalizedName = NormalizeMediaName(name)
+        if normalizedName and type(path) == "string" and path ~= "" then
+            fonts[#fonts + 1] = { name = normalizedName, path = path }
         end
     end
 
-    -- Pull in fonts registered by other addons via LibSharedMedia
-    local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+    if AddYourCustomFonts then
+        for name, path in pairs(AddYourCustomFonts) do
+            local normalizedName = NormalizeMediaName(name)
+            if normalizedName and type(path) == "string" and path ~= "" then
+                fonts[#fonts + 1] = { name = normalizedName, path = path }
+            end
+        end
+    end
+
+    return fonts
+end
+
+function MABF:ScanCustomFonts()
+    local fonts = {}
+
+    for _, media in ipairs(self:GetLocalFontRegistry()) do
+        fonts[media.name] = media.path
+    end
+
     if LSM then
-        local lsmFonts = LSM:HashTable(LSM.MediaType.FONT)
-        if lsmFonts then
-            for name, path in pairs(lsmFonts) do
-                if not fonts[name] then
-                    fonts[name] = path
+        local names = LSM:List(FONT) or {}
+        for _, name in ipairs(names) do
+            local normalizedName = NormalizeMediaName(name)
+            if normalizedName then
+                local fetched = LSM:Fetch(FONT, normalizedName, true)
+                if fetched and IsUsableFontPath(fetched) then
+                    fonts[normalizedName] = fetched
                 end
             end
         end
@@ -62,16 +120,139 @@ end
 
 -----------------------------------------------------------
 -- RegisterFontsWithLSM
--- Registers all available fonts with LibSharedMedia-3.0
--- so other addons (ElvUI, WeakAuras, etc.) can use them.
 -----------------------------------------------------------
 function MABF:RegisterFontsWithLSM()
-    local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if not LSM then return end
 
-    for name, path in pairs(self.availableFonts) do
-        LSM:Register(LSM.MediaType.FONT, "MABF: " .. name, path)
+    for _, media in ipairs(self:GetLocalFontRegistry()) do
+        if not LSM:IsValid(FONT, media.name) then
+            LSM:Register(FONT, media.name, media.path)
+        end
     end
+end
+
+function MABF:GetFontOptions()
+    local list = {}
+    if LSM then
+        local names = LSM:List(FONT) or {}
+        for _, name in ipairs(names) do
+            local normalizedName = NormalizeMediaName(name)
+            if normalizedName then
+                list[#list + 1] = normalizedName
+            end
+        end
+    else
+        for _, media in ipairs(self:GetLocalFontRegistry()) do
+            local normalizedName = NormalizeMediaName(media.name)
+            if normalizedName then
+                list[#list + 1] = normalizedName
+            end
+        end
+    end
+    if #list == 0 then
+        list[#list + 1] = MABF_FONT_DEFAULT
+    end
+    table.sort(list, function(a, b) return tostring(a):lower() < tostring(b):lower() end)
+    return list
+end
+
+function MABF:EnsureFontSelection()
+    if not MattActionBarFontDB then
+        MattActionBarFontDB = {}
+    end
+
+    local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily) or MABF_FONT_DEFAULT
+    MattActionBarFontDB.fontFamily = selected
+    return selected
+end
+
+function MABF:GetFontPathByName(fontName)
+    local selected = NormalizeMediaName(fontName) or MABF_FONT_DEFAULT
+    if LSM then
+        local fetched = LSM:Fetch(FONT, selected, true)
+        if fetched and IsUsableFontPath(fetched) then
+            return fetched
+        end
+        local fallback = LSM:Fetch(FONT, MABF_FONT_DEFAULT, true)
+        if fallback and IsUsableFontPath(fallback) then
+            return fallback
+        end
+    end
+    local scanned = self:ScanCustomFonts()
+    if scanned[selected] and IsUsableFontPath(scanned[selected]) then
+        return scanned[selected]
+    end
+    if scanned[MABF_FONT_DEFAULT] and IsUsableFontPath(scanned[MABF_FONT_DEFAULT]) then
+        return scanned[MABF_FONT_DEFAULT]
+    end
+    return MABF_FONT_DEFAULT_PATH
+end
+
+function MABF:GetSelectedFontPath()
+    local selected = self:EnsureFontSelection()
+    return self:GetFontPathByName(selected)
+end
+
+function MABF:SetSelectedFont(fontName)
+    fontName = NormalizeMediaName(fontName)
+    if not fontName then return end
+    if not MattActionBarFontDB then MattActionBarFontDB = {} end
+
+    MattActionBarFontDB.fontFamily = fontName
+    fontApplyToken = fontApplyToken + 1
+    local thisToken = fontApplyToken
+
+    self.availableFonts = self:ScanCustomFonts()
+    if self.ApplyFontSettings then self:ApplyFontSettings() end
+    if self.UpdateMacroText then self:UpdateMacroText() end
+    if self.UpdateFontPositions then self:UpdateFontPositions() end
+    if self.UpdateActionBarFontPositions then self:UpdateActionBarFontPositions() end
+    if self.UpdateSpecificBars then self:UpdateSpecificBars() end
+    if self.UpdatePetBarFontSettings then self:UpdatePetBarFontSettings() end
+
+    if LSM and (not LSM:IsValid(FONT, fontName)) and C_Timer and C_Timer.After then
+        local attempts = 0
+        local function RetryApply()
+            attempts = attempts + 1
+            if thisToken ~= fontApplyToken then return end
+            if not MattActionBarFontDB or MattActionBarFontDB.fontFamily ~= fontName then return end
+
+            self.availableFonts = self:ScanCustomFonts()
+            if self.ApplyFontSettings then self:ApplyFontSettings() end
+            if self.UpdateMacroText then self:UpdateMacroText() end
+            if self.UpdateActionBarFontPositions then self:UpdateActionBarFontPositions() end
+
+            if (not LSM:IsValid(FONT, fontName)) and attempts < 40 then
+                C_Timer.After(0.2, RetryApply)
+            end
+        end
+        C_Timer.After(0.2, RetryApply)
+    end
+end
+
+if LSM and LSM.RegisterCallback then
+    LSM.RegisterCallback("MABF_SHARED_MEDIA_WATCHER", "LibSharedMedia_Registered", function(eventName, mediaType, mediaKey)
+        if eventName ~= "LibSharedMedia_Registered" then return end
+        if mediaType ~= FONT then return end
+        if not MattActionBarFontDB then return end
+
+        local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily)
+        local registered = NormalizeMediaName(mediaKey)
+        if not selected or not registered or selected ~= registered then
+            return
+        end
+
+        MABF.availableFonts = MABF:ScanCustomFonts()
+        if MABF.ApplyFontSettings then
+            MABF:ApplyFontSettings()
+        end
+        if MABF.UpdateMacroText then
+            MABF:UpdateMacroText()
+        end
+        if MABF.UpdateActionBarFontPositions then
+            MABF:UpdateActionBarFontPositions()
+        end
+    end)
 end
 
 -----------------------------------------------------------
@@ -116,6 +297,7 @@ end
 -----------------------------------------------------------
 do
     local petBarHooked = false
+    local petBarRegenFrame = nil
 
     local function IsPetBarMouseOver()
         local bar = _G["PetActionBar"]
@@ -142,6 +324,22 @@ do
     end
 
     function MABF:ApplyPetBarMouseoverFade()
+        if InCombatLockdown and InCombatLockdown() then
+            if not petBarRegenFrame then
+                petBarRegenFrame = CreateFrame("Frame")
+                petBarRegenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+                petBarRegenFrame:SetScript("OnEvent", function(self)
+                    self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                    self:Hide()
+                    if MABF and MABF.ApplyPetBarMouseoverFade then
+                        MABF:ApplyPetBarMouseoverFade()
+                    end
+                end)
+            end
+            petBarRegenFrame:Show()
+            return
+        end
+
         if not MattActionBarFontDB.petBarMouseoverFade then
             local bar = _G["PetActionBar"]
             if bar then bar:SetAlpha(1) end
@@ -152,7 +350,6 @@ do
         if not bar then return end
 
         if not petBarHooked then
-            bar:EnableMouse(true)
             bar:HookScript("OnEnter", UpdatePetBarAlpha)
             bar:HookScript("OnLeave", UpdatePetBarAlpha)
             for i = 1, 10 do
@@ -208,7 +405,6 @@ function MABF:ApplyScaleTalkingHead()
         end
     end
 
-    -- TalkingHeadFrame is load-on-demand, hook it when it loads
     if TalkingHeadFrame then
         ScaleHead()
     else
@@ -223,35 +419,6 @@ function MABF:ApplyScaleTalkingHead()
     end
 end
 
------------------------------------------------------------
--- ApplyFontSettings
--- Reapplies font settings by calling various update functions.
------------------------------------------------------------
-function MABF:ApplyFontSettings()
-    if self.UpdateActionBarFontPositions then
-        self:UpdateActionBarFontPositions()
-    end
-    if self.UpdateMacroText then
-        self:UpdateMacroText()
-    end
-    if self.UpdateSpecificBars then
-        self:UpdateSpecificBars()
-    end
-    if self.UpdatePetBarFontSettings then
-        self:UpdatePetBarFontSettings()
-    end
-    if self.ApplyObjectiveTrackerScale then
-        self:ApplyObjectiveTrackerScale()
-    end
-    if self.ApplyMinimapScale then
-        self:ApplyMinimapScale()
-    end
-    if self.ApplyActionBarMouseover then
-        self:ApplyActionBarMouseover()
-    end
-end
-
------------------------------------------------------------
 -- ApplyObjectiveTrackerScale
 -- Scales the objective tracker to 0.7 if enabled
 -----------------------------------------------------------
@@ -287,9 +454,28 @@ end
 -- Action Bar Tweaks
 -----------------------------------------------------------
 local mouseoverManagedBars = {
-    "MultiBarRight", -- Action Bar 4
-    "MultiBarLeft",  -- Action Bar 5
+    "MultiBarRight",
+    "MultiBarLeft",
 }
+
+local mouseoverRegenFrame = nil
+
+local function QueueActionBarMouseoverReapply()
+    if mouseoverRegenFrame then
+        mouseoverRegenFrame:Show()
+        return
+    end
+
+    mouseoverRegenFrame = CreateFrame("Frame")
+    mouseoverRegenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    mouseoverRegenFrame:SetScript("OnEvent", function(self)
+        self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+        self:Hide()
+        if MABF and MABF.ApplyActionBarMouseover then
+            MABF:ApplyActionBarMouseover()
+        end
+    end)
+end
 
 local function IsMouseOverBarOrButtons(barFrame, barName)
     if not barFrame or not barName then return false end
@@ -347,11 +533,14 @@ end
 function MABF:ApplyActionBarMouseover()
     self._inQuickKeybindMode = self._inQuickKeybindMode or false
 
+    if InCombatLockdown and InCombatLockdown() then
+        QueueActionBarMouseoverReapply()
+        return
+    end
+
     for _, barName in ipairs(mouseoverManagedBars) do
         local barFrame = _G[barName]
         if barFrame and not barFrame._MABFMouseoverHooked then
-            barFrame:EnableMouse(true)
-
             barFrame:HookScript("OnEnter", function()
                 UpdateManagedBarAlpha(barFrame, barName)
             end)
@@ -362,7 +551,6 @@ function MABF:ApplyActionBarMouseover()
             for i = 1, 12 do
                 local button = _G[barName .. "Button" .. i]
                 if button and not button._MABFMouseoverHooked then
-                    button:EnableMouse(true)
                     button:HookScript("OnEnter", function()
                         UpdateManagedBarAlpha(barFrame, barName)
                     end)
@@ -411,8 +599,6 @@ function MABF:ApplyReverseBarGrowth()
         return
     end
 
-    -- Mirror MattSimpleTweaks behavior: when enabled, invert the bar growth
-    -- direction once per session/login.
     if MattActionBarFontDB and MattActionBarFontDB.reverseBarGrowth then
         if not self._reverseGrowthApplied then
             mainBar.addButtonsToTop = not mainBar.addButtonsToTop
@@ -444,19 +630,39 @@ end
 function MABF:SetupSlashCommands()
     local db = MattActionBarFontDB
 
-    -- Keybind Mode (/kb)
     if db.enableQuickBind then
         SLASH_QUICKBIND1 = "/kb"
         SlashCmdList["QUICKBIND"] = function()
-            if QuickKeybindFrame then
-                QuickKeybindFrame:Show()
+            if not QuickKeybindFrame then
+                print("|cFF00FF00MABF|r: Quick Keybind Mode is not available.")
+                return
             end
+
+            if InCombatLockdown and InCombatLockdown() then
+                self._kbOpenAfterCombat = true
+                if not self._kbRegenFrame then
+                    self._kbRegenFrame = CreateFrame("Frame")
+                    self._kbRegenFrame:SetScript("OnEvent", function(frame, event)
+                        if event ~= "PLAYER_REGEN_ENABLED" then return end
+                        frame:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                        if MABF._kbOpenAfterCombat and QuickKeybindFrame and (not InCombatLockdown or not InCombatLockdown()) then
+                            MABF._kbOpenAfterCombat = false
+                            QuickKeybindFrame:Show()
+                            print("|cFF00FF00MABF|r: Entered Keybind Mode after combat.")
+                        end
+                    end)
+                end
+                self._kbRegenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+                print("|cFF00FF00MABF|r: Can't open Keybind Mode in combat. It will open when combat ends.")
+                return
+            end
+
+            QuickKeybindFrame:Show()
         end
     else
         UnregisterSlashCommand("QUICKBIND")
     end
 
-    -- Reload UI (/rl)
     if db.enableReloadAlias then
         SLASH_RELOADUI1 = "/rl"
         SlashCmdList["RELOADUI"] = function() ReloadUI() end
@@ -464,7 +670,6 @@ function MABF:SetupSlashCommands()
         UnregisterSlashCommand("RELOADUI")
     end
 
-    -- Edit Mode (/edit)
     if db.enableEditModeAlias then
         SLASH_EDITMODE1 = "/edit"
         SlashCmdList["EDITMODE"] = function()
@@ -476,7 +681,6 @@ function MABF:SetupSlashCommands()
         UnregisterSlashCommand("EDITMODE")
     end
 
-    -- Pull Timer (/pull X)
     if db.enablePullAlias then
         SLASH_PULLCOUNTDOWN1 = "/pull"
         SlashCmdList["PULLCOUNTDOWN"] = function(msg)
@@ -516,7 +720,6 @@ function MABF:SetupPerformanceMonitor()
         edgeSize = 1,
     })
 
-    -- Restore saved position or default to top-center
     local pos = MattActionBarFontDB.perfMonitorPos
     if pos then
         f:SetPoint(pos.point, UIParent, pos.relativePoint, pos.xOfs, pos.yOfs)
@@ -534,7 +737,6 @@ function MABF:SetupPerformanceMonitor()
     self.perfFrame = f
     self:ApplyPerfMonitorStyle()
 
-    -- Update every 1 second
     f.elapsed = 0
     f:SetScript("OnUpdate", function(self, dt)
         self.elapsed = self.elapsed + dt
@@ -556,7 +758,6 @@ function MABF:SetupPerformanceMonitor()
         end
     end)
 
-    -- Shift+LeftClick to drag/move
     f:EnableMouse(true)
     f:SetMovable(true)
     f:RegisterForDrag("LeftButton")
@@ -598,19 +799,16 @@ function MABF:ApplyPerfMonitorStyle()
     local f = self.perfFrame
     if not f then return end
 
-    -- Background opacity
     local alpha = MattActionBarFontDB.perfMonitorBgOpacity or 0.5
     f:SetBackdropColor(0, 0, 0, alpha)
     f:SetBackdropBorderColor(0, 0, 0, math.min(alpha + 0.1, 1))
 
-    -- Text color
     local c = PERF_COLORS[MattActionBarFontDB.perfMonitorColor] or PERF_COLORS.green
     f.text:SetTextColor(c[1], c[2], c[3])
     if f.text2 then
         f.text2:SetTextColor(c[1], c[2], c[3])
     end
 
-    -- Layout: vertical vs horizontal
     local showMS = not MattActionBarFontDB.perfMonitorHideMS
 
     if MattActionBarFontDB.perfMonitorVertical then
@@ -643,7 +841,6 @@ function MABF:SetupEditModeDeviceManager()
     local db = MattActionBarFontDB
     if not db.editMode or not db.editMode.enabled then return end
 
-    -- Load Blizzard_EditMode if needed
     if not C_AddOns.IsAddOnLoaded("Blizzard_EditMode") then
         C_AddOns.LoadAddOn("Blizzard_EditMode")
     end
@@ -661,7 +858,6 @@ function MABF:SetupEditModeDeviceManager()
         local desired = db.editMode.presetIndexOnLogin
         if desired and desired > 0 and desired <= #layouts then
             EditModeManagerFrame:SelectLayout(desired, true)
-            -- Update status text if visible
             if MABFEDMStatusText then
                 MABFEDMStatusText:SetText("Selected: |cff90E4C1" .. layouts[desired].layoutName .. "|r")
             end
@@ -672,10 +868,8 @@ function MABF:SetupEditModeDeviceManager()
         end
     end
 
-    -- Apply on login
     C_Timer.After(1, ApplyEDMLayout)
 
-    -- Register for layout updates
     if not self._edmEventsRegistered then
         local edmEvents = CreateFrame("Frame")
         edmEvents:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
@@ -701,7 +895,6 @@ function MABF:SetupQuestTweaks()
     end
     local qf = self._questFrame
 
-    -- Unregister all first, then re-register based on settings
     qf:UnregisterAllEvents()
     qf:SetScript("OnEvent", nil)
 
