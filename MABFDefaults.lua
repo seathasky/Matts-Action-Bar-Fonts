@@ -37,6 +37,10 @@ MABF.defaults = {
     hideBagBar        = false,    -- Hide bag bar buttons
     petBarMouseoverFade = false,  -- Mouseover fade on pet action bar
     scaleTalkingHead  = false,    -- Scale talking head frame to 0.7
+    enableCursorCircle = false,   -- Show colored cursor circle
+    cursorCircleColor = "lightBlue", -- Cursor circle color preset
+    cursorCircleScale = 1.0,      -- Cursor circle scale (0.5-2.0)
+    cursorCircleOpacity = 1.0,    -- Cursor circle opacity (0-1)
 
     -- Slash commands
     enableQuickBind   = true,    -- /kb keybind mode

@@ -12,7 +12,7 @@ function MABF:CreateOptionsWindow()
     ui.frame = f
 
     f:Hide()
-    f:SetSize(420, 500)
+    f:SetSize(420, 580)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:EnableMouse(true)
@@ -62,7 +62,7 @@ function MABF:CreateOptionsWindow()
     -- Create Left Panel for Tabs
     ------------------------------------------------------------------------------
     local leftPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    leftPanel:SetSize(100, 430)
+    leftPanel:SetSize(100, 510)
     leftPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -45)
     leftPanel:SetBackdrop({
         bgFile   = "Interface\\Buttons\\WHITE8X8",
@@ -79,7 +79,7 @@ function MABF:CreateOptionsWindow()
     -- Create Right Panel for Content Pages
     ------------------------------------------------------------------------------
     local rightPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    rightPanel:SetSize(295, 430)
+    rightPanel:SetSize(295, 510)
     rightPanel:SetPoint("TOPLEFT", leftPanel, "TOPRIGHT", 6, 0)
     rightPanel:SetBackdrop({
         bgFile   = "Interface\\Buttons\\WHITE8X8",
@@ -1698,9 +1698,134 @@ function MABF:CreateOptionsWindow()
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
+    cursorCircleCheck = CreateFrame("CheckButton", "MABFCursorCircleCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    cursorCircleCheck:ClearAllPoints()
+    cursorCircleCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, checkSpacing)
+    cursorCircleText = _G[cursorCircleCheck:GetName().."Text"]
+    cursorCircleText:SetText("Cursor Circle")
+    cursorCircleText:SetTextColor(1, 1, 1)
+    cursorCircleCheck:SetChecked(MattActionBarFontDB.enableCursorCircle)
+
+    cursorCircleColorLabel = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    cursorCircleColorLabel:SetPoint("TOPLEFT", cursorCircleCheck, "BOTTOMLEFT", 26, -10)
+    cursorCircleColorLabel:SetText("Color:")
+    cursorCircleColorLabel:SetTextColor(0.8, 0.8, 0.8)
+
+    cursorCircleColorDropdown = CreateMinimalDropdown(pageUIFeatures, 130, 7)
+    cursorCircleColorDropdown:SetPoint("LEFT", cursorCircleColorLabel, "RIGHT", 8, 0)
+
+    cursorCircleColorOptions = {
+        {label = "Light Blue", value = "lightBlue"},
+        {label = "White",     value = "white"},
+        {label = "Red",       value = "red"},
+        {label = "Green",     value = "green"},
+        {label = "Yellow",    value = "yellow"},
+        {label = "Blue",      value = "blue"},
+        {label = "Purple",    value = "purple"},
+    }
+
+    local function GetCursorCircleColorValue()
+        return MattActionBarFontDB.cursorCircleColor or "lightBlue"
+    end
+
+    cursorCircleColorDropdown:SetOptions(cursorCircleColorOptions)
+    cursorCircleColorDropdown:SetSelectedValue(GetCursorCircleColorValue())
+    cursorCircleColorDropdown:SetOnOpen(function(self)
+        self:SetOptions(cursorCircleColorOptions)
+        self:SetSelectedValue(GetCursorCircleColorValue())
+    end)
+    cursorCircleColorDropdown:SetOnSelect(function(value)
+        MattActionBarFontDB.cursorCircleColor = value
+        cursorCircleColorDropdown:SetSelectedValue(value)
+        MABF:ApplyCursorCircleStyle()
+    end)
+
+    cursorCircleScaleSlider = CreateFrame("Slider", "MABFCursorCircleScaleSlider", pageUIFeatures, "OptionsSliderTemplate")
+    cursorCircleScaleSlider:SetWidth(140)
+    cursorCircleScaleSlider:SetHeight(16)
+    cursorCircleScaleSlider:SetPoint("TOPLEFT", cursorCircleColorLabel, "BOTTOMLEFT", -6, -22)
+    cursorCircleScaleSlider:SetMinMaxValues(50, 200)
+    cursorCircleScaleSlider:SetValueStep(5)
+    cursorCircleScaleSlider:SetObeyStepOnDrag(true)
+    _G[cursorCircleScaleSlider:GetName().."Low"]:SetText("50%")
+    _G[cursorCircleScaleSlider:GetName().."High"]:SetText("200%")
+    cursorCircleScaleTitle = _G[cursorCircleScaleSlider:GetName().."Text"]
+    cursorCircleScaleTitle:SetText("Size Scale: " .. math.floor((MattActionBarFontDB.cursorCircleScale or 1.0) * 100) .. "%")
+    StyleSlider(cursorCircleScaleSlider)
+    cursorCircleScaleSlider:SetValue((MattActionBarFontDB.cursorCircleScale or 1.0) * 100)
+    cursorCircleScaleSlider:SetScript("OnValueChanged", function(self, value)
+        local scale = value / 100
+        MattActionBarFontDB.cursorCircleScale = scale
+        _G[self:GetName().."Text"]:SetText("Size Scale: " .. math.floor(value) .. "%")
+        MABF:ApplyCursorCircleScale()
+    end)
+
+    cursorCircleOpacitySlider = CreateFrame("Slider", "MABFCursorCircleOpacitySlider", pageUIFeatures, "OptionsSliderTemplate")
+    cursorCircleOpacitySlider:SetWidth(140)
+    cursorCircleOpacitySlider:SetHeight(16)
+    cursorCircleOpacitySlider:SetPoint("TOPLEFT", cursorCircleScaleSlider, "BOTTOMLEFT", 0, -22)
+    cursorCircleOpacitySlider:SetMinMaxValues(0, 100)
+    cursorCircleOpacitySlider:SetValueStep(5)
+    cursorCircleOpacitySlider:SetObeyStepOnDrag(true)
+    _G[cursorCircleOpacitySlider:GetName().."Low"]:SetText("0%")
+    _G[cursorCircleOpacitySlider:GetName().."High"]:SetText("100%")
+    cursorCircleOpacityTitle = _G[cursorCircleOpacitySlider:GetName().."Text"]
+    cursorCircleOpacityTitle:SetText("Opacity: " .. math.floor((MattActionBarFontDB.cursorCircleOpacity or 1.0) * 100) .. "%")
+    StyleSlider(cursorCircleOpacitySlider)
+    cursorCircleOpacitySlider:SetValue((MattActionBarFontDB.cursorCircleOpacity or 1.0) * 100)
+    cursorCircleOpacitySlider:SetScript("OnValueChanged", function(self, value)
+        local alpha = value / 100
+        MattActionBarFontDB.cursorCircleOpacity = alpha
+        _G[self:GetName().."Text"]:SetText("Opacity: " .. math.floor(value) .. "%")
+        MABF:ApplyCursorCircleStyle()
+    end)
+
+    local function UpdateCursorCircleControls()
+        local enabled = MattActionBarFontDB.enableCursorCircle and true or false
+        if enabled then
+            cursorCircleColorLabel:SetTextColor(0.8, 0.8, 0.8)
+            cursorCircleColorDropdown:SetAlpha(1)
+            cursorCircleColorDropdown.button:Enable()
+            cursorCircleScaleSlider:SetAlpha(1)
+            cursorCircleScaleSlider:EnableMouse(true)
+            _G[cursorCircleScaleSlider:GetName().."Text"]:SetTextColor(1, 1, 1)
+            _G[cursorCircleScaleSlider:GetName().."Low"]:SetTextColor(0.8, 0.8, 0.8)
+            _G[cursorCircleScaleSlider:GetName().."High"]:SetTextColor(0.8, 0.8, 0.8)
+            cursorCircleOpacitySlider:SetAlpha(1)
+            cursorCircleOpacitySlider:EnableMouse(true)
+            _G[cursorCircleOpacitySlider:GetName().."Text"]:SetTextColor(1, 1, 1)
+            _G[cursorCircleOpacitySlider:GetName().."Low"]:SetTextColor(0.8, 0.8, 0.8)
+            _G[cursorCircleOpacitySlider:GetName().."High"]:SetTextColor(0.8, 0.8, 0.8)
+        else
+            cursorCircleColorLabel:SetTextColor(0.45, 0.45, 0.45)
+            cursorCircleColorDropdown:SetAlpha(0.6)
+            cursorCircleColorDropdown.button:Disable()
+            cursorCircleScaleSlider:SetAlpha(0.6)
+            cursorCircleScaleSlider:EnableMouse(false)
+            _G[cursorCircleScaleSlider:GetName().."Text"]:SetTextColor(0.6, 0.6, 0.6)
+            _G[cursorCircleScaleSlider:GetName().."Low"]:SetTextColor(0.5, 0.5, 0.5)
+            _G[cursorCircleScaleSlider:GetName().."High"]:SetTextColor(0.5, 0.5, 0.5)
+            cursorCircleOpacitySlider:SetAlpha(0.6)
+            cursorCircleOpacitySlider:EnableMouse(false)
+            _G[cursorCircleOpacitySlider:GetName().."Text"]:SetTextColor(0.6, 0.6, 0.6)
+            _G[cursorCircleOpacitySlider:GetName().."Low"]:SetTextColor(0.5, 0.5, 0.5)
+            _G[cursorCircleOpacitySlider:GetName().."High"]:SetTextColor(0.5, 0.5, 0.5)
+            if cursorCircleColorDropdown.list and cursorCircleColorDropdown.list:IsShown() then
+                cursorCircleColorDropdown:Close()
+            end
+        end
+    end
+
+    cursorCircleCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableCursorCircle = self:GetChecked() and true or false
+        MABF:SetupCursorCircle()
+        UpdateCursorCircleControls()
+    end)
+    UpdateCursorCircleControls()
+
     perfMonitorCheck = CreateFrame("CheckButton", "MABFPerfMonitorCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     perfMonitorCheck:ClearAllPoints()
-    perfMonitorCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, checkSpacing)
+    perfMonitorCheck:SetPoint("TOPLEFT", cursorCircleOpacitySlider, "BOTTOMLEFT", -20, -20)
     perfMonitorText = _G[perfMonitorCheck:GetName().."Text"]
     perfMonitorText:SetText("Performance Monitor (FPS & MS)")
     perfMonitorText:SetTextColor(1, 1, 1)
@@ -2150,7 +2275,7 @@ function MABF:CreateOptionsWindow()
     local optionChecks = {
         mouseoverFadeCheck, petBarFadeCheck, hideMacroTextCheck, reverseBarGrowthCheck,
         objectiveTrackerCheck, scaleStatusBarCheck, scaleTalkingHeadCheck,
-        hideMicroMenuCheck, hideBagBarCheck, perfMonitorCheck, perfVerticalCheck,
+        hideMicroMenuCheck, hideBagBarCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
         perfHideMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
         autoTurnInCheck, bagIlvlCheck, autoRepairCheck, autoSellCheck,
         quickBindCheck, reloadAliasCheck, editModeAliasCheck, pullAliasCheck,
