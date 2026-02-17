@@ -58,7 +58,7 @@ local function GetAllActionButtons()
         "StanceButton", "PetActionButton", "PossessButton", "ExtraActionButton"
     }
     
-    for _, bar in pairs(bars) do
+    for _, bar in ipairs(bars) do
         for i = 1, 12 do
             local button = _G[bar .. i]
             if button then
@@ -68,6 +68,49 @@ local function GetAllActionButtons()
     end
     
     return buttons
+end
+
+local function AnchorFontString(fontString, point, relativeTo, relativePoint, xOfs, yOfs)
+    if not fontString then return end
+    local cPoint, cRelativeTo, cRelativePoint, cX, cY = fontString:GetPoint(1)
+    if cPoint == point and cRelativeTo == relativeTo and cRelativePoint == relativePoint
+        and (cX or 0) == (xOfs or 0) and (cY or 0) == (yOfs or 0) then
+        return
+    end
+    fontString:ClearAllPoints()
+    fontString:SetPoint(point, relativeTo, relativePoint, xOfs or 0, yOfs or 0)
+end
+
+local function SetFontIfChanged(fontString, fontPath, fontSize, flags)
+    if not (fontString and fontString.SetFont and fontPath) then return end
+    if fontString._mabfFontPath == fontPath and fontString._mabfFontSize == fontSize and fontString._mabfFontFlags == flags then
+        return
+    end
+    fontString:SetFont(fontPath, fontSize, flags)
+    fontString._mabfFontPath = fontPath
+    fontString._mabfFontSize = fontSize
+    fontString._mabfFontFlags = flags
+end
+
+local petFontUpdateQueued = false
+local function QueuePetBarFontSettingsUpdate(delay)
+    if petFontUpdateQueued then
+        return
+    end
+    petFontUpdateQueued = true
+
+    local function RunUpdate()
+        petFontUpdateQueued = false
+        if MABF and MABF.UpdatePetBarFontSettings then
+            MABF:UpdatePetBarFontSettings()
+        end
+    end
+
+    if C_Timer and C_Timer.After then
+        C_Timer.After(delay or 0, RunUpdate)
+    else
+        RunUpdate()
+    end
 end
 
 -----------------------------------------------------------
@@ -97,7 +140,7 @@ function MABF:ApplyFontSettings()
         local hotKeyFont = button.HotKey or button.bind
         if not hotKeyFont then return end
 
-        local fPath = MABF:GetSelectedFontPath()
+        local fPath = fontPath
         if not fPath then return end
 
         local currentText = hotKeyFont:GetText() or ""
@@ -108,12 +151,11 @@ function MABF:ApplyFontSettings()
             hotKeyFont._MABF_FormattingText = nil
         end
 
-        hotKeyFont:SetFont(fPath, MattActionBarFontDB.fontSize, "OUTLINE")
+        SetFontIfChanged(hotKeyFont, fPath, MattActionBarFontDB.fontSize, "OUTLINE")
         hotKeyFont:SetTextColor(1, 1, 1, 1)
 
         local xOff, yOff = GetHotKeyOffsets(button)
-        hotKeyFont:ClearAllPoints()
-        hotKeyFont:SetPoint("TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+        AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
         hotKeyFont:SetWidth(0)
         hotKeyFont:SetHeight(0)
     end
@@ -137,7 +179,7 @@ function MABF:ApplyFontSettings()
             if isHotKey then
                 ApplyHotKeyOverrides(button)
             else
-                fontString:SetFont(fontPath, MattActionBarFontDB.fontSize * 0.5, "OUTLINE")
+                SetFontIfChanged(fontString, fontPath, MattActionBarFontDB.fontSize * 0.5, "OUTLINE")
                 fontString:SetTextColor(1, 1, 1, 1)
             end
             if not isHotKey then
@@ -164,8 +206,7 @@ function MABF:ApplyFontSettings()
                             return
                         end
                         self._MABF_AnchoringLock = true
-                        self:ClearAllPoints()
-                        self:SetPoint("TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+                        AnchorFontString(self, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
                         self:SetWidth(0)
                         self:SetHeight(0)
                         self._MABF_AnchoringLock = nil
@@ -209,11 +250,10 @@ function MABF:ApplyFontSettings()
                                     self._MABF_FormattingText = nil
                                 end
                             end
-                            self:SetFont(fPath, MattActionBarFontDB.fontSize, "OUTLINE")
+                            SetFontIfChanged(self, fPath, MattActionBarFontDB.fontSize, "OUTLINE")
                             self:SetTextColor(1, 1, 1, 1)
                             local xOff, yOff = GetHotKeyOffsets(button)
-                            self:ClearAllPoints()
-                            self:SetPoint("TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+                            AnchorFontString(self, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
                             self:SetWidth(0)
                             self:SetHeight(0)
                         end
@@ -225,7 +265,7 @@ function MABF:ApplyFontSettings()
             end
         end
         
-        for _, region in pairs({ button:GetRegions() }) do
+        for _, region in ipairs({ button:GetRegions() }) do
             if region:GetObjectType() == "FontString" then
                 if region ~= hotKeyFont and region ~= button.Count and region ~= button.Name then
                     SafeSetFont(region, false, button)
@@ -246,7 +286,7 @@ function MABF:ApplyFontSettings()
 
     local extraContainer = _G["ExtraAbilityContainer"]
     if extraContainer then
-        for _, child in pairs({ extraContainer:GetChildren() }) do
+        for _, child in ipairs({ extraContainer:GetChildren() }) do
             if child and (child.GetObjectType == nil or child:GetObjectType() == "Button" or child.IsObjectType and child:IsObjectType("Button")) then
                 pcall(UpdateActionButton, child)
             end
@@ -276,8 +316,7 @@ function MABF:UpdateFontPositions()
         if button then
             local countText = button.Count or _G[(button:GetName() or "") .. "Count"]
             if countText then
-                countText:ClearAllPoints()
-                countText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", xOff, yOff)
+                AnchorFontString(countText, "BOTTOMRIGHT", button, "BOTTOMRIGHT", xOff, yOff)
             end
         end
     end
@@ -299,8 +338,7 @@ function MABF:UpdateActionBarFontPositions()
                 local isExtra = (bName:find("Extra") or parentName:find("Extra") or button == _G["ExtraActionButton1"])
                 local xOff = isExtra and extraXOff or abXOff
                 local yOff = isExtra and extraYOff or abYOff
-                hotKeyFont:ClearAllPoints()
-                hotKeyFont:SetPoint("TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+                AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
             end
         end
     end
@@ -309,18 +347,16 @@ function MABF:UpdateActionBarFontPositions()
     if extraBtn then
         local hk = extraBtn.HotKey or extraBtn.bind
         if hk then
-            hk:ClearAllPoints()
-            hk:SetPoint("TOPRIGHT", extraBtn, "TOPRIGHT", extraXOff, extraYOff)
+            AnchorFontString(hk, "TOPRIGHT", extraBtn, "TOPRIGHT", extraXOff, extraYOff)
         end
     end
 
     local extraContainer = _G["ExtraAbilityContainer"]
     if extraContainer then
-        for _, child in pairs({ extraContainer:GetChildren() }) do
+        for _, child in ipairs({ extraContainer:GetChildren() }) do
             local hk = child and (child.HotKey or child.bind)
             if hk then
-                hk:ClearAllPoints()
-                hk:SetPoint("TOPRIGHT", child, "TOPRIGHT", extraXOff, extraYOff)
+                AnchorFontString(hk, "TOPRIGHT", child, "TOPRIGHT", extraXOff, extraYOff)
             end
         end
     end
@@ -332,8 +368,7 @@ function MABF:UpdateActionBarFontPositions()
                 for _, b in pairs(frame.buttons) do
                     local hk = b and (b.HotKey or b.bind)
                     if hk then
-                        hk:ClearAllPoints()
-                        hk:SetPoint("TOPRIGHT", b, "TOPRIGHT", extraXOff, extraYOff)
+                        AnchorFontString(hk, "TOPRIGHT", b, "TOPRIGHT", extraXOff, extraYOff)
                     end
                 end
             end
@@ -356,9 +391,8 @@ function MABF:UpdateMacroText()
                 button.Name:Hide()
             else
                 button.Name:Show()
-                button.Name:ClearAllPoints()
-                button.Name:SetPoint("BOTTOM", button, "BOTTOM", 0, 2)
-                button.Name:SetFont(fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
+                AnchorFontString(button.Name, "BOTTOM", button, "BOTTOM", 0, 2)
+                SetFontIfChanged(button.Name, fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
                 local success, text = pcall(button.Name.GetText, button.Name)
                 if success and text and type(text) == "string" then
                     local formatted = FormatText(text)
@@ -379,16 +413,18 @@ function MABF:UpdatePetBarFontSettings()
     self:EnsureFontSelection()
     local fontPath = self:GetSelectedFontPath()
     if not fontPath then return end
+    local fontSize = MattActionBarFontDB.petBarFontSize
+    local flags = "OUTLINE"
     
     if Dominos and Dominos.Frame then
         local foundPetBar = false
         for _, frame in Dominos.Frame:GetAll() do
-            local frameName = frame:GetName()
+            local frameName = frame and frame.GetName and frame:GetName()
             if frame and frame.buttons and frameName and frameName:find("Pet") then
                 for _, button in pairs(frame.buttons) do
                     local hotKeyFont = button.HotKey or button.bind
                     if button and hotKeyFont then
-                        hotKeyFont:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+                        SetFontIfChanged(hotKeyFont, fontPath, fontSize, flags)
                         foundPetBar = true
                     end
                 end
@@ -398,7 +434,7 @@ function MABF:UpdatePetBarFontSettings()
             for i = 1, 10 do
                 local button = _G["PetActionButton" .. i]
                 if button and button.HotKey then
-                    button.HotKey:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+                    SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
                 end
             end
         end
@@ -406,7 +442,7 @@ function MABF:UpdatePetBarFontSettings()
         for i = 1, 10 do
             local button = _G["PetActionButton" .. i]
             if button and button.HotKey then
-                button.HotKey:SetFont(fontPath, MattActionBarFontDB.petBarFontSize, "OUTLINE")
+                SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
             end
         end
     end
@@ -417,29 +453,33 @@ end
 -- Ensures pet bar font settings persist after UI reload
 -----------------------------------------------------------
 function MABF:HookPetActionBarUpdates()
+    if self._MABF_PetHooksRegistered then
+        return
+    end
+    self._MABF_PetHooksRegistered = true
+
     if PetActionBar_Update then
         hooksecurefunc("PetActionBar_Update", function()
-            MABF:UpdatePetBarFontSettings()
+            QueuePetBarFontSettingsUpdate(0)
         end)
     end
     
     if PetActionButton_Update then
         hooksecurefunc("PetActionButton_Update", function(self)
-            MABF:UpdatePetBarFontSettings()
+            QueuePetBarFontSettingsUpdate(0)
         end)
     end
     
     local petBar = _G["PetActionBar"]
     if petBar then
-        local scheduled = false
-        petBar:HookScript("OnUpdate", function()
-            if not scheduled then
-                scheduled = true
-                C_Timer.After(0.05, function()
-                    MABF:UpdatePetBarFontSettings()
-                    scheduled = false
-                end)
+        local elapsedSinceRefresh = 0
+        petBar:HookScript("OnUpdate", function(_, elapsed)
+            elapsedSinceRefresh = elapsedSinceRefresh + elapsed
+            if elapsedSinceRefresh < 0.25 then
+                return
             end
+            elapsedSinceRefresh = 0
+            QueuePetBarFontSettingsUpdate(0)
         end)
     end
 
@@ -457,18 +497,20 @@ function MABF:HookPetActionBarUpdates()
         pcall(petBarEvents.RegisterEvent, petBarEvents, ev)
     end
     petBarEvents:SetScript("OnEvent", function()
-        C_Timer.After(0.1, function()
-            MABF:UpdatePetBarFontSettings()
-        end)
+        QueuePetBarFontSettingsUpdate(0.05)
     end)
 
-    MABF:UpdatePetBarFontSettings()
-    C_Timer.After(0.1, function()
-        MABF:UpdatePetBarFontSettings()
-    end)
-    C_Timer.After(0.5, function()
-        MABF:UpdatePetBarFontSettings()
-    end)
+    QueuePetBarFontSettingsUpdate(0)
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.1, function()
+            QueuePetBarFontSettingsUpdate(0)
+        end)
+        C_Timer.After(0.5, function()
+            QueuePetBarFontSettingsUpdate(0)
+        end)
+    else
+        QueuePetBarFontSettingsUpdate(0)
+    end
 end
 
 -- This function (formerly a local UpdateSpecificBars) is now part of MABF.
@@ -486,7 +528,7 @@ function MABF:UpdateSpecificBars()
         if button then
             local countText = button.Count or _G[(button:GetName() or "") .. "Count"]
             if countText then
-                countText:SetFont(fontPath, MattActionBarFontDB.countFontSize, flags)
+                SetFontIfChanged(countText, fontPath, MattActionBarFontDB.countFontSize, flags)
             end
         end
     end

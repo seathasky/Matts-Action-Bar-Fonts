@@ -13,6 +13,12 @@ local CURSOR_CIRCLE_SIZE = 28
 local fontValidationString = nil
 local fontApplyToken = 0
 
+local function ResetResolvedFontCaches(self)
+    self._fontPathCache = nil
+    self._selectedFontPathKey = nil
+    self._selectedFontPathValue = nil
+end
+
 -----------------------------------------------------------
 -- Initialization & Font Scanning
 -----------------------------------------------------------
@@ -117,6 +123,8 @@ function MABF:ScanCustomFonts()
         end
     end
 
+    -- Font registry changes can invalidate resolved path caches.
+    ResetResolvedFontCaches(self)
     return fonts
 end
 
@@ -131,6 +139,8 @@ function MABF:RegisterFontsWithLSM()
             LSM:Register(FONT, media.name, media.path)
         end
     end
+
+    ResetResolvedFontCaches(self)
 end
 
 function MABF:GetFontOptions()
@@ -164,35 +174,65 @@ function MABF:EnsureFontSelection()
     end
 
     local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily) or MABF_FONT_DEFAULT
+    if self._selectedFontPathKey and self._selectedFontPathKey ~= selected then
+        self._selectedFontPathKey = nil
+        self._selectedFontPathValue = nil
+    end
     MattActionBarFontDB.fontFamily = selected
     return selected
 end
 
 function MABF:GetFontPathByName(fontName)
     local selected = NormalizeMediaName(fontName) or MABF_FONT_DEFAULT
+    if self._fontPathCache and self._fontPathCache[selected] then
+        return self._fontPathCache[selected]
+    end
+
+    local resolvedPath = nil
     if LSM then
         local fetched = LSM:Fetch(FONT, selected, true)
         if fetched and IsUsableFontPath(fetched) then
-            return fetched
+            resolvedPath = fetched
         end
-        local fallback = LSM:Fetch(FONT, MABF_FONT_DEFAULT, true)
-        if fallback and IsUsableFontPath(fallback) then
-            return fallback
+        if not resolvedPath then
+            local fallback = LSM:Fetch(FONT, MABF_FONT_DEFAULT, true)
+            if fallback and IsUsableFontPath(fallback) then
+                resolvedPath = fallback
+            end
         end
     end
-    local scanned = self:ScanCustomFonts()
-    if scanned[selected] and IsUsableFontPath(scanned[selected]) then
-        return scanned[selected]
+
+    local scanned = self.availableFonts
+    if type(scanned) ~= "table" then
+        scanned = self:ScanCustomFonts()
+        self.availableFonts = scanned
     end
-    if scanned[MABF_FONT_DEFAULT] and IsUsableFontPath(scanned[MABF_FONT_DEFAULT]) then
-        return scanned[MABF_FONT_DEFAULT]
+
+    if not resolvedPath and scanned[selected] and IsUsableFontPath(scanned[selected]) then
+        resolvedPath = scanned[selected]
     end
-    return MABF_FONT_DEFAULT_PATH
+    if not resolvedPath and scanned[MABF_FONT_DEFAULT] and IsUsableFontPath(scanned[MABF_FONT_DEFAULT]) then
+        resolvedPath = scanned[MABF_FONT_DEFAULT]
+    end
+    if not resolvedPath then
+        resolvedPath = MABF_FONT_DEFAULT_PATH
+    end
+
+    self._fontPathCache = self._fontPathCache or {}
+    self._fontPathCache[selected] = resolvedPath
+    return resolvedPath
 end
 
 function MABF:GetSelectedFontPath()
     local selected = self:EnsureFontSelection()
-    return self:GetFontPathByName(selected)
+    if self._selectedFontPathKey == selected and self._selectedFontPathValue then
+        return self._selectedFontPathValue
+    end
+
+    local path = self:GetFontPathByName(selected)
+    self._selectedFontPathKey = selected
+    self._selectedFontPathValue = path
+    return path
 end
 
 function MABF:SetSelectedFont(fontName)
@@ -201,6 +241,7 @@ function MABF:SetSelectedFont(fontName)
     if not MattActionBarFontDB then MattActionBarFontDB = {} end
 
     MattActionBarFontDB.fontFamily = fontName
+    ResetResolvedFontCaches(self)
     fontApplyToken = fontApplyToken + 1
     local thisToken = fontApplyToken
 
@@ -802,6 +843,47 @@ end
 -- Performance Monitor  (FPS & MS display)
 --------------------------------------------------------------------------------
 
+local function SavePerfMonitorScreenPosition(frame)
+    if not frame or not frame.GetCenter then return end
+    local centerX, centerY = frame:GetCenter()
+    if not centerX or not centerY then return end
+
+    local frameScale = frame:GetEffectiveScale() or 1
+    MattActionBarFontDB.perfMonitorPos = {
+        mode = "screenCenter",
+        x = centerX * frameScale,
+        y = centerY * frameScale,
+    }
+end
+
+local function RestorePerfMonitorPosition(frame)
+    frame:ClearAllPoints()
+    local pos = MattActionBarFontDB.perfMonitorPos
+
+    if type(pos) == "table" and pos.mode == "screenCenter" and tonumber(pos.x) and tonumber(pos.y) then
+        local parentScale = UIParent:GetEffectiveScale() or 1
+        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", pos.x / parentScale, pos.y / parentScale)
+        return
+    end
+
+    if type(pos) == "table" and pos.point then
+        local relativeTo = UIParent
+        if type(pos.relativeTo) == "string" and _G[pos.relativeTo] then
+            relativeTo = _G[pos.relativeTo]
+        end
+        frame:SetPoint(
+            pos.point,
+            relativeTo,
+            pos.relativePoint or pos.point,
+            tonumber(pos.xOfs) or 0,
+            tonumber(pos.yOfs) or 0
+        )
+        return
+    end
+
+    frame:SetPoint("TOP", UIParent, "TOP", 0, -4)
+end
+
 function MABF:SetupPerformanceMonitor()
     if not MattActionBarFontDB.enablePerformanceMonitor then
         self:DisablePerformanceMonitor()
@@ -822,13 +904,8 @@ function MABF:SetupPerformanceMonitor()
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-
-    local pos = MattActionBarFontDB.perfMonitorPos
-    if pos then
-        f:SetPoint(pos.point, UIParent, pos.relativePoint, pos.xOfs, pos.yOfs)
-    else
-        f:SetPoint("TOP", UIParent, "TOP", 0, -4)
-    end
+    f:SetClampedToScreen(true)
+    RestorePerfMonitorPosition(f)
 
     f.text = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     f.text:SetPoint("CENTER")
@@ -871,13 +948,8 @@ function MABF:SetupPerformanceMonitor()
     end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
-        local point, _, relativePoint, xOfs, yOfs = self:GetPoint()
-        MattActionBarFontDB.perfMonitorPos = {
-            point = point,
-            relativePoint = relativePoint,
-            xOfs = xOfs,
-            yOfs = yOfs,
-        }
+        SavePerfMonitorScreenPosition(self)
+        RestorePerfMonitorPosition(self)
     end)
 
     self.perfFrame = f

@@ -6,6 +6,7 @@ local LPP = LibStub and LibStub("LibPixelPerfect-1.0", true)
 -- Global table to hold all skinned buttons for global update
 -----------------------------------------------------------
 local skinnedButtons = {}
+local RefreshGlobalSkinUpdaterState
 
 local MINIMAL_THEME_STYLES = {
     minimalTranslucent = {
@@ -500,6 +501,7 @@ function MABF:SkinActionBars()
     for _, button in ipairs(buttons) do
         SkinButton(button)
     end
+    RefreshGlobalSkinUpdaterState()
 end
 
 local function RestoreButtonDefaultLook(button)
@@ -551,11 +553,13 @@ function MABF:RemoveCustomSkins()
     for _, button in ipairs(buttons) do
         RestoreButtonDefaultLook(button)
     end
+    RefreshGlobalSkinUpdaterState()
 end
 
 function MABF:ApplyActionBarThemeLive()
     local theme = MattActionBarFontDB and MattActionBarFontDB.minimalTheme or "blizzard"
     if theme == "blizzard" then
+        RefreshGlobalSkinUpdaterState()
         return
     end
     self:SkinActionBars()
@@ -568,6 +572,13 @@ end
 -----------------------------------------------------------
 local globalSkinUpdater = CreateFrame("Frame")
 local throttle = 0
+RefreshGlobalSkinUpdaterState = function()
+    if IsMinimalThemeActive() and #skinnedButtons > 0 then
+        globalSkinUpdater:Show()
+    else
+        globalSkinUpdater:Hide()
+    end
+end
 globalSkinUpdater:SetScript("OnUpdate", function(self, elapsed)
     if not IsMinimalThemeActive() then
         return
@@ -579,6 +590,7 @@ globalSkinUpdater:SetScript("OnUpdate", function(self, elapsed)
         UpdateActionButtonState(button)
     end
 end)
+globalSkinUpdater:Hide()
 
 -----------------------------------------------------------
 -- "PLAYER_ENTERING_WORLD" Event
@@ -589,6 +601,8 @@ skinFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 skinFrame:SetScript("OnEvent", function()
     if MattActionBarFontDB and MattActionBarFontDB.minimalTheme ~= "blizzard" then
         MABF:ApplyActionBarThemeLive()
+    else
+        RefreshGlobalSkinUpdaterState()
     end
 end)
 
