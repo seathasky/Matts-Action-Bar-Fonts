@@ -1,6 +1,31 @@
 -- MABFOptions.lua
 local addonName, MABF = ...
 
+local function SaveOptionsFramePosition(frame)
+    if not frame or not MattActionBarFontDB or not frame.GetCenter then return end
+    local centerX, centerY = frame:GetCenter()
+    if not centerX or not centerY then return end
+
+    local frameScale = frame:GetEffectiveScale() or 1
+    MattActionBarFontDB.optionsFramePos = {
+        mode = "screenCenter",
+        x = centerX * frameScale,
+        y = centerY * frameScale,
+    }
+end
+
+local function RestoreOptionsFramePosition(frame)
+    frame:ClearAllPoints()
+    local pos = MattActionBarFontDB and MattActionBarFontDB.optionsFramePos
+    if type(pos) == "table" and pos.mode == "screenCenter" and tonumber(pos.x) and tonumber(pos.y) then
+        local parentScale = UIParent:GetEffectiveScale() or 1
+        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", pos.x / parentScale, pos.y / parentScale)
+        return
+    end
+
+    frame:SetPoint("CENTER")
+end
+
 -----------------------------------------------------------
 -- Options Window Creation with Vertical Tabs
 -----------------------------------------------------------
@@ -13,13 +38,18 @@ function MABF:CreateOptionsWindow()
 
     f:Hide()
     f:SetSize(420, 580)
-    f:SetPoint("CENTER")
+    f:SetClampedToScreen(true)
+    RestoreOptionsFramePosition(f)
     f:SetFrameStrata("DIALOG")
     f:EnableMouse(true)
     f:SetMovable(true)
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
-    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        SaveOptionsFramePosition(self)
+        RestoreOptionsFramePosition(self)
+    end)
     f:SetBackdrop({
         bgFile   = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -166,6 +196,7 @@ function MABF:CreateOptionsWindow()
         local normalized = ClampGUIScale(scale)
         MattActionBarFontDB.guiScale = normalized
         f:SetScale(normalized)
+        SaveOptionsFramePosition(f)
         return normalized
     end
 
@@ -1266,8 +1297,9 @@ function MABF:CreateOptionsWindow()
     end)
     fontDropDown:SetOnSelect(function(value)
         MABF:SetSelectedFont(value)
-        fontDropDown:SetSelectedValue(value)
-        print("|cFF00FF00MattActionBarFont:|r Font updated to: " .. value)
+        fontDropDown:SetSelectedValue(MattActionBarFontDB.fontFamily)
+        print("|cFF00FF00MattActionBarFont:|r Font updated to: " .. tostring(MattActionBarFontDB.fontFamily))
+        StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
 

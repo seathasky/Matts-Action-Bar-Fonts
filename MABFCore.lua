@@ -12,6 +12,8 @@ local CURSOR_CIRCLE_TEXTURE = "Interface\\AddOns\\MattActionBarFont\\Textures\\c
 local CURSOR_CIRCLE_SIZE = 28
 local fontValidationString = nil
 local fontApplyToken = 0
+local sharedMediaHooked = false
+local fontPreloadFrame = nil
 
 local function ResetResolvedFontCaches(self)
     self._fontPathCache = nil
@@ -26,11 +28,28 @@ function MABF:Init()
     self:ApplyDefaults()
 
     MattActionBarFontDB.fontSize = math.min(math.max(MattActionBarFontDB.fontSize, MIN_FONT_SIZE), MAX_FONT_SIZE)
+    if type(MattActionBarFontDB.fontFamilyPath) == "string" then
+        MattActionBarFontDB.fontFamilyPath = MattActionBarFontDB.fontFamilyPath:match("^%s*(.-)%s*$")
+        if MattActionBarFontDB.fontFamilyPath == "" then
+            MattActionBarFontDB.fontFamilyPath = nil
+        end
+    else
+        MattActionBarFontDB.fontFamilyPath = nil
+    end
+    if type(MattActionBarFontDB.fontFamilyPathName) == "string" then
+        MattActionBarFontDB.fontFamilyPathName = MattActionBarFontDB.fontFamilyPathName:match("^%s*(.-)%s*$")
+        if MattActionBarFontDB.fontFamilyPathName == "" then
+            MattActionBarFontDB.fontFamilyPathName = nil
+        end
+    else
+        MattActionBarFontDB.fontFamilyPathName = nil
+    end
 
     MABF:RegisterFontsWithLSM()
 
     MABF:EnsureFontSelection()
     MABF.availableFonts = MABF:ScanCustomFonts()
+    MABF:HookSharedMediaFontUpdates()
 end
 
 MABF.basefonts = {
@@ -45,6 +64,26 @@ local function NormalizeMediaName(value)
         return nil
     end
     local trimmed = value:match("^%s*(.-)%s*$")
+    if not trimmed or trimmed == "" then
+        return nil
+    end
+    return trimmed
+end
+
+local function MediaNamesEqual(a, b)
+    local left = NormalizeMediaName(a)
+    local right = NormalizeMediaName(b)
+    if not left or not right then
+        return false
+    end
+    return left:lower() == right:lower()
+end
+
+local function GetUsableFontPath(path)
+    if type(path) ~= "string" then
+        return nil
+    end
+    local trimmed = path:match("^%s*(.-)%s*$")
     if not trimmed or trimmed == "" then
         return nil
     end
@@ -79,6 +118,65 @@ local function IsUsableFontPath(fontPath)
     end
     ok, applied = pcall(probe.SetFont, probe, fontPath, 12, "")
     return ok and applied ~= false
+end
+
+local function ClearSavedFontPath()
+    if type(MattActionBarFontDB) ~= "table" then return end
+    MattActionBarFontDB.fontFamilyPath = nil
+    MattActionBarFontDB.fontFamilyPathName = nil
+end
+
+local function SetSavedFontPath(fontName, fontPath)
+    if type(MattActionBarFontDB) ~= "table" then return end
+    local normalizedName = NormalizeMediaName(fontName)
+    local normalizedPath = GetUsableFontPath(fontPath)
+    if not normalizedName or not normalizedPath then
+        ClearSavedFontPath()
+        return
+    end
+    MattActionBarFontDB.fontFamilyPath = normalizedPath
+    MattActionBarFontDB.fontFamilyPathName = normalizedName
+end
+
+local function GetSavedFontPath(fontName)
+    if type(MattActionBarFontDB) ~= "table" then return nil end
+    local selected = NormalizeMediaName(fontName)
+    local savedName = NormalizeMediaName(MattActionBarFontDB.fontFamilyPathName)
+    if not selected or not savedName or not MediaNamesEqual(selected, savedName) then
+        return nil
+    end
+    local savedPath = GetUsableFontPath(MattActionBarFontDB.fontFamilyPath)
+    if not savedPath or not IsUsableFontPath(savedPath) then
+        return nil
+    end
+    return savedPath
+end
+
+local function GetOrCreateFontPreloadFrame()
+    if fontPreloadFrame then
+        return fontPreloadFrame
+    end
+    if not UIParent then
+        return nil
+    end
+    local frame = CreateFrame("Frame", "MABFFontPreloadFrame", UIParent)
+    frame:Hide()
+    fontPreloadFrame = frame
+    return fontPreloadFrame
+end
+
+local function PreloadFontPath(fontPath)
+    local path = GetUsableFontPath(fontPath)
+    if not path then
+        return
+    end
+    local frame = GetOrCreateFontPreloadFrame()
+    if not frame then
+        return
+    end
+    local fs = frame:CreateFontString(nil, "OVERLAY")
+    fs:Hide()
+    pcall(fs.SetFont, fs, path, 12, "")
 end
 
 function MABF:GetLocalFontRegistry()
@@ -138,32 +236,87 @@ function MABF:RegisterFontsWithLSM()
         if not LSM:IsValid(FONT, media.name) then
             LSM:Register(FONT, media.name, media.path)
         end
+        PreloadFontPath(media.path)
     end
 
     ResetResolvedFontCaches(self)
 end
 
+function MABF:ReapplySelectedFontEverywhere()
+    self.availableFonts = self:ScanCustomFonts()
+    if self.ApplyFontSettings then self:ApplyFontSettings() end
+    if self.UpdateMacroText then self:UpdateMacroText() end
+    if self.UpdateFontPositions then self:UpdateFontPositions() end
+    if self.UpdateActionBarFontPositions then self:UpdateActionBarFontPositions() end
+    if self.UpdateSpecificBars then self:UpdateSpecificBars() end
+    if self.UpdatePetBarFontSettings then self:UpdatePetBarFontSettings() end
+end
+
+function MABF:ReapplySelectedFontBurst(fontName, thisToken)
+    local selectedName = NormalizeMediaName(fontName)
+    local function Run()
+        if thisToken and thisToken ~= fontApplyToken then return end
+        if selectedName and MattActionBarFontDB and not MediaNamesEqual(MattActionBarFontDB.fontFamily, selectedName) then return end
+        self:ReapplySelectedFontEverywhere()
+    end
+
+    Run()
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.1, Run)
+        C_Timer.After(0.5, Run)
+    end
+end
+
+function MABF:HookSharedMediaFontUpdates()
+    if sharedMediaHooked or not LSM then return end
+    sharedMediaHooked = true
+
+    if self.availableFonts then
+        for _, path in pairs(self.availableFonts) do
+            PreloadFontPath(path)
+        end
+    end
+
+    if not hooksecurefunc then return end
+    hooksecurefunc(LSM, "Register", function(_, mediaType, mediaKey, mediaData)
+        if mediaType ~= FONT then return end
+        PreloadFontPath(mediaData)
+        if not MattActionBarFontDB then return end
+
+        local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily)
+        if selected and MediaNamesEqual(selected, mediaKey) then
+            ResetResolvedFontCaches(MABF)
+            MABF:ReapplySelectedFontBurst(selected)
+        end
+    end)
+end
+
 function MABF:GetFontOptions()
     local list = {}
-    if LSM then
-        local names = LSM:List(FONT) or {}
-        for _, name in ipairs(names) do
-            local normalizedName = NormalizeMediaName(name)
-            if normalizedName then
-                list[#list + 1] = normalizedName
-            end
-        end
-    else
-        for _, media in ipairs(self:GetLocalFontRegistry()) do
-            local normalizedName = NormalizeMediaName(media.name)
-            if normalizedName then
+    local seen = {}
+    local scanned = self.availableFonts
+    if type(scanned) ~= "table" then
+        scanned = self:ScanCustomFonts()
+        self.availableFonts = scanned
+    end
+
+    for name, path in pairs(scanned) do
+        local normalizedName = NormalizeMediaName(name)
+        if normalizedName and path and IsUsableFontPath(path) then
+            local key = normalizedName:lower()
+            if not seen[key] then
+                seen[key] = true
                 list[#list + 1] = normalizedName
             end
         end
     end
+
     if #list == 0 then
         list[#list + 1] = MABF_FONT_DEFAULT
+    elseif not seen[MABF_FONT_DEFAULT:lower()] then
+        list[#list + 1] = MABF_FONT_DEFAULT
     end
+
     table.sort(list, function(a, b) return tostring(a):lower() < tostring(b):lower() end)
     return list
 end
@@ -174,33 +327,35 @@ function MABF:EnsureFontSelection()
     end
 
     local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily) or MABF_FONT_DEFAULT
+    local scanned = self.availableFonts
+    if type(scanned) == "table" then
+        for name in pairs(scanned) do
+            if MediaNamesEqual(name, selected) then
+                selected = name
+                break
+            end
+        end
+    end
+
     if self._selectedFontPathKey and self._selectedFontPathKey ~= selected then
         self._selectedFontPathKey = nil
         self._selectedFontPathValue = nil
     end
+
     MattActionBarFontDB.fontFamily = selected
     return selected
 end
 
 function MABF:GetFontPathByName(fontName)
     local selected = NormalizeMediaName(fontName) or MABF_FONT_DEFAULT
-    if self._fontPathCache and self._fontPathCache[selected] then
-        return self._fontPathCache[selected]
+    local cacheKey = selected:lower()
+    if self._fontPathCache and self._fontPathCache[cacheKey] then
+        return self._fontPathCache[cacheKey], selected, true
     end
 
-    local resolvedPath = nil
-    if LSM then
-        local fetched = LSM:Fetch(FONT, selected, true)
-        if fetched and IsUsableFontPath(fetched) then
-            resolvedPath = fetched
-        end
-        if not resolvedPath then
-            local fallback = LSM:Fetch(FONT, MABF_FONT_DEFAULT, true)
-            if fallback and IsUsableFontPath(fallback) then
-                resolvedPath = fallback
-            end
-        end
-    end
+    local resolvedPath = GetSavedFontPath(selected)
+    local matched = resolvedPath ~= nil
+    local resolvedName = selected
 
     local scanned = self.availableFonts
     if type(scanned) ~= "table" then
@@ -208,19 +363,68 @@ function MABF:GetFontPathByName(fontName)
         self.availableFonts = scanned
     end
 
-    if not resolvedPath and scanned[selected] and IsUsableFontPath(scanned[selected]) then
-        resolvedPath = scanned[selected]
+    if not resolvedPath then
+        for name, path in pairs(scanned) do
+            if MediaNamesEqual(name, selected) and IsUsableFontPath(path) then
+                resolvedPath = path
+                resolvedName = name
+                matched = true
+                break
+            end
+        end
     end
-    if not resolvedPath and scanned[MABF_FONT_DEFAULT] and IsUsableFontPath(scanned[MABF_FONT_DEFAULT]) then
-        resolvedPath = scanned[MABF_FONT_DEFAULT]
+
+    if not resolvedPath and LSM then
+        local fetched = LSM:Fetch(FONT, selected, true)
+        if fetched and IsUsableFontPath(fetched) then
+            resolvedPath = fetched
+            matched = true
+        end
     end
+
+    if not resolvedPath then
+        for name, path in pairs(scanned) do
+            if MediaNamesEqual(name, MABF_FONT_DEFAULT) and IsUsableFontPath(path) then
+                resolvedPath = path
+                resolvedName = name
+                matched = false
+                break
+            end
+        end
+    end
+
+    if not resolvedPath and LSM then
+        local fallback = LSM:Fetch(FONT, MABF_FONT_DEFAULT, true)
+        if fallback and IsUsableFontPath(fallback) then
+            resolvedPath = fallback
+            resolvedName = MABF_FONT_DEFAULT
+            matched = false
+        end
+    end
+
     if not resolvedPath then
         resolvedPath = MABF_FONT_DEFAULT_PATH
+        resolvedName = MABF_FONT_DEFAULT
+        matched = MediaNamesEqual(selected, MABF_FONT_DEFAULT)
+    end
+
+    if matched then
+        SetSavedFontPath(resolvedName, resolvedPath)
+    else
+        local selectedFetch = nil
+        if LSM then
+            selectedFetch = LSM:Fetch(FONT, selected, true)
+        end
+        if selectedFetch and IsUsableFontPath(selectedFetch) then
+            SetSavedFontPath(selected, selectedFetch)
+        else
+            ClearSavedFontPath()
+        end
     end
 
     self._fontPathCache = self._fontPathCache or {}
-    self._fontPathCache[selected] = resolvedPath
-    return resolvedPath
+    self._fontPathCache[cacheKey] = resolvedPath
+    return resolvedPath, resolvedName, matched
 end
 
 function MABF:GetSelectedFontPath()
@@ -229,7 +433,11 @@ function MABF:GetSelectedFontPath()
         return self._selectedFontPathValue
     end
 
-    local path = self:GetFontPathByName(selected)
+    local path, resolvedName = self:GetFontPathByName(selected)
+    if resolvedName and not MediaNamesEqual(selected, resolvedName) and MattActionBarFontDB then
+        MattActionBarFontDB.fontFamily = resolvedName
+        selected = resolvedName
+    end
     self._selectedFontPathKey = selected
     self._selectedFontPathValue = path
     return path
@@ -242,28 +450,35 @@ function MABF:SetSelectedFont(fontName)
 
     MattActionBarFontDB.fontFamily = fontName
     ResetResolvedFontCaches(self)
+    local resolvedPath, resolvedName, matched = self:GetFontPathByName(fontName)
+    if resolvedName then
+        MattActionBarFontDB.fontFamily = resolvedName
+        fontName = resolvedName
+    end
+    if matched and resolvedPath then
+        SetSavedFontPath(fontName, resolvedPath)
+    end
+
     fontApplyToken = fontApplyToken + 1
     local thisToken = fontApplyToken
-
-    self.availableFonts = self:ScanCustomFonts()
-    if self.ApplyFontSettings then self:ApplyFontSettings() end
-    if self.UpdateMacroText then self:UpdateMacroText() end
-    if self.UpdateFontPositions then self:UpdateFontPositions() end
-    if self.UpdateActionBarFontPositions then self:UpdateActionBarFontPositions() end
-    if self.UpdateSpecificBars then self:UpdateSpecificBars() end
-    if self.UpdatePetBarFontSettings then self:UpdatePetBarFontSettings() end
+    self:ReapplySelectedFontBurst(fontName, thisToken)
 
     if LSM and (not LSM:IsValid(FONT, fontName)) and C_Timer and C_Timer.After then
         local attempts = 0
         local function RetryApply()
             attempts = attempts + 1
             if thisToken ~= fontApplyToken then return end
-            if not MattActionBarFontDB or MattActionBarFontDB.fontFamily ~= fontName then return end
+            if not MattActionBarFontDB or not MediaNamesEqual(MattActionBarFontDB.fontFamily, fontName) then return end
 
-            self.availableFonts = self:ScanCustomFonts()
-            if self.ApplyFontSettings then self:ApplyFontSettings() end
-            if self.UpdateMacroText then self:UpdateMacroText() end
-            if self.UpdateActionBarFontPositions then self:UpdateActionBarFontPositions() end
+            local retryPath, retryName, retryMatched = self:GetFontPathByName(fontName)
+            if retryName then
+                MattActionBarFontDB.fontFamily = retryName
+                fontName = retryName
+            end
+            if retryMatched and retryPath then
+                SetSavedFontPath(fontName, retryPath)
+            end
+            self:ReapplySelectedFontEverywhere()
 
             if (not LSM:IsValid(FONT, fontName)) and attempts < 40 then
                 C_Timer.After(0.2, RetryApply)
@@ -271,31 +486,6 @@ function MABF:SetSelectedFont(fontName)
         end
         C_Timer.After(0.2, RetryApply)
     end
-end
-
-if LSM and LSM.RegisterCallback then
-    LSM.RegisterCallback("MABF_SHARED_MEDIA_WATCHER", "LibSharedMedia_Registered", function(eventName, mediaType, mediaKey)
-        if eventName ~= "LibSharedMedia_Registered" then return end
-        if mediaType ~= FONT then return end
-        if not MattActionBarFontDB then return end
-
-        local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily)
-        local registered = NormalizeMediaName(mediaKey)
-        if not selected or not registered or selected ~= registered then
-            return
-        end
-
-        MABF.availableFonts = MABF:ScanCustomFonts()
-        if MABF.ApplyFontSettings then
-            MABF:ApplyFontSettings()
-        end
-        if MABF.UpdateMacroText then
-            MABF:UpdateMacroText()
-        end
-        if MABF.UpdateActionBarFontPositions then
-            MABF:UpdateActionBarFontPositions()
-        end
-    end)
 end
 
 -----------------------------------------------------------

@@ -12,6 +12,9 @@ MABF.defaults = {
 
     -- Font family
     fontFamily        = "Naowh",    -- Default font
+    fontFamilyPath    = nil,        -- Cached resolved path for selected font
+    fontFamilyPathName = nil,       -- Name associated with cached font path
+    optionsFramePos   = nil,        -- Saved options window position
 
     -- Offsets
     xOffset           = 0,        -- Count text X offset

@@ -7,6 +7,41 @@ local addonName, MABF = ...
 local HookQuickKeybindFrame
 local events = CreateFrame("Frame")
 local quickbindReanchorQueued = false
+local optionsOpenQueuedForCombatEnd = false
+local optionsAutoClosedByCombat = false
+
+local function HideMABFOptionsFrame()
+    if MABF and MABF.optionsFrame and MABF.optionsFrame:IsShown() then
+        MABF.optionsFrame:Hide()
+        return true
+    end
+    return false
+end
+
+local function QueueMABFOptionsOpenAfterCombat()
+    if optionsOpenQueuedForCombatEnd then
+        return
+    end
+    optionsOpenQueuedForCombatEnd = true
+    print("|cFF00FF00MattActionBarFont|r: Options will open after combat.")
+end
+
+local function ToggleMABFOptionsWindow()
+    if not MABF or not MABF.optionsFrame then
+        return
+    end
+    if InCombatLockdown and InCombatLockdown() then
+        HideMABFOptionsFrame()
+        QueueMABFOptionsOpenAfterCombat()
+        return
+    end
+
+    if MABF.optionsFrame:IsShown() then
+        MABF.optionsFrame:Hide()
+    else
+        MABF.optionsFrame:Show()
+    end
+end
 
 local function QueueQuickbindReanchor()
     if quickbindReanchorQueued then
@@ -30,6 +65,8 @@ end
 events:RegisterEvent("ADDON_LOADED")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("UPDATE_BINDINGS")
+events:RegisterEvent("PLAYER_REGEN_DISABLED")
+events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         MABF:Init()
@@ -106,6 +143,18 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:ApplyFontSettings()
         MABF:UpdateActionBarFontPositions()
         MABF:UpdateMacroText()
+    elseif event == "PLAYER_REGEN_DISABLED" then
+        if HideMABFOptionsFrame() then
+            optionsAutoClosedByCombat = true
+            print("|cFF00FF00MattActionBarFont|r: Options closed for combat.")
+        end
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if (optionsOpenQueuedForCombatEnd or optionsAutoClosedByCombat) and MABF and MABF.optionsFrame then
+            optionsOpenQueuedForCombatEnd = false
+            optionsAutoClosedByCombat = false
+            MABF.optionsFrame:Show()
+            print("|cFF00FF00MattActionBarFont|r: Options reopened after combat.")
+        end
     end
 end)
 
@@ -172,11 +221,7 @@ SLASH_MABF1 = "/mabf"
 SlashCmdList["MABF"] = function(msg)
     local command, param = msg:match("^(%S*)%s*(.*)$")
     if not command or command == "" then
-        if MABF.optionsFrame and MABF.optionsFrame:IsShown() then
-            MABF.optionsFrame:Hide()
-        else
-            if MABF.optionsFrame then MABF.optionsFrame:Show() end
-        end
+        ToggleMABFOptionsWindow()
     elseif command:lower() == "countsize" then
         local newSize = tonumber(param)
         if newSize then

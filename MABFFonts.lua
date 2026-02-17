@@ -1,5 +1,6 @@
 -- MABFFonts.lua
 local addonName, MABF = ...
+local DEFAULT_FONT_PATH = "Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf"
 
 local function FormatText(text)
     if not text then return "" end
@@ -72,24 +73,50 @@ end
 
 local function AnchorFontString(fontString, point, relativeTo, relativePoint, xOfs, yOfs)
     if not fontString then return end
-    local cPoint, cRelativeTo, cRelativePoint, cX, cY = fontString:GetPoint(1)
-    if cPoint == point and cRelativeTo == relativeTo and cRelativePoint == relativePoint
-        and (cX or 0) == (xOfs or 0) and (cY or 0) == (yOfs or 0) then
-        return
-    end
     fontString:ClearAllPoints()
     fontString:SetPoint(point, relativeTo, relativePoint, xOfs or 0, yOfs or 0)
 end
 
 local function SetFontIfChanged(fontString, fontPath, fontSize, flags)
-    if not (fontString and fontString.SetFont and fontPath) then return end
-    if fontString._mabfFontPath == fontPath and fontString._mabfFontSize == fontSize and fontString._mabfFontFlags == flags then
-        return
+    if not (fontString and fontString.SetFont) then return false end
+    local requestedPath = (type(fontPath) == "string" and fontPath ~= "") and fontPath or DEFAULT_FONT_PATH
+    local requestedSize = tonumber(fontSize) or 12
+    local requestedFlags = type(flags) == "string" and flags or ""
+    local appliedFlags = requestedFlags
+    if fontString._mabfFontPath == requestedPath and fontString._mabfFontSize == requestedSize and fontString._mabfFontFlags == requestedFlags then
+        return true
     end
-    fontString:SetFont(fontPath, fontSize, flags)
-    fontString._mabfFontPath = fontPath
-    fontString._mabfFontSize = fontSize
-    fontString._mabfFontFlags = flags
+
+    local function TrySet(path, setFlags)
+        local ok, applied = pcall(fontString.SetFont, fontString, path, requestedSize, setFlags)
+        return ok and applied ~= false
+    end
+
+    local applied = TrySet(requestedPath, requestedFlags)
+    if not applied and requestedFlags ~= "" then
+        appliedFlags = ""
+        applied = TrySet(requestedPath, "")
+    end
+    if not applied and requestedPath ~= DEFAULT_FONT_PATH then
+        appliedFlags = requestedFlags
+        applied = TrySet(DEFAULT_FONT_PATH, requestedFlags)
+        if not applied and requestedFlags ~= "" then
+            appliedFlags = ""
+            applied = TrySet(DEFAULT_FONT_PATH, "")
+        end
+        if applied then
+            requestedPath = DEFAULT_FONT_PATH
+        end
+    end
+
+    if not applied then
+        return false
+    end
+
+    fontString._mabfFontPath = requestedPath
+    fontString._mabfFontSize = requestedSize
+    fontString._mabfFontFlags = appliedFlags
+    return true
 end
 
 local petFontUpdateQueued = false
@@ -166,8 +193,18 @@ function MABF:ApplyFontSettings()
                 ApplyHotKeyOverrides(button)
             end)
         end
+        if type(_G.ActionButton_UpdateHotkeys) == "function" then
+            hooksecurefunc("ActionButton_UpdateHotkeys", function(button)
+                ApplyHotKeyOverrides(button)
+            end)
+        end
         if PetActionButtonMixin and PetActionButtonMixin.SetHotkeys then
             hooksecurefunc(PetActionButtonMixin, "SetHotkeys", function(button)
+                ApplyHotKeyOverrides(button)
+            end)
+        end
+        if type(_G.PetActionButton_UpdateHotkeys) == "function" then
+            hooksecurefunc("PetActionButton_UpdateHotkeys", function(button)
                 ApplyHotKeyOverrides(button)
             end)
         end
@@ -194,75 +231,8 @@ function MABF:ApplyFontSettings()
         
         local hotKeyFont = button.HotKey or button.bind
         if hotKeyFont then
+            -- Keep this passive: avoid FontString method hooks here to reduce taint risk.
             SafeSetFont(hotKeyFont, true, button)
-            if not hotKeyFont._MABF_SetPointHooked then
-                local setPointHooked = pcall(function()
-                    hooksecurefunc(hotKeyFont, "SetPoint", function(self)
-                        if self._MABF_AnchoringLock then return end
-                        local xOff, yOff = GetHotKeyOffsets(button)
-                        local point, relativeTo, relativePoint, curX, curY = self:GetPoint(1)
-                        if point == "TOPRIGHT" and relativeTo == button and relativePoint == "TOPRIGHT"
-                            and (curX or 0) == xOff and (curY or 0) == yOff then
-                            return
-                        end
-                        self._MABF_AnchoringLock = true
-                        AnchorFontString(self, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
-                        self:SetWidth(0)
-                        self:SetHeight(0)
-                        self._MABF_AnchoringLock = nil
-                    end)
-                end)
-                if setPointHooked then
-                    hotKeyFont._MABF_SetPointHooked = true
-                end
-            end
-            if not hotKeyFont._MABF_SetTextHooked then
-                local setTextHooked = pcall(function()
-                    hooksecurefunc(hotKeyFont, "SetText", function(self, text)
-                        if self._MABF_FormattingText then return end
-                        local currentText = text
-                        if currentText == nil and self.GetText then
-                            currentText = self:GetText()
-                        end
-                        local normalizedText = NormalizeHotKeyText(currentText or "")
-                        if normalizedText ~= (currentText or "") and self.SetText then
-                            self._MABF_FormattingText = true
-                            self:SetText(normalizedText)
-                            self._MABF_FormattingText = nil
-                        end
-                    end)
-                end)
-                if setTextHooked then
-                    hotKeyFont._MABF_SetTextHooked = true
-                end
-            end
-            if not hotKeyFont._MABF_Hooked and hotKeyFont.HookScript then
-                local success = pcall(function()
-                    hotKeyFont:HookScript("OnTextChanged", function(self)
-                        local fPath = MABF:GetSelectedFontPath()
-                        if fPath then
-                            if not self._MABF_FormattingText and self.SetText then
-                                local currentText = self:GetText() or ""
-                                local normalizedText = NormalizeHotKeyText(currentText)
-                                if normalizedText ~= currentText then
-                                    self._MABF_FormattingText = true
-                                    self:SetText(normalizedText)
-                                    self._MABF_FormattingText = nil
-                                end
-                            end
-                            SetFontIfChanged(self, fPath, MattActionBarFontDB.fontSize, "OUTLINE")
-                            self:SetTextColor(1, 1, 1, 1)
-                            local xOff, yOff = GetHotKeyOffsets(button)
-                            AnchorFontString(self, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
-                            self:SetWidth(0)
-                            self:SetHeight(0)
-                        end
-                    end)
-                end)
-                if success then
-                    hotKeyFont._MABF_Hooked = true
-                end
-            end
         end
         
         for _, region in ipairs({ button:GetRegions() }) do
