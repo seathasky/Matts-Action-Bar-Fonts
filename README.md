@@ -2,6 +2,7 @@
 
 👉 [**Download & Install on CurseForge**](https://www.curseforge.com/wow/addons/matts-action-bar-fonts)
 
+![bar](https://i.imgur.com/OtIxqTN.jpeg)
 
 ![Example](https://media.forgecdn.net/attachments/1104/136/example.png)
 
