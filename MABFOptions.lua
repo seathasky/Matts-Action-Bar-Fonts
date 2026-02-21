@@ -6,11 +6,11 @@ local function SaveOptionsFramePosition(frame)
     local centerX, centerY = frame:GetCenter()
     if not centerX or not centerY then return end
 
-    local frameScale = frame:GetEffectiveScale() or 1
+    local parentScale = (UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
     MattActionBarFontDB.optionsFramePos = {
         mode = "screenCenter",
-        x = centerX * frameScale,
-        y = centerY * frameScale,
+        x = centerX * parentScale,
+        y = centerY * parentScale,
     }
 end
 
