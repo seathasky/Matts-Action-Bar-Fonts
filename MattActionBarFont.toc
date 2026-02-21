@@ -1,9 +1,9 @@
-## Interface: 120000
+## Interface: 120001
 ## Title: Matt's Action Bar Fonts & UI QoL
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version: 7.0.4
+## Version: 7.0.5
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## OptionalDeps: Dominos
 
