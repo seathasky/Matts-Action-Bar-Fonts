@@ -43,3 +43,22 @@ if ldb then
         end
     end
 end
+
+-- AddOn Compartment callbacks (referenced by TOC metadata).
+function MABF_AddonCompartment_Click(addonName, buttonName)
+    if SlashCmdList and SlashCmdList["MABF"] then
+        SlashCmdList["MABF"]("")
+    end
+end
+
+function MABF_AddonCompartment_OnEnter(addonName, button)
+    if not button then return end
+    GameTooltip:SetOwner(button, "ANCHOR_LEFT")
+    GameTooltip:SetText("Matt's Action Bar Fonts & UI QoL")
+    GameTooltip:AddLine("Click to open options", 1, 1, 1)
+    GameTooltip:Show()
+end
+
+function MABF_AddonCompartment_OnLeave(addonName, button)
+    GameTooltip:Hide()
+end
