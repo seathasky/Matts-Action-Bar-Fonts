@@ -33,6 +33,15 @@ MABF.defaults = {
     -- Toggles
     hideMacroText     = false,    -- Show macro text by default
     mouseoverFade     = false,    -- Keep bars 4/5 always visible
+    mouseoverFadeBars = {         -- Bars managed by action bar mouseover fade
+        bar1 = false,
+        bar2 = false,
+        bar3 = false,
+        bar4 = false,
+        bar5 = false,
+        bar6 = false,
+    },
+    actionBarFadeDuration = 0.15, -- Fade duration in seconds (0-1)
     reverseBarGrowth  = false,    -- Normal bar 1 growth direction
     scaleObjectiveTracker = false, -- Don't scale objective tracker
     scaleStatusBar    = false,    -- Scale status/exp bar to 0.7
@@ -117,4 +126,21 @@ function MABF:ApplyDefaults()
         borderSize = 4
     end
     MattActionBarFontDB.minimalThemeBorderSize = borderSize
+
+    if type(MattActionBarFontDB.mouseoverFadeBars) ~= "table" then
+        MattActionBarFontDB.mouseoverFadeBars = {}
+    end
+    for key, defaultValue in pairs(self.defaults.mouseoverFadeBars) do
+        if MattActionBarFontDB.mouseoverFadeBars[key] == nil then
+            MattActionBarFontDB.mouseoverFadeBars[key] = defaultValue
+        end
+    end
+
+    local fadeDuration = tonumber(MattActionBarFontDB.actionBarFadeDuration or 0.15) or 0.15
+    if fadeDuration < 0 then
+        fadeDuration = 0
+    elseif fadeDuration > 1 then
+        fadeDuration = 1
+    end
+    MattActionBarFontDB.actionBarFadeDuration = fadeDuration
 end

@@ -450,7 +450,7 @@ function MABF:CreateOptionsWindow()
     end
 
     --------------------------------------------------------------------------
-    -- SECTION: ACTION BARS (tabs 1-4)
+    -- SECTION: ACTION BARS (tabs 1-4, 11)
     --------------------------------------------------------------------------
     local abHeader = CreateSectionHeader(leftPanel, "ACTION BARS", nil, nil, -4)
 
@@ -463,8 +463,11 @@ function MABF:CreateOptionsWindow()
     local btnThemes = CreateTabButton(leftPanel, "Themes", 3, btnOffsets)
     tabButtons[3] = btnThemes
 
-    local btnABFeatures = CreateTabButton(leftPanel, "Features", 4, btnThemes)
-    tabButtons[4] = btnABFeatures
+    local btnABFading = CreateTabButton(leftPanel, "Fading", 4, btnThemes)
+    tabButtons[4] = btnABFading
+
+    local btnABFeatures = CreateTabButton(leftPanel, "Features", 11, btnABFading)
+    tabButtons[11] = btnABFeatures
 
     --------------------------------------------------------------------------
     -- SECTION: UI / QoL (tabs 5, 8, 9)
@@ -1561,8 +1564,8 @@ function MABF:CreateOptionsWindow()
         end
     end)
 
-    -- Page 4: AB Features
-    pageABFeatures = CreateContentPage(4)
+    -- Page 4: AB Fading
+    pageABFading = CreateContentPage(4)
 
     -- Page 5: UI Features
     pageUIFeatures = CreateContentPage(5)
@@ -1582,6 +1585,9 @@ function MABF:CreateOptionsWindow()
     -- Page 10: Merchant
     pageMerchant = CreateContentPage(10)
 
+    -- Page 11: AB Features
+    pageABFeatures = CreateContentPage(11)
+
     -- Initialize pages: show first page and set tab button colors
     for i, page in ipairs(pages) do
         if i == 1 then page:Show() else page:Hide() end
@@ -1596,50 +1602,139 @@ function MABF:CreateOptionsWindow()
     checkSpacing = -4
 
     --------------------------------------------------------------------------
-    -- AB Features Page
+    -- AB Fading Page
     --------------------------------------------------------------------------
-    abFeaturesTitle = CreatePageTitle(pageABFeatures, "AB Features")
+    abFadingTitle = CreatePageTitle(pageABFading, "AB Fading")
+    local RefreshMouseoverFadeControls
 
     mouseoverFadeCheck, mouseoverFadeText = CreateBasicCheckbox(
-        pageABFeatures,
+        pageABFading,
         "MABFMouseoverFadeCheck",
-        abFeaturesTitle,
+        abFadingTitle,
         "TOPLEFT",
         0,
         -8,
-        "Mouseover Fade (Bars 4 & 5)",
+        "Enable Mouseover Fade (Action Bars)",
         MattActionBarFontDB.mouseoverFade,
         function(self)
-        enabled = self:GetChecked() and true or false
+        local enabled = self:GetChecked() and true or false
+        if not enabled and MABF.ResetActionBarMouseoverState then
+            MABF:ResetActionBarMouseoverState()
+        end
         MattActionBarFontDB.mouseoverFade = enabled
         MABF:ApplyActionBarMouseover()
         if enabled then
             MABF:SetBarsMouseoverState(false)
-            StaticPopup_Show("MABF_RELOAD_UI")
+        end
+        if RefreshMouseoverFadeControls then
+            RefreshMouseoverFadeControls()
         end
     end)
 
+    local mouseoverTargetsTitle = pageABFading:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    mouseoverTargetsTitle:SetPoint("TOPLEFT", mouseoverFadeCheck, "BOTTOMLEFT", 26, -10)
+    mouseoverTargetsTitle:SetText("Selecy Action Bar to")
+    mouseoverTargetsTitle:SetTextColor(1, 1, 1)
+
+    local mouseoverBarChecks = {}
+    local mouseoverBarDefs = {
+        { key = "bar1", label = "Bar 1 (Main)" },
+        { key = "bar2", label = "Bar 2" },
+        { key = "bar3", label = "Bar 3" },
+        { key = "bar4", label = "Bar 4" },
+        { key = "bar5", label = "Bar 5" },
+        { key = "bar6", label = "Bar 6" },
+    }
+
+    local previousAnchor = mouseoverTargetsTitle
+    for _, barDef in ipairs(mouseoverBarDefs) do
+        local check = CreateFrame("CheckButton", "MABFMouseoverFadeTarget_" .. barDef.key, pageABFading, "InterfaceOptionsCheckButtonTemplate")
+        check:ClearAllPoints()
+        check:SetPoint("TOPLEFT", previousAnchor, "BOTTOMLEFT", 0, checkSpacing)
+        local label = _G[check:GetName().."Text"]
+        label:SetText(barDef.label)
+        label:SetTextColor(1, 1, 1)
+        check:SetChecked(MattActionBarFontDB.mouseoverFadeBars and MattActionBarFontDB.mouseoverFadeBars[barDef.key] and true or false)
+        check:SetScript("OnClick", function(self)
+            if type(MattActionBarFontDB.mouseoverFadeBars) ~= "table" then
+                MattActionBarFontDB.mouseoverFadeBars = {}
+            end
+            local enabled = self:GetChecked() and true or false
+            MattActionBarFontDB.mouseoverFadeBars[barDef.key] = enabled
+            if not enabled and MABF.ResetActionBarMouseoverStateForBar then
+                MABF:ResetActionBarMouseoverStateForBar(barDef.key)
+            end
+            MABF:ApplyActionBarMouseover()
+            if RefreshMouseoverFadeControls then
+                RefreshMouseoverFadeControls()
+            end
+        end)
+        mouseoverBarChecks[#mouseoverBarChecks + 1] = check
+        previousAnchor = check
+    end
+
     petBarFadeCheck, petBarFadeText = CreateBasicCheckbox(
-        pageABFeatures,
+        pageABFading,
         "MABFPetBarFadeCheck",
-        mouseoverFadeCheck,
+        previousAnchor,
         "TOPLEFT",
         0,
         checkSpacing,
-        "Mouseover Fade (Pet Bar)",
+        "Pet Bar",
         MattActionBarFontDB.petBarMouseoverFade,
         function(self)
         MattActionBarFontDB.petBarMouseoverFade = self:GetChecked() and true or false
         MABF:ApplyPetBarMouseoverFade()
     end)
 
+    local fadeDurationSlider = CreateFrame("Slider", "MABFActionBarFadeDurationSlider", pageABFading, "OptionsSliderTemplate")
+    fadeDurationSlider:SetSize(PAGE_WIDTH, 14)
+    fadeDurationSlider:SetPoint("TOPLEFT", petBarFadeCheck, "BOTTOMLEFT", 0, -22)
+    fadeDurationSlider:SetMinMaxValues(0, 100)
+    fadeDurationSlider:SetValue((tonumber(MattActionBarFontDB.actionBarFadeDuration) or 0.15) * 100)
+    fadeDurationSlider:SetValueStep(5)
+    fadeDurationSlider:SetObeyStepOnDrag(true)
+    local fadeDurationName = fadeDurationSlider:GetName()
+    _G[fadeDurationName.."Low"]:SetText("0.00s")
+    _G[fadeDurationName.."High"]:SetText("1.00s")
+    _G[fadeDurationName.."Text"]:SetText(string.format("Fade Duration: %.2fs", tonumber(MattActionBarFontDB.actionBarFadeDuration) or 0.15))
+    StyleSlider(fadeDurationSlider)
+    fadeDurationSlider:SetScript("OnValueChanged", function(self, value)
+        local rounded = math.floor((value or 0) + 0.5)
+        local duration = rounded / 100
+        MattActionBarFontDB.actionBarFadeDuration = duration
+        _G[self:GetName().."Text"]:SetText(string.format("Fade Duration: %.2fs", duration))
+        MABF:ApplyActionBarMouseover()
+        MABF:ApplyPetBarMouseoverFade()
+    end)
+
+    RefreshMouseoverFadeControls = function()
+        local fadeEnabled = MattActionBarFontDB.mouseoverFade and true or false
+        mouseoverTargetsTitle:SetTextColor(fadeEnabled and 1 or 0.6, fadeEnabled and 1 or 0.6, fadeEnabled and 1 or 0.6)
+        fadeDurationSlider:EnableMouse(fadeEnabled)
+        fadeDurationSlider:SetAlpha(fadeEnabled and 1 or 0.6)
+
+        local customEnabled = fadeEnabled
+        for _, cb in ipairs(mouseoverBarChecks) do
+            cb:SetEnabled(customEnabled)
+            cb:SetAlpha(customEnabled and 1 or 0.6)
+        end
+    end
+
+    RefreshMouseoverFadeControls()
+
+    --------------------------------------------------------------------------
+    -- AB Features Page
+    --------------------------------------------------------------------------
+    abFeaturesTitle = CreatePageTitle(pageABFeatures, "AB Features")
+
     hideMacroTextCheck, hideMacroTextLabel = CreateBasicCheckbox(
         pageABFeatures,
         "MABFHideMacroTextExperimentalCheck",
-        petBarFadeCheck,
+        abFeaturesTitle,
         "TOPLEFT",
         0,
-        checkSpacing,
+        -8,
         "Hide Macro Text",
         MattActionBarFontDB.hideMacroText,
         function(self)
@@ -2312,6 +2407,9 @@ function MABF:CreateOptionsWindow()
         autoTurnInCheck, bagIlvlCheck, autoRepairCheck, autoSellCheck,
         quickBindCheck, reloadAliasCheck, editModeAliasCheck, pullAliasCheck,
     }
+    for _, cb in ipairs(mouseoverBarChecks or {}) do
+        optionChecks[#optionChecks + 1] = cb
+    end
     for _, cb in ipairs(optionChecks) do
         StyleMinimalCheckbox(cb)
     end
