@@ -210,20 +210,7 @@ function MABF:ApplyFontSettings()
             hotKeyFont._MABF_FormattingText = nil
         end
 
-        local function ApplyHotKeyColorByRange()
-            local action = button.action
-            if action and type(IsActionInRange) == "function" then
-                local inRange = IsActionInRange(action)
-                if inRange == 0 or inRange == false then
-                    hotKeyFont:SetTextColor(1, 0.2, 0.2, 1)
-                    return
-                end
-            end
-            hotKeyFont:SetTextColor(1, 1, 1, 1)
-        end
-
         SetFontIfChanged(hotKeyFont, fPath, MattActionBarFontDB.fontSize, "OUTLINE")
-        ApplyHotKeyColorByRange()
 
         local xOff, yOff = GetHotKeyOffsets(button)
         AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
@@ -240,18 +227,8 @@ function MABF:ApplyFontSettings()
                 ApplyHotKeyOverrides(button)
             end)
         end
-        if ActionBarActionButtonMixin and ActionBarActionButtonMixin.UpdateRangeIndicator then
-            hooksecurefunc(ActionBarActionButtonMixin, "UpdateRangeIndicator", function(button)
-                ApplyHotKeyOverrides(button)
-            end)
-        end
         if type(_G.ActionButton_UpdateHotkeys) == "function" then
             hooksecurefunc("ActionButton_UpdateHotkeys", function(button)
-                ApplyHotKeyOverrides(button)
-            end)
-        end
-        if type(_G.ActionButton_UpdateRangeIndicator) == "function" then
-            hooksecurefunc("ActionButton_UpdateRangeIndicator", function(button)
                 ApplyHotKeyOverrides(button)
             end)
         end
