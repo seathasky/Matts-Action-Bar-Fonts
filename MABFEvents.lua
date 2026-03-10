@@ -7,6 +7,7 @@ local addonName, MABF = ...
 local HookQuickKeybindFrame
 local events = CreateFrame("Frame")
 local quickbindReanchorQueued = false
+local quickbindFontTicker = nil
 local optionsOpenQueuedForCombatEnd = false
 local optionsAutoClosedByCombat = false
 
@@ -136,8 +137,8 @@ events:SetScript("OnEvent", function(self, event, arg1)
         end
     elseif event == "UPDATE_BINDINGS" then
         if QuickKeybindFrame and QuickKeybindFrame:IsShown() then
-
-            QueueQuickbindReanchor()
+            -- Keep MABF hotkey font active during keybind mode, but avoid re-anchoring jitter.
+            MABF:ApplyFontSettings()
             return
         end
         MABF:ApplyFontSettings()
@@ -187,15 +188,66 @@ HookQuickKeybindFrame = function()
     QuickKeybindFrame:HookScript("OnShow", function()
         blockWoWSettings = true
         escBlockFrame:Show()
+        MABF:ApplyFontSettings()
+        if quickbindFontTicker and quickbindFontTicker.Cancel then
+            quickbindFontTicker:Cancel()
+            quickbindFontTicker = nil
+        end
+        if C_Timer and C_Timer.NewTicker then
+            quickbindFontTicker = C_Timer.NewTicker(0.1, function()
+                if not (QuickKeybindFrame and QuickKeybindFrame:IsShown()) then
+                    if quickbindFontTicker and quickbindFontTicker.Cancel then
+                        quickbindFontTicker:Cancel()
+                    end
+                    quickbindFontTicker = nil
+                    return
+                end
+                MABF:ApplyFontSettings()
+            end)
+        end
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0.05, function()
+                if QuickKeybindFrame and QuickKeybindFrame:IsShown() then
+                    MABF:ApplyFontSettings()
+                end
+            end)
+            C_Timer.After(0.2, function()
+                if QuickKeybindFrame and QuickKeybindFrame:IsShown() then
+                    MABF:ApplyFontSettings()
+                end
+            end)
+        end
     end)
 
     QuickKeybindFrame:HookScript("OnHide", function()
         lastKBClosedTime = GetTime()
         blockWoWSettings = false
         escBlockFrame:Hide()
+        if quickbindFontTicker and quickbindFontTicker.Cancel then
+            quickbindFontTicker:Cancel()
+            quickbindFontTicker = nil
+        end
         MABF:ApplyFontSettings()
         MABF:UpdateActionBarFontPositions()
         MABF:UpdateMacroText()
+        -- Blizzard can push another hotkey refresh right after keybind mode closes.
+        -- Re-apply shortly after close so MABF formatting (e.g. no modifier hyphen) persists.
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0.05, function()
+                if not (QuickKeybindFrame and QuickKeybindFrame:IsShown()) then
+                    MABF:ApplyFontSettings()
+                    MABF:UpdateActionBarFontPositions()
+                    MABF:UpdateMacroText()
+                end
+            end)
+            C_Timer.After(0.2, function()
+                if not (QuickKeybindFrame and QuickKeybindFrame:IsShown()) then
+                    MABF:ApplyFontSettings()
+                    MABF:UpdateActionBarFontPositions()
+                    MABF:UpdateMacroText()
+                end
+            end)
+        end
     end)
 end
 

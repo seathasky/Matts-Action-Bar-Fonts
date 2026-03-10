@@ -742,6 +742,10 @@ local mouseoverBarDefinitions = {
 
 local mouseoverRegenFrame = nil
 
+local function IsInCombatLockdown()
+    return InCombatLockdown and InCombatLockdown()
+end
+
 local function QueueActionBarMouseoverReapply()
     if mouseoverRegenFrame then
         mouseoverRegenFrame:Show()
@@ -837,6 +841,13 @@ local function SetFrameAlphaWithFade(frame, targetAlpha)
     frame._MABFTargetAlpha = normalizedAlpha
 
     local duration = GetMouseoverFadeDuration()
+    if IsInCombatLockdown() then
+        -- Avoid UIFrameFade on protected action bars in combat.
+        frame:SetAlpha(normalizedAlpha)
+        QueueActionBarMouseoverReapply()
+        return
+    end
+
     if duration <= 0 then
         frame:SetAlpha(normalizedAlpha)
         return
@@ -867,7 +878,7 @@ local function UpdateManagedBarAlpha(barFrame, buttonPrefix, barKey)
     end
 
     if not IsMouseoverBarManagedByKey(barKey) then
-        if UIFrameFadeRemoveFrame then
+        if UIFrameFadeRemoveFrame and not IsInCombatLockdown() then
             UIFrameFadeRemoveFrame(barFrame)
         end
         barFrame._MABFTargetAlpha = 1
@@ -949,7 +960,7 @@ local function UpdateAllManagedBarAlpha()
             if IsMouseoverBarManaged(barDef) then
                 UpdateManagedBarAlpha(barFrame, barDef.buttonPrefix, barDef.key)
             else
-                if UIFrameFadeRemoveFrame then
+                if UIFrameFadeRemoveFrame and not IsInCombatLockdown() then
                     UIFrameFadeRemoveFrame(barFrame)
                 end
                 barFrame._MABFTargetAlpha = 1
@@ -985,7 +996,7 @@ end
 function MABF:ApplyActionBarMouseover()
     self._inQuickKeybindMode = self._inQuickKeybindMode or false
 
-    if InCombatLockdown and InCombatLockdown() then
+    if IsInCombatLockdown() then
         QueueActionBarMouseoverReapply()
         return
     end

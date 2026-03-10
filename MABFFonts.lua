@@ -83,7 +83,35 @@ local function SetFontIfChanged(fontString, fontPath, fontSize, flags)
     local requestedSize = tonumber(fontSize) or 12
     local requestedFlags = type(flags) == "string" and flags or ""
     local appliedFlags = requestedFlags
-    if fontString._mabfFontPath == requestedPath and fontString._mabfFontSize == requestedSize and fontString._mabfFontFlags == requestedFlags then
+
+    local function EqualsIgnoreCase(a, b)
+        if type(a) ~= "string" or type(b) ~= "string" then
+            return false
+        end
+        return a:lower() == b:lower()
+    end
+
+    local function IsAlreadyApplied()
+        if fontString._mabfFontPath ~= requestedPath or fontString._mabfFontSize ~= requestedSize or fontString._mabfFontFlags ~= requestedFlags then
+            return false
+        end
+        if type(fontString.GetFont) ~= "function" then
+            return true
+        end
+        local currentPath, currentSize, currentFlags = fontString:GetFont()
+        if type(currentPath) ~= "string" then
+            return false
+        end
+        if tonumber(currentSize) ~= requestedSize then
+            return false
+        end
+        if (currentFlags or "") ~= requestedFlags then
+            return false
+        end
+        return EqualsIgnoreCase(currentPath, requestedPath)
+    end
+
+    if IsAlreadyApplied() then
         return true
     end
 
@@ -117,6 +145,10 @@ local function SetFontIfChanged(fontString, fontPath, fontSize, flags)
     fontString._mabfFontSize = requestedSize
     fontString._mabfFontFlags = appliedFlags
     return true
+end
+
+local function IsQuickKeybindModeActive()
+    return QuickKeybindFrame and QuickKeybindFrame:IsShown()
 end
 
 local petFontUpdateQueued = false
@@ -178,11 +210,26 @@ function MABF:ApplyFontSettings()
             hotKeyFont._MABF_FormattingText = nil
         end
 
+        local function ApplyHotKeyColorByRange()
+            local action = button.action
+            if action and type(IsActionInRange) == "function" then
+                local inRange = IsActionInRange(action)
+                if inRange == 0 or inRange == false then
+                    hotKeyFont:SetTextColor(1, 0.2, 0.2, 1)
+                    return
+                end
+            end
+            hotKeyFont:SetTextColor(1, 1, 1, 1)
+        end
+
         SetFontIfChanged(hotKeyFont, fPath, MattActionBarFontDB.fontSize, "OUTLINE")
-        hotKeyFont:SetTextColor(1, 1, 1, 1)
+        ApplyHotKeyColorByRange()
 
         local xOff, yOff = GetHotKeyOffsets(button)
         AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+        if hotKeyFont.SetJustifyH then
+            hotKeyFont:SetJustifyH("RIGHT")
+        end
         hotKeyFont:SetWidth(0)
         hotKeyFont:SetHeight(0)
     end
@@ -193,8 +240,18 @@ function MABF:ApplyFontSettings()
                 ApplyHotKeyOverrides(button)
             end)
         end
+        if ActionBarActionButtonMixin and ActionBarActionButtonMixin.UpdateRangeIndicator then
+            hooksecurefunc(ActionBarActionButtonMixin, "UpdateRangeIndicator", function(button)
+                ApplyHotKeyOverrides(button)
+            end)
+        end
         if type(_G.ActionButton_UpdateHotkeys) == "function" then
             hooksecurefunc("ActionButton_UpdateHotkeys", function(button)
+                ApplyHotKeyOverrides(button)
+            end)
+        end
+        if type(_G.ActionButton_UpdateRangeIndicator) == "function" then
+            hooksecurefunc("ActionButton_UpdateRangeIndicator", function(button)
                 ApplyHotKeyOverrides(button)
             end)
         end

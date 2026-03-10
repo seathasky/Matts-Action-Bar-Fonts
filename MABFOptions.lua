@@ -122,7 +122,7 @@ function MABF:CreateOptionsWindow()
     rightPanel:SetBackdropColor(0.08, 0.08, 0.1, 1)
     rightPanel:SetBackdropBorderColor(0.18, 0.18, 0.22, 1)
 
-    local THEME_ACCENT = {0.86, 0, 0}
+    local THEME_ACCENT = {1.0, 0.25, 0.25}
     local TAB_NORMAL = {0.06, 0.06, 0.08, 1}
     local TAB_SELECTED = {0.12, 0.12, 0.15, 1}
     local TAB_BORDER = {0.18, 0.18, 0.22, 1}
@@ -1633,7 +1633,7 @@ function MABF:CreateOptionsWindow()
 
     local mouseoverTargetsTitle = pageABFading:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mouseoverTargetsTitle:SetPoint("TOPLEFT", mouseoverFadeCheck, "BOTTOMLEFT", 26, -10)
-    mouseoverTargetsTitle:SetText("Selecy Action Bar to")
+    mouseoverTargetsTitle:SetText("Select Action Bar to fade:")
     mouseoverTargetsTitle:SetTextColor(1, 1, 1)
 
     local mouseoverBarChecks = {}
@@ -1688,7 +1688,7 @@ function MABF:CreateOptionsWindow()
     end)
 
     local fadeDurationSlider = CreateFrame("Slider", "MABFActionBarFadeDurationSlider", pageABFading, "OptionsSliderTemplate")
-    fadeDurationSlider:SetSize(PAGE_WIDTH, 14)
+    fadeDurationSlider:SetSize(PAGE_WIDTH - 32, 14)
     fadeDurationSlider:SetPoint("TOPLEFT", petBarFadeCheck, "BOTTOMLEFT", 0, -22)
     fadeDurationSlider:SetMinMaxValues(0, 100)
     fadeDurationSlider:SetValue((tonumber(MattActionBarFontDB.actionBarFadeDuration) or 0.15) * 100)
