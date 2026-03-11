@@ -219,6 +219,8 @@ function MABF:ApplyFontSettings()
         end
         hotKeyFont:SetWidth(0)
         hotKeyFont:SetHeight(0)
+        hotKeyFont:SetTextColor(1, 1, 1, 1)
+        hotKeyFont:SetAlpha(1)
     end
 
     if not self._MABF_GlobalHotkeyHooksRegistered then
@@ -429,6 +431,8 @@ function MABF:UpdatePetBarFontSettings()
                     local hotKeyFont = button.HotKey or button.bind
                     if button and hotKeyFont then
                         SetFontIfChanged(hotKeyFont, fontPath, fontSize, flags)
+                        hotKeyFont:SetTextColor(1, 1, 1, 1)
+                        hotKeyFont:SetAlpha(1)
                         foundPetBar = true
                     end
                 end
@@ -439,6 +443,8 @@ function MABF:UpdatePetBarFontSettings()
                 local button = _G["PetActionButton" .. i]
                 if button and button.HotKey then
                     SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
+                    button.HotKey:SetTextColor(1, 1, 1, 1)
+                    button.HotKey:SetAlpha(1)
                 end
             end
         end
@@ -447,6 +453,8 @@ function MABF:UpdatePetBarFontSettings()
             local button = _G["PetActionButton" .. i]
             if button and button.HotKey then
                 SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
+                button.HotKey:SetTextColor(1, 1, 1, 1)
+                button.HotKey:SetAlpha(1)
             end
         end
     end
