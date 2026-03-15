@@ -152,6 +152,109 @@ local function IsQuickKeybindModeActive()
 end
 
 local petFontUpdateQueued = false
+
+local function IsPetActionButton(button)
+    if not button then return false end
+
+    local buttonName = (button.GetName and (button:GetName() or "")) or ""
+    if buttonName:find("PetActionButton") then
+        return true
+    end
+
+    local parent = button.GetParent and button:GetParent() or nil
+    local parentName = (parent and parent.GetName and (parent:GetName() or "")) or ""
+    if parentName:find("PetAction") then
+        return true
+    end
+
+    if Dominos and Dominos.Frame then
+        local owner = button.GetParent and button:GetParent() or nil
+        local ownerName = (owner and owner.GetName and (owner:GetName() or "")) or ""
+        if ownerName:find("Pet") then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function InstallPetHotKeyColorLock(button)
+    if not button then return end
+    local hotKeyFont = button.HotKey or button.bind
+    if not hotKeyFont then return end
+    if hotKeyFont._MABFColorLockInstalled then return end
+    hotKeyFont._MABFColorLockInstalled = true
+    local installedAnyHook = false
+
+    local function ForceBrightWhite(fs)
+        if not fs or fs._MABFColorLockApplying then return end
+        fs._MABFColorLockApplying = true
+        if fs.SetIgnoreParentAlpha then
+            pcall(fs.SetIgnoreParentAlpha, fs, true)
+        end
+        if fs.SetVertexColor then
+            pcall(fs.SetVertexColor, fs, 1, 1, 1, 1)
+        end
+        pcall(fs.SetTextColor, fs, 1, 1, 1, 1)
+        pcall(fs.SetAlpha, fs, 1)
+        fs._MABFColorLockApplying = nil
+    end
+
+    local function EnforceFromHook(fs, r, g, b, a)
+        if not fs or fs._MABFColorLockApplying then return end
+        local rr, gg, bb, aa = tonumber(r), tonumber(g), tonumber(b), tonumber(a)
+        if rr == 1 and gg == 1 and bb == 1 and (aa == nil or aa == 1) then
+            return
+        end
+        ForceBrightWhite(fs)
+    end
+
+    local okTextColor = pcall(function()
+        hooksecurefunc(hotKeyFont, "SetTextColor", EnforceFromHook)
+    end)
+    installedAnyHook = installedAnyHook or okTextColor
+    local okVertexColor = pcall(function()
+        hooksecurefunc(hotKeyFont, "SetVertexColor", EnforceFromHook)
+    end)
+    installedAnyHook = installedAnyHook or okVertexColor
+    local okAlpha = pcall(function()
+        hooksecurefunc(hotKeyFont, "SetAlpha", function(fs, alpha)
+            if fs and not fs._MABFColorLockApplying and tonumber(alpha) ~= 1 then
+                ForceBrightWhite(fs)
+            end
+        end)
+    end)
+    installedAnyHook = installedAnyHook or okAlpha
+    local okIgnoreParentAlpha = pcall(function()
+        hooksecurefunc(hotKeyFont, "SetIgnoreParentAlpha", function(fs, ignoreParentAlpha)
+            if fs and not fs._MABFColorLockApplying and ignoreParentAlpha ~= true then
+                ForceBrightWhite(fs)
+            end
+        end)
+    end)
+    installedAnyHook = installedAnyHook or okIgnoreParentAlpha
+    if not installedAnyHook then
+        hotKeyFont._MABFColorLockInstalled = nil
+    end
+
+    ForceBrightWhite(hotKeyFont)
+end
+
+local function ApplyPetHotKeyVisualOverrides(button)
+    if not button then return end
+    InstallPetHotKeyColorLock(button)
+    local hotKeyFont = button.HotKey or button.bind
+    if not hotKeyFont then return end
+    if hotKeyFont.SetIgnoreParentAlpha then
+        hotKeyFont:SetIgnoreParentAlpha(true)
+    end
+    if hotKeyFont.SetVertexColor then
+        hotKeyFont:SetVertexColor(1, 1, 1, 1)
+    end
+    hotKeyFont:SetTextColor(1, 1, 1, 1)
+    hotKeyFont:SetAlpha(1)
+end
+
 local function QueuePetBarFontSettingsUpdate(delay)
     if petFontUpdateQueued then
         return
@@ -165,7 +268,9 @@ local function QueuePetBarFontSettingsUpdate(delay)
         end
     end
 
-    if C_Timer and C_Timer.After then
+    if (delay or 0) <= 0 then
+        RunUpdate()
+    elseif C_Timer and C_Timer.After then
         C_Timer.After(delay or 0, RunUpdate)
     else
         RunUpdate()
@@ -201,6 +306,8 @@ function MABF:ApplyFontSettings()
 
         local fPath = fontPath
         if not fPath then return end
+        local isPetButton = IsPetActionButton(button)
+        local effectiveFontSize = isPetButton and (MattActionBarFontDB.petBarFontSize or MattActionBarFontDB.fontSize) or MattActionBarFontDB.fontSize
 
         local currentText = hotKeyFont:GetText() or ""
         local normalizedText = NormalizeHotKeyText(currentText)
@@ -210,12 +317,18 @@ function MABF:ApplyFontSettings()
             hotKeyFont._MABF_FormattingText = nil
         end
 
-        SetFontIfChanged(hotKeyFont, fPath, MattActionBarFontDB.fontSize, "OUTLINE")
+        SetFontIfChanged(hotKeyFont, fPath, effectiveFontSize, "OUTLINE")
 
         local xOff, yOff = GetHotKeyOffsets(button)
         AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
         if hotKeyFont.SetJustifyH then
             hotKeyFont:SetJustifyH("RIGHT")
+        end
+        if isPetButton and hotKeyFont.SetIgnoreParentAlpha then
+            hotKeyFont:SetIgnoreParentAlpha(true)
+        end
+        if isPetButton and hotKeyFont.SetVertexColor then
+            hotKeyFont:SetVertexColor(1, 1, 1, 1)
         end
         hotKeyFont:SetWidth(0)
         hotKeyFont:SetHeight(0)
@@ -431,8 +544,7 @@ function MABF:UpdatePetBarFontSettings()
                     local hotKeyFont = button.HotKey or button.bind
                     if button and hotKeyFont then
                         SetFontIfChanged(hotKeyFont, fontPath, fontSize, flags)
-                        hotKeyFont:SetTextColor(1, 1, 1, 1)
-                        hotKeyFont:SetAlpha(1)
+                        ApplyPetHotKeyVisualOverrides(button)
                         foundPetBar = true
                     end
                 end
@@ -443,8 +555,7 @@ function MABF:UpdatePetBarFontSettings()
                 local button = _G["PetActionButton" .. i]
                 if button and button.HotKey then
                     SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
-                    button.HotKey:SetTextColor(1, 1, 1, 1)
-                    button.HotKey:SetAlpha(1)
+                    ApplyPetHotKeyVisualOverrides(button)
                 end
             end
         end
@@ -453,8 +564,7 @@ function MABF:UpdatePetBarFontSettings()
             local button = _G["PetActionButton" .. i]
             if button and button.HotKey then
                 SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
-                button.HotKey:SetTextColor(1, 1, 1, 1)
-                button.HotKey:SetAlpha(1)
+                ApplyPetHotKeyVisualOverrides(button)
             end
         end
     end
@@ -481,24 +591,37 @@ function MABF:HookPetActionBarUpdates()
             QueuePetBarFontSettingsUpdate(0)
         end)
     end
-    
-    local petBar = _G["PetActionBar"]
-    if petBar then
-        local elapsedSinceRefresh = 0
-        petBar:HookScript("OnUpdate", function(_, elapsed)
-            elapsedSinceRefresh = elapsedSinceRefresh + elapsed
-            if elapsedSinceRefresh < 0.25 then
-                return
-            end
-            elapsedSinceRefresh = 0
+
+    if type(_G.PetActionButton_SetHotkeys) == "function" then
+        hooksecurefunc("PetActionButton_SetHotkeys", function(button)
             QueuePetBarFontSettingsUpdate(0)
         end)
+    end
+
+    if type(_G.PetActionButton_UpdateUsable) == "function" then
+        hooksecurefunc("PetActionButton_UpdateUsable", function(button)
+            ApplyPetHotKeyVisualOverrides(button)
+        end)
+    end
+
+    if PetActionButtonMixin and PetActionButtonMixin.UpdateUsable then
+        hooksecurefunc(PetActionButtonMixin, "UpdateUsable", function(button)
+            ApplyPetHotKeyVisualOverrides(button)
+        end)
+    end
+
+    if not self._MABF_PetRangeIndicatorHooked and type(_G.ActionButton_UpdateRangeIndicator) == "function" then
+        hooksecurefunc("ActionButton_UpdateRangeIndicator", function(button)
+            if IsPetActionButton(button) then
+                ApplyPetHotKeyVisualOverrides(button)
+            end
+        end)
+        self._MABF_PetRangeIndicatorHooked = true
     end
 
     local petBarEvents = CreateFrame("Frame")
     local petEvents = {
         "PET_BAR_UPDATE",
-        "PET_BAR_UPDATE_COOLDOWN",
         "PET_BAR_SHOWGRID",
         "PET_BAR_HIDEGRID",
         "UNIT_PET",
@@ -509,7 +632,7 @@ function MABF:HookPetActionBarUpdates()
         pcall(petBarEvents.RegisterEvent, petBarEvents, ev)
     end
     petBarEvents:SetScript("OnEvent", function()
-        QueuePetBarFontSettingsUpdate(0.05)
+        QueuePetBarFontSettingsUpdate(0)
     end)
 
     QueuePetBarFontSettingsUpdate(0)

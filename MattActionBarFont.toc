@@ -3,7 +3,7 @@
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version: 7.1.0
+## Version: 7.1.1
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## AddonCompartmentFunc: MABF_AddonCompartment_Click
 ## AddonCompartmentFuncOnEnter: MABF_AddonCompartment_OnEnter
