@@ -5,9 +5,12 @@ local MAX_FONT_SIZE = 50
 local MIN_FONT_SIZE = 10
 
 local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+local LCG = LibStub and LibStub("LibCustomGlow-1.0", true)
 local FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
 local MABF_FONT_DEFAULT = "Naowh"
 local MABF_FONT_DEFAULT_PATH = "Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf"
+local BLIZZARD_FONT_NAME = "Blizzard Default"
+local BLIZZARD_FONT_PATH = "Fonts\\FRIZQT__.ttf"
 local CURSOR_CIRCLE_TEXTURE = "Interface\\AddOns\\MattActionBarFont\\Textures\\cursor_circle.tga"
 local CURSOR_CIRCLE_SIZE = 28
 local fontValidationString = nil
@@ -292,6 +295,10 @@ function MABF:HookSharedMediaFontUpdates()
 end
 
 function MABF:GetFontOptions()
+    if not MattActionBarFontDB or MattActionBarFontDB.enableCustomFontSection == false then
+        return { BLIZZARD_FONT_NAME }
+    end
+
     local list = {}
     local seen = {}
     local scanned = self.availableFonts
@@ -326,6 +333,13 @@ function MABF:EnsureFontSelection()
         MattActionBarFontDB = {}
     end
 
+    if MattActionBarFontDB.enableCustomFontSection == false then
+        MattActionBarFontDB.fontFamily = BLIZZARD_FONT_NAME
+        self._selectedFontPathKey = BLIZZARD_FONT_NAME
+        self._selectedFontPathValue = BLIZZARD_FONT_PATH
+        return BLIZZARD_FONT_NAME
+    end
+
     local selected = NormalizeMediaName(MattActionBarFontDB.fontFamily) or MABF_FONT_DEFAULT
     local scanned = self.availableFonts
     if type(scanned) == "table" then
@@ -348,6 +362,9 @@ end
 
 function MABF:GetFontPathByName(fontName)
     local selected = NormalizeMediaName(fontName) or MABF_FONT_DEFAULT
+    if MediaNamesEqual(selected, BLIZZARD_FONT_NAME) then
+        return BLIZZARD_FONT_PATH, BLIZZARD_FONT_NAME, true
+    end
     local cacheKey = selected:lower()
     if self._fontPathCache and self._fontPathCache[cacheKey] then
         return self._fontPathCache[cacheKey], selected, true
@@ -428,6 +445,15 @@ function MABF:GetFontPathByName(fontName)
 end
 
 function MABF:GetSelectedFontPath()
+    if MattActionBarFontDB and MattActionBarFontDB.enableCustomFontSection == false then
+        self._selectedFontPathKey = BLIZZARD_FONT_NAME
+        self._selectedFontPathValue = BLIZZARD_FONT_PATH
+        if MattActionBarFontDB.fontFamily ~= BLIZZARD_FONT_NAME then
+            MattActionBarFontDB.fontFamily = BLIZZARD_FONT_NAME
+        end
+        return BLIZZARD_FONT_PATH
+    end
+
     local selected = self:EnsureFontSelection()
     if self._selectedFontPathKey == selected and self._selectedFontPathValue then
         return self._selectedFontPathValue
@@ -444,6 +470,14 @@ function MABF:GetSelectedFontPath()
 end
 
 function MABF:SetSelectedFont(fontName)
+    if MattActionBarFontDB and MattActionBarFontDB.enableCustomFontSection == false then
+        MattActionBarFontDB.fontFamily = BLIZZARD_FONT_NAME
+        self._selectedFontPathKey = BLIZZARD_FONT_NAME
+        self._selectedFontPathValue = BLIZZARD_FONT_PATH
+        self:ReapplySelectedFontEverywhere()
+        return
+    end
+
     fontName = NormalizeMediaName(fontName)
     if not fontName then return end
     if not MattActionBarFontDB then MattActionBarFontDB = {} end
@@ -488,42 +522,7 @@ function MABF:SetSelectedFont(fontName)
     end
 end
 
------------------------------------------------------------
--- ApplyStatusBarScale
------------------------------------------------------------
-function MABF:ApplyStatusBarScale()
-    if MattActionBarFontDB.scaleStatusBar then
-        if StatusTrackingBarManager then
-            StatusTrackingBarManager:SetScale(0.7)
-        end
-    else
-        if StatusTrackingBarManager then
-            StatusTrackingBarManager:SetScale(1.0)
-        end
-    end
-end
-
------------------------------------------------------------
--- ApplyHideMicroMenu
------------------------------------------------------------
-function MABF:ApplyHideMicroMenu()
-    if not MattActionBarFontDB.hideMicroMenu then return end
-    local buttonsToHide = {
-        "CharacterMicroButton", "PlayerSpellsMicroButton", "ProfessionMicroButton",
-        "AchievementMicroButton", "QuestLogMicroButton", "GuildMicroButton",
-        "CollectionsMicroButton", "EJMicroButton",
-        "MainMenuMicroButton", "QuickJoinToastButton", "StoreMicroButton"
-    }
-    for _, buttonName in ipairs(buttonsToHide) do
-        local button = _G[buttonName]
-        if button then
-            button:Hide()
-            if buttonName == "StoreMicroButton" then
-                hooksecurefunc(button, "Show", function(self) self:Hide() end)
-            end
-        end
-    end
-end
+-- ApplyStatusBarScale / ApplyHideMicroMenu moved to Core/UIFeatures/BlizzardUI.lua
 
 -----------------------------------------------------------
 -- Pet Bar Mouseover Fade
@@ -644,73 +643,7 @@ do
     end
 end
 
------------------------------------------------------------
--- ApplyHideBagBar
------------------------------------------------------------
-function MABF:ApplyHideBagBar()
-    if not MattActionBarFontDB.hideBagBar then return end
-    if MainMenuBarBackpackButton then MainMenuBarBackpackButton:Hide() end
-    if BagBarExpandToggle then BagBarExpandToggle:Hide() end
-    if CharacterReagentBag0Slot then CharacterReagentBag0Slot:Hide() end
-
-    for i = 0, 3 do
-        local slot = _G["CharacterBag" .. i .. "Slot"]
-        if slot then
-            slot:Hide()
-            slot:SetScript("OnShow", slot.Hide)
-        end
-    end
-
-    if MainMenuBarBackpackButton then
-        MainMenuBarBackpackButton:SetScript("OnShow", MainMenuBarBackpackButton.Hide)
-    end
-    if CharacterReagentBag0Slot then
-        CharacterReagentBag0Slot:SetScript("OnShow", CharacterReagentBag0Slot.Hide)
-    end
-end
-
------------------------------------------------------------
--- ApplyScaleTalkingHead
------------------------------------------------------------
-function MABF:ApplyScaleTalkingHead()
-    local function ScaleHead()
-        local frame = TalkingHeadFrame
-        if not frame then return end
-        if MattActionBarFontDB.scaleTalkingHead then
-            frame:SetScale(0.7)
-        else
-            frame:SetScale(1.0)
-        end
-    end
-
-    if TalkingHeadFrame then
-        ScaleHead()
-    else
-        local loader = CreateFrame("Frame")
-        loader:RegisterEvent("ADDON_LOADED")
-        loader:SetScript("OnEvent", function(self, event, addon)
-            if addon == "Blizzard_TalkingHeadUI" then
-                ScaleHead()
-                self:UnregisterAllEvents()
-            end
-        end)
-    end
-end
-
--- ApplyObjectiveTrackerScale
--- Scales the objective tracker to 0.7 if enabled
------------------------------------------------------------
-function MABF:ApplyObjectiveTrackerScale()
-    if MattActionBarFontDB.scaleObjectiveTracker then
-        if ObjectiveTrackerFrame then
-            ObjectiveTrackerFrame:SetScale(0.7)
-        end
-    else
-        if ObjectiveTrackerFrame then
-            ObjectiveTrackerFrame:SetScale(1.0)
-        end
-    end
-end
+-- ApplyHideBagBar / ApplyScaleTalkingHead / ApplyObjectiveTrackerScale moved to Core/UIFeatures/BlizzardUI.lua
 
 -----------------------------------------------------------
 -- ApplyMinimapScale
@@ -1633,6 +1566,10 @@ do
         end)
     end
 end
+
+-----------------------------------------------------------
+-- Reminders moved to Core/Reminders/*
+-----------------------------------------------------------
 
 -----------------------------------------------------------
 -- Bag Item Levels

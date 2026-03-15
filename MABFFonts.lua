@@ -147,6 +147,26 @@ local function SetFontIfChanged(fontString, fontPath, fontSize, flags)
     return true
 end
 
+local function SetFontSizeOnlyIfChanged(fontString, fontSize)
+    if not (fontString and fontString.SetFont) then return false end
+    local requestedSize = tonumber(fontSize) or 12
+    local currentPath, currentSize, currentFlags
+    if fontString.GetFont then
+        currentPath, currentSize, currentFlags = fontString:GetFont()
+    end
+    local usePath = (type(currentPath) == "string" and currentPath ~= "") and currentPath or "Fonts\\FRIZQT__.ttf"
+    local useFlags = type(currentFlags) == "string" and currentFlags or ""
+    if tonumber(currentSize) == requestedSize and currentPath == usePath and (currentFlags or "") == useFlags then
+        return true
+    end
+    local ok, applied = pcall(fontString.SetFont, fontString, usePath, requestedSize, useFlags)
+    return ok and applied ~= false
+end
+
+local function IsCustomFontsEnabled()
+    return not MattActionBarFontDB or MattActionBarFontDB.enableCustomFontSection ~= false
+end
+
 local function IsQuickKeybindModeActive()
     return QuickKeybindFrame and QuickKeybindFrame:IsShown()
 end
@@ -285,8 +305,9 @@ function MABF:ApplyFontSettings()
         self.availableFonts = self:ScanCustomFonts()
     end
     self:EnsureFontSelection()
-    local fontPath = self:GetSelectedFontPath()
-    if not fontPath then
+    local customFontsEnabled = IsCustomFontsEnabled()
+    local fontPath = customFontsEnabled and self:GetSelectedFontPath() or nil
+    if customFontsEnabled and not fontPath then
         return
     end
 
@@ -305,35 +326,39 @@ function MABF:ApplyFontSettings()
         if not hotKeyFont then return end
 
         local fPath = fontPath
-        if not fPath then return end
         local isPetButton = IsPetActionButton(button)
         local effectiveFontSize = isPetButton and (MattActionBarFontDB.petBarFontSize or MattActionBarFontDB.fontSize) or MattActionBarFontDB.fontSize
 
-        local currentText = hotKeyFont:GetText() or ""
-        local normalizedText = NormalizeHotKeyText(currentText)
-        if not hotKeyFont._MABF_FormattingText and normalizedText ~= currentText and hotKeyFont.SetText then
-            hotKeyFont._MABF_FormattingText = true
-            hotKeyFont:SetText(normalizedText)
-            hotKeyFont._MABF_FormattingText = nil
-        end
+        if customFontsEnabled then
+            if not fPath then return end
+            local currentText = hotKeyFont:GetText() or ""
+            local normalizedText = NormalizeHotKeyText(currentText)
+            if not hotKeyFont._MABF_FormattingText and normalizedText ~= currentText and hotKeyFont.SetText then
+                hotKeyFont._MABF_FormattingText = true
+                hotKeyFont:SetText(normalizedText)
+                hotKeyFont._MABF_FormattingText = nil
+            end
 
-        SetFontIfChanged(hotKeyFont, fPath, effectiveFontSize, "OUTLINE")
+            SetFontIfChanged(hotKeyFont, fPath, effectiveFontSize, "OUTLINE")
 
-        local xOff, yOff = GetHotKeyOffsets(button)
-        AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
-        if hotKeyFont.SetJustifyH then
-            hotKeyFont:SetJustifyH("RIGHT")
+            local xOff, yOff = GetHotKeyOffsets(button)
+            AnchorFontString(hotKeyFont, "TOPRIGHT", button, "TOPRIGHT", xOff, yOff)
+            if hotKeyFont.SetJustifyH then
+                hotKeyFont:SetJustifyH("RIGHT")
+            end
+            if isPetButton and hotKeyFont.SetIgnoreParentAlpha then
+                hotKeyFont:SetIgnoreParentAlpha(true)
+            end
+            if isPetButton and hotKeyFont.SetVertexColor then
+                hotKeyFont:SetVertexColor(1, 1, 1, 1)
+            end
+            hotKeyFont:SetWidth(0)
+            hotKeyFont:SetHeight(0)
+            hotKeyFont:SetTextColor(1, 1, 1, 1)
+            hotKeyFont:SetAlpha(1)
+        else
+            SetFontSizeOnlyIfChanged(hotKeyFont, effectiveFontSize)
         end
-        if isPetButton and hotKeyFont.SetIgnoreParentAlpha then
-            hotKeyFont:SetIgnoreParentAlpha(true)
-        end
-        if isPetButton and hotKeyFont.SetVertexColor then
-            hotKeyFont:SetVertexColor(1, 1, 1, 1)
-        end
-        hotKeyFont:SetWidth(0)
-        hotKeyFont:SetHeight(0)
-        hotKeyFont:SetTextColor(1, 1, 1, 1)
-        hotKeyFont:SetAlpha(1)
     end
 
     if not self._MABF_GlobalHotkeyHooksRegistered then
@@ -365,12 +390,14 @@ function MABF:ApplyFontSettings()
             if isHotKey then
                 ApplyHotKeyOverrides(button)
             else
-                SetFontIfChanged(fontString, fontPath, MattActionBarFontDB.fontSize * 0.5, "OUTLINE")
-                fontString:SetTextColor(1, 1, 1, 1)
-            end
-            if not isHotKey then
-                fontString:SetWidth(0)
-                fontString:SetHeight(0)
+                if customFontsEnabled then
+                    SetFontIfChanged(fontString, fontPath, MattActionBarFontDB.fontSize * 0.5, "OUTLINE")
+                    fontString:SetTextColor(1, 1, 1, 1)
+                    fontString:SetWidth(0)
+                    fontString:SetHeight(0)
+                else
+                    SetFontSizeOnlyIfChanged(fontString, MattActionBarFontDB.fontSize * 0.5)
+                end
             end
         end
     end
@@ -427,6 +454,9 @@ function MABF:ApplyFontSettings()
 end
 
 function MABF:UpdateFontPositions()
+    if not IsCustomFontsEnabled() then
+        return
+    end
     local xOff = MattActionBarFontDB.xOffset or 0
     local yOff = MattActionBarFontDB.yOffset or 0
     
@@ -442,6 +472,9 @@ function MABF:UpdateFontPositions()
 end
 
 function MABF:UpdateActionBarFontPositions()
+    if not IsCustomFontsEnabled() then
+        return
+    end
     local abXOff = MattActionBarFontDB.abXOffset or 0
     local abYOff = MattActionBarFontDB.abYOffset or 0
     local extraXOff = MattActionBarFontDB.extraXOffset or 0
@@ -496,12 +529,16 @@ function MABF:UpdateActionBarFontPositions()
 end
 
 function MABF:UpdateMacroText()
-    if not self.availableFonts then
-        self.availableFonts = self:ScanCustomFonts()
+    local customFontsEnabled = IsCustomFontsEnabled()
+    local fontPath = nil
+    if customFontsEnabled then
+        if not self.availableFonts then
+            self.availableFonts = self:ScanCustomFonts()
+        end
+        self:EnsureFontSelection()
+        fontPath = self:GetSelectedFontPath()
+        if not fontPath then return end
     end
-    self:EnsureFontSelection()
-    local fontPath = self:GetSelectedFontPath()
-    if not fontPath then return end
     
     local allButtons = GetAllActionButtons()
     for _, button in ipairs(allButtons) do
@@ -510,28 +547,36 @@ function MABF:UpdateMacroText()
                 button.Name:Hide()
             else
                 button.Name:Show()
-                AnchorFontString(button.Name, "BOTTOM", button, "BOTTOM", 0, 2)
-                SetFontIfChanged(button.Name, fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
-                local success, text = pcall(button.Name.GetText, button.Name)
-                if success and text and type(text) == "string" then
-                    local formatted = FormatText(text)
-                    if formatted ~= text then
-                        pcall(button.Name.SetText, button.Name, formatted)
+                if customFontsEnabled then
+                    AnchorFontString(button.Name, "BOTTOM", button, "BOTTOM", 0, 2)
+                    SetFontIfChanged(button.Name, fontPath, MattActionBarFontDB.macroTextSize, "OUTLINE")
+                    local success, text = pcall(button.Name.GetText, button.Name)
+                    if success and text and type(text) == "string" then
+                        local formatted = FormatText(text)
+                        if formatted ~= text then
+                            pcall(button.Name.SetText, button.Name, formatted)
+                        end
                     end
+                    button.Name:SetTextColor(1, 1, 1, 1)
+                else
+                    SetFontSizeOnlyIfChanged(button.Name, MattActionBarFontDB.macroTextSize)
                 end
-                button.Name:SetTextColor(1, 1, 1, 1)
             end
         end
     end
 end
 
 function MABF:UpdatePetBarFontSettings()
-    if not self.availableFonts then
-        self.availableFonts = self:ScanCustomFonts()
+    local customFontsEnabled = IsCustomFontsEnabled()
+    local fontPath = nil
+    if customFontsEnabled then
+        if not self.availableFonts then
+            self.availableFonts = self:ScanCustomFonts()
+        end
+        self:EnsureFontSelection()
+        fontPath = self:GetSelectedFontPath()
+        if not fontPath then return end
     end
-    self:EnsureFontSelection()
-    local fontPath = self:GetSelectedFontPath()
-    if not fontPath then return end
     local fontSize = MattActionBarFontDB.petBarFontSize
     local flags = "OUTLINE"
     
@@ -543,8 +588,12 @@ function MABF:UpdatePetBarFontSettings()
                 for _, button in pairs(frame.buttons) do
                     local hotKeyFont = button.HotKey or button.bind
                     if button and hotKeyFont then
-                        SetFontIfChanged(hotKeyFont, fontPath, fontSize, flags)
-                        ApplyPetHotKeyVisualOverrides(button)
+                        if customFontsEnabled then
+                            SetFontIfChanged(hotKeyFont, fontPath, fontSize, flags)
+                            ApplyPetHotKeyVisualOverrides(button)
+                        else
+                            SetFontSizeOnlyIfChanged(hotKeyFont, fontSize)
+                        end
                         foundPetBar = true
                     end
                 end
@@ -554,8 +603,12 @@ function MABF:UpdatePetBarFontSettings()
             for i = 1, 10 do
                 local button = _G["PetActionButton" .. i]
                 if button and button.HotKey then
-                    SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
-                    ApplyPetHotKeyVisualOverrides(button)
+                    if customFontsEnabled then
+                        SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
+                        ApplyPetHotKeyVisualOverrides(button)
+                    else
+                        SetFontSizeOnlyIfChanged(button.HotKey, fontSize)
+                    end
                 end
             end
         end
@@ -563,8 +616,12 @@ function MABF:UpdatePetBarFontSettings()
         for i = 1, 10 do
             local button = _G["PetActionButton" .. i]
             if button and button.HotKey then
-                SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
-                ApplyPetHotKeyVisualOverrides(button)
+                if customFontsEnabled then
+                    SetFontIfChanged(button.HotKey, fontPath, fontSize, flags)
+                    ApplyPetHotKeyVisualOverrides(button)
+                else
+                    SetFontSizeOnlyIfChanged(button.HotKey, fontSize)
+                end
             end
         end
     end
@@ -600,19 +657,23 @@ function MABF:HookPetActionBarUpdates()
 
     if type(_G.PetActionButton_UpdateUsable) == "function" then
         hooksecurefunc("PetActionButton_UpdateUsable", function(button)
-            ApplyPetHotKeyVisualOverrides(button)
+            if IsCustomFontsEnabled() then
+                ApplyPetHotKeyVisualOverrides(button)
+            end
         end)
     end
 
     if PetActionButtonMixin and PetActionButtonMixin.UpdateUsable then
         hooksecurefunc(PetActionButtonMixin, "UpdateUsable", function(button)
-            ApplyPetHotKeyVisualOverrides(button)
+            if IsCustomFontsEnabled() then
+                ApplyPetHotKeyVisualOverrides(button)
+            end
         end)
     end
 
     if not self._MABF_PetRangeIndicatorHooked and type(_G.ActionButton_UpdateRangeIndicator) == "function" then
         hooksecurefunc("ActionButton_UpdateRangeIndicator", function(button)
-            if IsPetActionButton(button) then
+            if IsCustomFontsEnabled() and IsPetActionButton(button) then
                 ApplyPetHotKeyVisualOverrides(button)
             end
         end)
@@ -650,12 +711,16 @@ end
 
 -- This function (formerly a local UpdateSpecificBars) is now part of MABF.
 function MABF:UpdateSpecificBars()
-    if not self.availableFonts then
-        self.availableFonts = self:ScanCustomFonts()
+    local customFontsEnabled = IsCustomFontsEnabled()
+    local fontPath = nil
+    if customFontsEnabled then
+        if not self.availableFonts then
+            self.availableFonts = self:ScanCustomFonts()
+        end
+        self:EnsureFontSelection()
+        fontPath = self:GetSelectedFontPath()
+        if not fontPath then return end
     end
-    self:EnsureFontSelection()
-    local fontPath = self:GetSelectedFontPath()
-    if not fontPath then return end
     local flags = "OUTLINE"
     
     local allButtons = GetAllActionButtons()
@@ -663,7 +728,11 @@ function MABF:UpdateSpecificBars()
         if button then
             local countText = button.Count or _G[(button:GetName() or "") .. "Count"]
             if countText then
-                SetFontIfChanged(countText, fontPath, MattActionBarFontDB.countFontSize, flags)
+                if customFontsEnabled then
+                    SetFontIfChanged(countText, fontPath, MattActionBarFontDB.countFontSize, flags)
+                else
+                    SetFontSizeOnlyIfChanged(countText, MattActionBarFontDB.countFontSize)
+                end
             end
         end
     end

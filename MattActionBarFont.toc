@@ -3,7 +3,7 @@
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version: 7.1.1
+## Version: 8.0.0
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## AddonCompartmentFunc: MABF_AddonCompartment_Click
 ## AddonCompartmentFuncOnEnter: MABF_AddonCompartment_OnEnter
@@ -14,11 +14,19 @@ Libs/LibStub.lua
 Libs/CallbackHandler-1.0.lua
 Libs/LibPixelPerfect-1.0/lib.xml
 Libs/LibSharedMedia-3.0.lua
+Libs/LibCustomGlow-1.0.xml
 Libs/LibDataBroker-1.1.lua
 Libs/LibDBIcon-1.0.lua
 
 MABFDefaults.lua
 MABFCore.lua
+Core/UIFeatures/BlizzardUI.lua
+Core/UIFeatures/Visual.lua
+Core/UIFeatures/Tools.lua
+Core/Reminders/Pets.lua
+Core/Reminders/Consumables.lua
+Core/Reminders/Buffs.lua
+Core/Reminders/ClassStuff.lua
 MABFFonts.lua
 MABFOptions.lua
 MABFEvents.lua

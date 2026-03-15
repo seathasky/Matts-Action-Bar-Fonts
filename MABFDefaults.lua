@@ -14,6 +14,7 @@ MABF.defaults = {
     fontFamily        = "Naowh",    -- Default font
     fontFamilyPath    = nil,        -- Cached resolved path for selected font
     fontFamilyPathName = nil,       -- Name associated with cached font path
+    enableCustomFontSection = true, -- Enable custom font family selection section
     optionsFramePos   = nil,        -- Saved options window position
 
     -- Offsets
@@ -71,6 +72,42 @@ MABF.defaults = {
     -- Quest tweaks
     autoAcceptQuests  = false,  -- Auto accept quests (hold Shift to skip)
     autoTurnInQuests  = false,  -- Auto turn in quests (skips reward choices)
+    warnMissingPet    = false,  -- Warn in combat when tracked-class pet is missing
+    petMissingOnlyInInstance = true, -- Show missing-pet reminder only in instance content
+    petMissingHideInRestArea = true, -- Hide missing-pet reminder while resting
+    petMissingSuppressInMPlus = true, -- Hide missing-pet reminder during active keystones
+    petMissingSuppressAfterFirstPull = false, -- Hide missing-pet reminder after first pull starts
+    petMissingHideWhenLFGComplete = true, -- Hide missing-pet reminder when LFG run is completed
+    warnPetPassive    = false,  -- Warn in combat when tracked-class pet is on Passive
+    trackConsumables  = false,  -- Track missing food/flask/oil reminders
+    consumablesOnlyInInstance = true, -- Show consumables reminder only in instance content
+    consumablesHideInRestArea = true, -- Hide consumables reminder while resting
+    consumablesSuppressInMPlus = true, -- Hide consumables reminder during active keystones
+    consumablesSuppressAfterFirstPull = false, -- Hide after first pull starts in-instance
+    consumablesHideWhenLFGComplete = true, -- Hide when LFG dungeon run is completed
+    warnConsumableHealthstone = false, -- Track missing Healthstone when a warlock is in group
+    consumableReminderPos = nil, -- Saved screen-center position for consumables reminder
+    petPassiveReminderPos = nil, -- Saved screen-center position for pet passive reminder
+    petReminderScale = 1.0, -- Scale for pet reminder frame (0.5-2.0)
+    consumableReminderScale = 1.0, -- Scale for consumables reminder frame (0.5-2.0)
+    warnMissingClassBuffs = false, -- Warn when tracked class buff is missing
+    warnClassSoulstone = false, -- Warlock-only: remind to cast Soulstone on someone
+    warnClassShamanShields = false, -- Shaman-only: remind when no self shield is active
+    warnClassPaladinBeacons = false, -- Paladin-only: remind when beacons are missing
+    classOnlyInInstance = true, -- Class reminders only in instance content
+    classHideInRestArea = true, -- Hide class reminders while resting
+    classSuppressInMPlus = true, -- Hide class reminders during active keystone runs
+    classSuppressAfterFirstPull = false, -- Hide class reminders after first pull starts
+    classHideWhenLFGComplete = true, -- Hide class reminders when LFG run is complete
+    classStuffReminderPos = nil, -- Saved screen-center position for class-stuff reminder
+    classStuffReminderScale = 1.0, -- Scale for class-stuff reminder frame (0.5-2.0)
+    missingBuffReminderPos = nil, -- Saved screen-center position for missing buff reminder
+    missingBuffReminderScale = 1.0, -- Scale for missing buff reminder frame (0.5-2.0)
+    buffsOnlyInInstance = true, -- Buff reminder only in instance content
+    buffsHideInRestArea = true, -- Hide buff reminder while resting
+    buffsSuppressInMPlus = true, -- Hide buff reminder during active keystone runs
+    buffsSuppressAfterFirstPull = false, -- Hide buff reminder after first pull starts
+    buffsHideWhenLFGComplete = true, -- Hide buff reminder when LFG run is complete
 
     -- Merchant tweaks
     enableAutoRepair   = false,    -- Auto-repair gear at merchants

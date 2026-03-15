@@ -77,6 +77,7 @@ function MABF:CreateOptionsWindow()
         "\"Probably a feature, not a bug.\"",
         "\"From Comic Sans to auto-sell junk, somehow.\"",
         "\"Proudly over-engineered since day one.\"",
+        "\"Mr_Dishonored told me to do it!\"",
     }
     local tagline = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     tagline:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
@@ -470,7 +471,7 @@ function MABF:CreateOptionsWindow()
     tabButtons[11] = btnABFeatures
 
     --------------------------------------------------------------------------
-    -- SECTION: UI / QoL (tabs 5, 8, 9)
+    -- SECTION: UI / QoL (tabs 5, 8, 9, 10, 12)
     --------------------------------------------------------------------------
     local uiHeader = CreateSectionHeader(leftPanel, "UI / QoL", btnABFeatures, "BOTTOMLEFT", -sectionGap)
 
@@ -480,7 +481,10 @@ function MABF:CreateOptionsWindow()
     local btnQuests = CreateTabButton(leftPanel, "Quests", 8, btnUIFeatures)
     tabButtons[8] = btnQuests
 
-    local btnBags = CreateTabButton(leftPanel, "Bags", 9, btnQuests)
+    local btnReminders = CreateTabButton(leftPanel, "Reminders", 12, btnQuests)
+    tabButtons[12] = btnReminders
+
+    local btnBags = CreateTabButton(leftPanel, "Bags", 9, btnReminders)
     tabButtons[9] = btnBags
 
     local btnMerchant = CreateTabButton(leftPanel, "Merchant", 10, btnBags)
@@ -575,11 +579,13 @@ function MABF:CreateOptionsWindow()
         local highlight = checkButton.GetHighlightTexture and checkButton:GetHighlightTexture() or nil
         local disabled = checkButton.GetDisabledTexture and checkButton:GetDisabledTexture() or nil
         local checked = checkButton.GetCheckedTexture and checkButton:GetCheckedTexture() or nil
+        local disabledChecked = checkButton.GetDisabledCheckedTexture and checkButton:GetDisabledCheckedTexture() or nil
         if normal then normal:SetTexture(nil) normal:SetAlpha(0) normal:Hide() end
         if pushed then pushed:SetTexture(nil) pushed:SetAlpha(0) pushed:Hide() end
         if highlight then highlight:SetTexture(nil) highlight:SetAlpha(0) highlight:Hide() end
         if disabled then disabled:SetTexture(nil) disabled:SetAlpha(0) disabled:Hide() end
         if checked then checked:SetTexture(nil) checked:SetAlpha(0) checked:Hide() end
+        if disabledChecked then disabledChecked:SetTexture(nil) disabledChecked:SetAlpha(0) disabledChecked:Hide() end
 
         if checkButton.SetHitRectInsets then
             checkButton:SetHitRectInsets(0, -220, 0, 0)
@@ -1278,8 +1284,30 @@ function MABF:CreateOptionsWindow()
         MABF:UpdatePetBarFontSettings()
     end)
 
+    local RefreshFontSectionState
+
+    customFontsCheck = CreateFrame("CheckButton", "MABFEnableCustomFontsCheck", pageGeneral, "InterfaceOptionsCheckButtonTemplate")
+    customFontsCheck:ClearAllPoints()
+    customFontsCheck:SetPoint("TOPLEFT", petBarSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
+    customFontsText = _G[customFontsCheck:GetName().."Text"]
+    customFontsText:SetText("Enable Custom Fonts")
+    customFontsText:SetTextColor(1, 1, 1)
+    customFontsCheck:SetChecked(MattActionBarFontDB.enableCustomFontSection ~= false)
+    customFontsCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.enableCustomFontSection = self:GetChecked() and true or false
+        if MattActionBarFontDB.enableCustomFontSection == false then
+            MattActionBarFontDB.fontFamily = "Blizzard Default"
+        else
+            MattActionBarFontDB.fontFamily = "Naowh"
+        end
+        if RefreshFontSectionState then
+            RefreshFontSectionState()
+        end
+        StaticPopup_Show("MABF_RELOAD_UI")
+    end)
+
     dropdownTitle = pageGeneral:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    dropdownTitle:SetPoint("TOPLEFT", petBarSlider, "BOTTOMLEFT", 0, CONTENT_SPACING)
+    dropdownTitle:SetPoint("TOPLEFT", customFontsCheck, "BOTTOMLEFT", 26, -8)
     dropdownTitle:SetText("Actionbar Font:")
     dropdownTitle:SetTextColor(1, 1, 1)
     fontDropDown = CreateMinimalDropdown(pageGeneral, 150, 10)
@@ -1295,14 +1323,112 @@ function MABF:CreateOptionsWindow()
     fontDropDown:SetOptions(BuildFontOptions())
     fontDropDown:SetSelectedValue(MattActionBarFontDB.fontFamily)
     fontDropDown:SetOnOpen(function(self)
-        self:SetOptions(BuildFontOptions())
+        local options = BuildFontOptions()
+        self:SetOptions(options)
         self:SetSelectedValue(MattActionBarFontDB.fontFamily)
     end)
     fontDropDown:SetOnSelect(function(value)
+        if MattActionBarFontDB.enableCustomFontSection == false then
+            return
+        end
         MABF:SetSelectedFont(value)
         fontDropDown:SetSelectedValue(MattActionBarFontDB.fontFamily)
         print("|cFF00FF00MattActionBarFont:|r Font updated to: " .. tostring(MattActionBarFontDB.fontFamily))
         StaticPopup_Show("MABF_RELOAD_UI")
+    end)
+
+    function RefreshFontSectionState()
+        local enabled = MattActionBarFontDB.enableCustomFontSection ~= false
+        if not enabled then
+            MattActionBarFontDB.fontFamily = "Blizzard Default"
+        end
+        customFontsCheck:SetChecked(enabled)
+        local options = BuildFontOptions()
+        fontDropDown:SetOptions(options)
+        fontDropDown:SetSelectedValue(MattActionBarFontDB.fontFamily)
+        if fontDropDown.SetAlpha then
+            fontDropDown:SetAlpha(enabled and 1 or 0.55)
+        end
+        if enabled then
+            dropdownTitle:SetTextColor(1, 1, 1)
+        else
+            dropdownTitle:SetTextColor(0.55, 0.55, 0.55)
+        end
+    end
+    RefreshFontSectionState()
+
+    local resetFontsBtn = CreateFrame("Button", "MABFResetFontDefaultsBtn", pageGeneral, "BackdropTemplate")
+    resetFontsBtn:SetSize(132, 20)
+    resetFontsBtn:SetPoint("BOTTOMLEFT", pageGeneral, "BOTTOMLEFT", 12, 14)
+    resetFontsBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    })
+    resetFontsBtn:SetBackdropColor(0.06, 0.06, 0.08, 1)
+    resetFontsBtn:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+
+    local resetFontsBtnText = resetFontsBtn:CreateFontString(nil, "OVERLAY")
+    resetFontsBtnText:SetPoint("CENTER", resetFontsBtn, "CENTER", 0, 0)
+    resetFontsBtnText:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 9, "OUTLINE")
+    resetFontsBtnText:SetText("Reset Font Defaults")
+    resetFontsBtnText:SetTextColor(0.9, 0.9, 0.9, 1)
+
+    resetFontsBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropBorderColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 0.8)
+    end)
+    resetFontsBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+        self:SetBackdropColor(0.06, 0.06, 0.08, 1)
+    end)
+    resetFontsBtn:SetScript("OnMouseDown", function(self)
+        self:SetBackdropColor(0.04, 0.04, 0.06, 1)
+    end)
+    resetFontsBtn:SetScript("OnMouseUp", function(self)
+        self:SetBackdropColor(0.06, 0.06, 0.08, 1)
+    end)
+    resetFontsBtn:SetScript("OnClick", function()
+        local db = MattActionBarFontDB or {}
+        MattActionBarFontDB = db
+        local customEnabled = db.enableCustomFontSection ~= false
+
+        db.fontSize = (MABF.defaults and MABF.defaults.fontSize) or 12
+        db.countFontSize = (MABF.defaults and MABF.defaults.countFontSize) or 14
+        db.macroTextSize = (MABF.defaults and MABF.defaults.macroTextSize) or 12
+        db.petBarFontSize = (MABF.defaults and MABF.defaults.petBarFontSize) or 12
+
+        if customEnabled then
+            db.enableCustomFontSection = true
+            db.fontFamily = "Naowh"
+            db.fontFamilyPath = nil
+            db.fontFamilyPathName = nil
+        else
+            db.enableCustomFontSection = false
+            db.fontFamily = "Blizzard Default"
+        end
+
+        mainSlider:SetValue(db.fontSize)
+        countSlider:SetValue(db.countFontSize)
+        macroSlider:SetValue(db.macroTextSize)
+        petBarSlider:SetValue(db.petBarFontSize)
+
+        customFontsCheck:SetChecked(customEnabled)
+        if RefreshFontSectionState then
+            RefreshFontSectionState()
+        end
+
+        if customEnabled and MABF and MABF.SetSelectedFont then
+            MABF:SetSelectedFont("Naowh")
+        end
+        if MABF and MABF.ApplyFontSettings then
+            MABF:ApplyFontSettings()
+            MABF:UpdateMacroText()
+            MABF:UpdateSpecificBars()
+            MABF:UpdatePetBarFontSettings()
+            MABF:UpdateFontPositions()
+            MABF:UpdateActionBarFontPositions()
+        end
     end)
 
 
@@ -1587,6 +1713,9 @@ function MABF:CreateOptionsWindow()
 
     -- Page 11: AB Features
     pageABFeatures = CreateContentPage(11)
+
+    -- Page 12: Reminders
+    pageReminders = CreateContentPage(12)
 
     -- Initialize pages: show first page and set tab button colors
     for i, page in ipairs(pages) do
@@ -2039,6 +2168,121 @@ function MABF:CreateOptionsWindow()
         MABF:ApplyPerfMonitorStyle()
     end)
 
+    -- UI Features internal sub-tabs (Blizzard UI / Visual / Tools)
+    local uiSubTabContainer = CreateFrame("Frame", nil, pageUIFeatures)
+    uiSubTabContainer:SetPoint("TOPLEFT", uiFeaturesTitle, "BOTTOMLEFT", 0, -8)
+    uiSubTabContainer:SetPoint("TOPRIGHT", pageUIFeatures, "TOPRIGHT", -20, -30)
+    uiSubTabContainer:SetHeight(24)
+
+    local uiSubTabGap = 4
+    local uiSubTabWidth = 92
+    local uiSubTabCount = 3
+    do
+        local totalWidth = pageUIFeatures:GetWidth() - 24
+        local computed = math.floor((totalWidth - (uiSubTabGap * (uiSubTabCount - 1))) / uiSubTabCount)
+        if computed < 76 then computed = 76 end
+        if computed > 96 then computed = 96 end
+        uiSubTabWidth = computed
+    end
+
+    local function CreateUIFeatureSubTab(name, label, anchor)
+        local btn = CreateFrame("Button", name, uiSubTabContainer, "BackdropTemplate")
+        btn:SetSize(uiSubTabWidth, 20)
+        if anchor then
+            btn:SetPoint("LEFT", anchor, "RIGHT", uiSubTabGap, 0)
+        else
+            btn:SetPoint("LEFT", uiSubTabContainer, "LEFT", 0, 0)
+        end
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        btn:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        btn:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+        local fs = btn:CreateFontString(nil, "OVERLAY")
+        fs:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        fs:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 9, "OUTLINE")
+        fs:SetText(label)
+        fs:SetTextColor(0.85, 0.85, 0.85, 1)
+        btn._mabfText = fs
+        return btn
+    end
+
+    local uiBlizzardBtn = CreateUIFeatureSubTab("MABFUIFeaturesBlizzard", "Blizzard UI", nil)
+    local uiVisualBtn = CreateUIFeatureSubTab("MABFUIFeaturesVisual", "Visual", uiBlizzardBtn)
+    local uiToolsBtn = CreateUIFeatureSubTab("MABFUIFeaturesTools", "Tools", uiVisualBtn)
+
+    local uiFeaturePages = {
+        blizzard = CreateFrame("Frame", nil, pageUIFeatures),
+        visual = CreateFrame("Frame", nil, pageUIFeatures),
+        tools = CreateFrame("Frame", nil, pageUIFeatures),
+    }
+    for _, subPage in pairs(uiFeaturePages) do
+        subPage:SetPoint("TOPLEFT", uiSubTabContainer, "BOTTOMLEFT", 0, -8)
+        subPage:SetPoint("BOTTOMRIGHT", pageUIFeatures, "BOTTOMRIGHT", -8, 8)
+    end
+
+    -- Re-parent existing controls into new sub-pages
+    objectiveTrackerCheck:SetParent(uiFeaturePages.blizzard)
+    scaleStatusBarCheck:SetParent(uiFeaturePages.blizzard)
+    scaleTalkingHeadCheck:SetParent(uiFeaturePages.blizzard)
+    hideMicroMenuCheck:SetParent(uiFeaturePages.blizzard)
+    hideMicroDesc:SetParent(uiFeaturePages.blizzard)
+    hideBagBarCheck:SetParent(uiFeaturePages.blizzard)
+
+    cursorCircleCheck:SetParent(uiFeaturePages.visual)
+    cursorCircleColorLabel:SetParent(uiFeaturePages.visual)
+    cursorCircleColorDropdown:SetParent(uiFeaturePages.visual)
+    cursorCircleScaleSlider:SetParent(uiFeaturePages.visual)
+    cursorCircleOpacitySlider:SetParent(uiFeaturePages.visual)
+
+    perfMonitorCheck:SetParent(uiFeaturePages.tools)
+    perfMonitorDesc:SetParent(uiFeaturePages.tools)
+    perfBgOpacitySlider:SetParent(uiFeaturePages.tools)
+    perfColorLabel:SetParent(uiFeaturePages.tools)
+    perfColorDropdown:SetParent(uiFeaturePages.tools)
+    perfVerticalCheck:SetParent(uiFeaturePages.tools)
+    perfHideMSCheck:SetParent(uiFeaturePages.tools)
+
+    -- Re-anchor first controls per page; dependent controls keep their relative anchors
+    objectiveTrackerCheck:ClearAllPoints()
+    objectiveTrackerCheck:SetPoint("TOPLEFT", uiFeaturePages.blizzard, "TOPLEFT", 0, -4)
+    cursorCircleCheck:ClearAllPoints()
+    cursorCircleCheck:SetPoint("TOPLEFT", uiFeaturePages.visual, "TOPLEFT", 0, -4)
+    perfMonitorCheck:ClearAllPoints()
+    perfMonitorCheck:SetPoint("TOPLEFT", uiFeaturePages.tools, "TOPLEFT", 0, -4)
+
+    local uiFeatureTabButtons = {
+        blizzard = uiBlizzardBtn,
+        visual = uiVisualBtn,
+        tools = uiToolsBtn,
+    }
+
+    local function ShowUIFeatureSubPage(key)
+        for k, p in pairs(uiFeaturePages) do
+            p:SetShown(k == key)
+        end
+        for k, b in pairs(uiFeatureTabButtons) do
+            local active = (k == key)
+            if active then
+                b:SetBackdropColor(0.12, 0.12, 0.15, 1)
+                b:SetBackdropBorderColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 0.85)
+                if b._mabfText then b._mabfText:SetTextColor(1, 1, 1, 1) end
+            else
+                b:SetBackdropColor(0.06, 0.06, 0.08, 1)
+                b:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+                if b._mabfText then b._mabfText:SetTextColor(0.85, 0.85, 0.85, 1) end
+            end
+        end
+    end
+
+    uiBlizzardBtn:SetScript("OnClick", function() ShowUIFeatureSubPage("blizzard") end)
+    uiVisualBtn:SetScript("OnClick", function() ShowUIFeatureSubPage("visual") end)
+    uiToolsBtn:SetScript("OnClick", function() ShowUIFeatureSubPage("tools") end)
+    ShowUIFeatureSubPage("blizzard")
+
     --------------------------------------------------------------------------
     -- System Page (Edit Mode Device Manager)
     --------------------------------------------------------------------------
@@ -2235,6 +2479,725 @@ function MABF:CreateOptionsWindow()
     end)
 
     --------------------------------------------------------------------------
+    -- Reminders Page
+    --------------------------------------------------------------------------
+    remindersTitle = CreatePageTitle(pageReminders, "Reminders")
+    remindersMoveHint = pageReminders:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    remindersMoveHint:SetPoint("LEFT", remindersTitle, "RIGHT", 10, 0)
+    remindersMoveHint:SetText("|cff888888Shift+Drag reminders to move|r")
+    remindersMoveHint:SetScale(0.9)
+    local RefreshMissingPetSubOptions
+    local RefreshPetReminderScaleControl
+    local RefreshConsumableSubOptions
+    local RefreshBuffSubOptions
+    local RefreshBuffReminderScaleControl
+    local RefreshClassStuffSubOptions
+    local RefreshClassStuffScaleControl
+    local RefreshClassStuffSubRules
+
+    local subTabContainer = CreateFrame("Frame", nil, pageReminders)
+    subTabContainer:SetPoint("TOPLEFT", remindersTitle, "BOTTOMLEFT", 0, -8)
+    subTabContainer:SetPoint("TOPRIGHT", pageReminders, "TOPRIGHT", -12, -30)
+    subTabContainer:SetHeight(24)
+
+    local function CreateReminderSubTab(name, label, anchor, xOff)
+        local btn = CreateFrame("Button", name, subTabContainer, "BackdropTemplate")
+        btn:SetSize(66, 20)
+        if anchor then
+            btn:SetPoint("LEFT", anchor, "RIGHT", 4, 0)
+        else
+            btn:SetPoint("LEFT", subTabContainer, "LEFT", xOff or 0, 0)
+        end
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        btn:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        btn:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+        local fs = btn:CreateFontString(nil, "OVERLAY")
+        fs:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        fs:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 8, "OUTLINE")
+        fs:SetText(label)
+        fs:SetTextColor(0.85, 0.85, 0.85, 1)
+        btn._mabfText = fs
+        return btn
+    end
+
+    local remindersSubConsumablesBtn = CreateReminderSubTab("MABFRemindersSubConsumables", "Consumables", nil, 0)
+    local remindersSubPetsBtn = CreateReminderSubTab("MABFRemindersSubPets", "Pets", remindersSubConsumablesBtn)
+    local remindersSubBuffsBtn = CreateReminderSubTab("MABFRemindersSubBuffs", "Buffs", remindersSubPetsBtn)
+    local remindersSubClassStuffBtn = CreateReminderSubTab("MABFRemindersSubClassStuff", "Class", remindersSubBuffsBtn)
+
+    local remindersPages = {
+        consumables = CreateFrame("Frame", nil, pageReminders),
+        pets = CreateFrame("Frame", nil, pageReminders),
+        buffs = CreateFrame("Frame", nil, pageReminders),
+        classstuff = CreateFrame("Frame", nil, pageReminders),
+    }
+    for _, subPage in pairs(remindersPages) do
+        subPage:SetPoint("TOPLEFT", subTabContainer, "BOTTOMLEFT", 0, -8)
+        subPage:SetPoint("BOTTOMRIGHT", pageReminders, "BOTTOMRIGHT", -8, 8)
+    end
+
+    local subTabButtons = {
+        consumables = remindersSubConsumablesBtn,
+        pets = remindersSubPetsBtn,
+        buffs = remindersSubBuffsBtn,
+        classstuff = remindersSubClassStuffBtn,
+    }
+    local function ShowReminderSubPage(key)
+        for k, p in pairs(remindersPages) do
+            p:SetShown(k == key)
+        end
+        for k, b in pairs(subTabButtons) do
+            local active = (k == key)
+            if active then
+                b:SetBackdropColor(0.12, 0.12, 0.15, 1)
+                b:SetBackdropBorderColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 0.85)
+                if b._mabfText then b._mabfText:SetTextColor(1, 1, 1, 1) end
+            else
+                b:SetBackdropColor(0.06, 0.06, 0.08, 1)
+                b:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+                if b._mabfText then b._mabfText:SetTextColor(0.85, 0.85, 0.85, 1) end
+            end
+        end
+    end
+    remindersSubConsumablesBtn:SetScript("OnClick", function() ShowReminderSubPage("consumables") end)
+    remindersSubPetsBtn:SetScript("OnClick", function() ShowReminderSubPage("pets") end)
+    remindersSubBuffsBtn:SetScript("OnClick", function() ShowReminderSubPage("buffs") end)
+    remindersSubClassStuffBtn:SetScript("OnClick", function() ShowReminderSubPage("classstuff") end)
+
+    local function CreateReminderResetButton(name, parent, onClick)
+        local btn = CreateFrame("Button", name, parent, "BackdropTemplate")
+        btn:SetSize(176, 22)
+        btn:SetPoint("BOTTOM", parent, "BOTTOM", 0, 12)
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        btn:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        btn:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+
+        local txt = btn:CreateFontString(nil, "OVERLAY")
+        txt:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        txt:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 10, "OUTLINE")
+        txt:SetText("Reset Position")
+        txt:SetTextColor(0.9, 0.9, 0.9, 1)
+
+        btn:SetScript("OnEnter", function(self)
+            self:SetBackdropBorderColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 0.8)
+        end)
+        btn:SetScript("OnLeave", function(self)
+            self:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+            self:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        end)
+        btn:SetScript("OnMouseDown", function(self)
+            self:SetBackdropColor(0.04, 0.04, 0.06, 1)
+        end)
+        btn:SetScript("OnMouseUp", function(self)
+            self:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        end)
+        btn:SetScript("OnClick", onClick)
+        return btn
+    end
+
+    local function CreateReminderResetSizeButton(name, parent, onClick)
+        local btn = CreateFrame("Button", name, parent, "BackdropTemplate")
+        btn:SetSize(176, 22)
+        btn:SetPoint("BOTTOM", parent, "BOTTOM", 0, 38)
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        btn:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        btn:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+
+        local txt = btn:CreateFontString(nil, "OVERLAY")
+        txt:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        txt:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 10, "OUTLINE")
+        txt:SetText("Reset Size")
+        txt:SetTextColor(0.9, 0.9, 0.9, 1)
+
+        btn:SetScript("OnEnter", function(self)
+            self:SetBackdropBorderColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 0.8)
+        end)
+        btn:SetScript("OnLeave", function(self)
+            self:SetBackdropBorderColor(0.25, 0.25, 0.3, 1)
+            self:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        end)
+        btn:SetScript("OnMouseDown", function(self)
+            self:SetBackdropColor(0.04, 0.04, 0.06, 1)
+        end)
+        btn:SetScript("OnMouseUp", function(self)
+            self:SetBackdropColor(0.06, 0.06, 0.08, 1)
+        end)
+        btn:SetScript("OnClick", onClick)
+        return btn
+    end
+
+    -- Pets sub-page
+    warnMissingPetCheck = CreateFrame("CheckButton", "MABFWarnMissingPetCheck", remindersPages.pets, "InterfaceOptionsCheckButtonTemplate")
+    warnMissingPetCheck:ClearAllPoints()
+    warnMissingPetCheck:SetPoint("TOPLEFT", remindersPages.pets, "TOPLEFT", 0, -4)
+    warnMissingPetText = _G[warnMissingPetCheck:GetName().."Text"]
+    warnMissingPetText:SetText("Warn when pet is missing")
+    warnMissingPetText:SetTextColor(1, 1, 1)
+    warnMissingPetDesc = remindersPages.pets:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    warnMissingPetDesc:SetPoint("TOPLEFT", warnMissingPetCheck, "BOTTOMLEFT", 26, 2)
+    warnMissingPetDesc:SetText("|cff888888Shows summon warning for tracked pet classes|r")
+    warnMissingPetDesc:SetScale(0.85)
+    warnMissingPetCheck:SetChecked(MattActionBarFontDB.warnMissingPet)
+    warnMissingPetCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.warnMissingPet = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+        if RefreshMissingPetSubOptions then
+            RefreshMissingPetSubOptions()
+        end
+        if RefreshPetReminderScaleControl then
+            RefreshPetReminderScaleControl()
+        end
+    end)
+
+    local function CreateMissingPetSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick)
+        local cb = CreateFrame("CheckButton", name, remindersPages.pets, "InterfaceOptionsCheckButtonTemplate")
+        cb:ClearAllPoints()
+        cb:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", xOffset or 0, checkSpacing)
+        local label = _G[cb:GetName().."Text"]
+        label:SetText(labelText)
+        label:SetTextColor(1, 1, 1)
+        cb:SetChecked(checkedValue and true or false)
+        cb:SetScript("OnClick", onClick)
+        return cb
+    end
+
+    petMissingOnlyInstanceCheck = CreateMissingPetSubCheckbox("MABFPetMissingOnlyInstanceCheck", warnMissingPetDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.petMissingOnlyInInstance, function(self)
+        MattActionBarFontDB.petMissingOnlyInInstance = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+    end)
+    petMissingHideInRestAreaCheck = CreateMissingPetSubCheckbox("MABFPetMissingHideInRestAreaCheck", petMissingOnlyInstanceCheck, 0, "Hide while resting", MattActionBarFontDB.petMissingHideInRestArea, function(self)
+        MattActionBarFontDB.petMissingHideInRestArea = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+    end)
+    petMissingSuppressInMPlusCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressInMPlusCheck", petMissingHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.petMissingSuppressInMPlus, function(self)
+        MattActionBarFontDB.petMissingSuppressInMPlus = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+    end)
+    petMissingSuppressAfterFirstPullCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressAfterFirstPullCheck", petMissingSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.petMissingSuppressAfterFirstPull, function(self)
+        MattActionBarFontDB.petMissingSuppressAfterFirstPull = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+    end)
+    petMissingHideWhenLFGCompleteCheck = CreateMissingPetSubCheckbox("MABFPetMissingHideWhenLFGCompleteCheck", petMissingSuppressAfterFirstPullCheck, 0, "Hide when LFG run is complete", MattActionBarFontDB.petMissingHideWhenLFGComplete, function(self)
+        MattActionBarFontDB.petMissingHideWhenLFGComplete = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+    end)
+
+    warnPetPassiveCheck = CreateFrame("CheckButton", "MABFWarnPetPassiveCheck", remindersPages.pets, "InterfaceOptionsCheckButtonTemplate")
+    warnPetPassiveCheck:ClearAllPoints()
+    warnPetPassiveCheck:SetPoint("TOPLEFT", petMissingHideWhenLFGCompleteCheck, "BOTTOMLEFT", 0, -8)
+    warnPetPassiveText = _G[warnPetPassiveCheck:GetName().."Text"]
+    warnPetPassiveText:SetText("Warn when pet is on passive")
+    warnPetPassiveText:SetTextColor(1, 1, 1)
+    warnPetPassiveDesc = remindersPages.pets:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    warnPetPassiveDesc:SetPoint("TOPLEFT", warnPetPassiveCheck, "BOTTOMLEFT", 26, 2)
+    warnPetPassiveDesc:SetText("|cff888888Shows in-combat text for tracked pet classes|r")
+    warnPetPassiveDesc:SetScale(0.85)
+    warnPetPassiveCheck:SetChecked(MattActionBarFontDB.warnPetPassive)
+    warnPetPassiveCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.warnPetPassive = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+        if RefreshPetReminderScaleControl then
+            RefreshPetReminderScaleControl()
+        end
+    end)
+
+    petReminderScaleSlider = CreateFrame("Slider", "MABFPetReminderScaleSlider", remindersPages.pets, "OptionsSliderTemplate")
+    petReminderScaleSlider:SetSize(180, 14)
+    petReminderScaleSlider:SetPoint("BOTTOM", remindersPages.pets, "BOTTOM", 0, 74)
+    petReminderScaleSlider:SetMinMaxValues(50, 200)
+    petReminderScaleSlider:SetValue((MattActionBarFontDB.petReminderScale or 1.0) * 100)
+    petReminderScaleSlider:SetValueStep(1)
+    petReminderScaleSlider:SetObeyStepOnDrag(true)
+    petReminderScaleSliderName = petReminderScaleSlider:GetName()
+    _G[petReminderScaleSliderName.."Low"]:SetText("50%")
+    _G[petReminderScaleSliderName.."High"]:SetText("200%")
+    _G[petReminderScaleSliderName.."Text"]:SetText("Pet Reminder Size: " .. math.floor((MattActionBarFontDB.petReminderScale or 1.0) * 100) .. "%")
+    StyleSlider(petReminderScaleSlider)
+    petReminderScaleSlider:SetScript("OnValueChanged", function(self, value)
+        local pct = math.floor((value or 100) + 0.5)
+        if pct < 50 then pct = 50 end
+        if pct > 200 then pct = 200 end
+        MattActionBarFontDB.petReminderScale = pct / 100
+        _G[petReminderScaleSliderName.."Text"]:SetText("Pet Reminder Size: " .. pct .. "%")
+        if MABF and MABF.ApplyPetReminderScale then
+            MABF:ApplyPetReminderScale()
+        end
+    end)
+    warnPetPassiveResetBtn = CreateReminderResetButton("MABFWarnPetPassiveResetBtn", remindersPages.pets, function()
+        if MABF and MABF.ResetPetPassiveReminderPosition then
+            MABF:ResetPetPassiveReminderPosition()
+            if MABF.SetupPetPassiveReminder then
+                MABF:SetupPetPassiveReminder()
+            end
+        end
+    end)
+    warnPetPassiveResetSizeBtn = CreateReminderResetSizeButton("MABFWarnPetPassiveResetSizeBtn", remindersPages.pets, function()
+        if petReminderScaleSlider then
+            petReminderScaleSlider:SetValue(100)
+        end
+        MattActionBarFontDB.petReminderScale = 1.0
+        if MABF and MABF.ApplyPetReminderScale then
+            MABF:ApplyPetReminderScale()
+        end
+    end)
+
+    function RefreshMissingPetSubOptions()
+        local enabled = warnMissingPetCheck:GetChecked() and true or false
+        local subChecks = {
+            petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petMissingSuppressInMPlusCheck,
+            petMissingSuppressAfterFirstPullCheck, petMissingHideWhenLFGCompleteCheck,
+        }
+        for _, cb in ipairs(subChecks) do
+            cb:SetEnabled(enabled)
+            local t = _G[cb:GetName().."Text"]
+            if t then t:SetTextColor(enabled and 1 or 0.55, enabled and 1 or 0.55, enabled and 1 or 0.55) end
+        end
+    end
+
+    function RefreshPetReminderScaleControl()
+        local enabled = (warnMissingPetCheck:GetChecked() or warnPetPassiveCheck:GetChecked()) and true or false
+        if petReminderScaleSlider then
+            petReminderScaleSlider:SetEnabled(enabled)
+            petReminderScaleSlider:SetAlpha(enabled and 1 or 0.6)
+        end
+    end
+
+    -- Consumables sub-page
+    trackConsumablesCheck = CreateFrame("CheckButton", "MABFTrackConsumablesCheck", remindersPages.consumables, "InterfaceOptionsCheckButtonTemplate")
+    trackConsumablesCheck:ClearAllPoints()
+    trackConsumablesCheck:SetPoint("TOPLEFT", remindersPages.consumables, "TOPLEFT", 0, -4)
+    trackConsumablesText = _G[trackConsumablesCheck:GetName().."Text"]
+    trackConsumablesText:SetText("Track consumables")
+    trackConsumablesText:SetTextColor(1, 1, 1)
+    trackConsumablesDesc = remindersPages.consumables:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    trackConsumablesDesc:SetPoint("TOPLEFT", trackConsumablesCheck, "BOTTOMLEFT", 26, 2)
+    trackConsumablesDesc:SetText("|cff888888Warns when food/flask/oil are missing|r")
+    trackConsumablesDesc:SetScale(0.85)
+    trackConsumablesCheck:SetChecked(MattActionBarFontDB.trackConsumables)
+    trackConsumablesCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.trackConsumables = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+        if RefreshConsumableSubOptions then
+            RefreshConsumableSubOptions()
+        end
+    end)
+
+    trackConsumablesResetBtn = CreateReminderResetButton("MABFTrackConsumablesResetBtn", remindersPages.consumables, function()
+        if MABF and MABF.ResetConsumableReminderPosition then
+            MABF:ResetConsumableReminderPosition()
+            if MABF.SetupConsumableReminder then
+                MABF:SetupConsumableReminder()
+            end
+        end
+    end)
+    trackConsumablesResetSizeBtn = CreateReminderResetSizeButton("MABFTrackConsumablesResetSizeBtn", remindersPages.consumables, function()
+        if consumableScaleSlider then
+            consumableScaleSlider:SetValue(100)
+        end
+        MattActionBarFontDB.consumableReminderScale = 1.0
+        if MABF and MABF.ApplyConsumableReminderScale then
+            MABF:ApplyConsumableReminderScale()
+        end
+    end)
+
+    local function CreateConsumablesSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick)
+        local cb = CreateFrame("CheckButton", name, remindersPages.consumables, "InterfaceOptionsCheckButtonTemplate")
+        cb:ClearAllPoints()
+        cb:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", xOffset or 0, checkSpacing)
+        local label = _G[cb:GetName().."Text"]
+        label:SetText(labelText)
+        label:SetTextColor(1, 1, 1)
+        cb:SetChecked(checkedValue and true or false)
+        cb:SetScript("OnClick", onClick)
+        return cb, label
+    end
+
+    consumablesOnlyInstanceCheck = CreateConsumablesSubCheckbox("MABFConsumablesOnlyInstanceCheck", trackConsumablesDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.consumablesOnlyInInstance, function(self)
+        MattActionBarFontDB.consumablesOnlyInInstance = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+    consumablesHideInRestAreaCheck = CreateConsumablesSubCheckbox("MABFConsumablesHideInRestAreaCheck", consumablesOnlyInstanceCheck, 0, "Hide while resting", MattActionBarFontDB.consumablesHideInRestArea, function(self)
+        MattActionBarFontDB.consumablesHideInRestArea = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+    consumablesSuppressInMPlusCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressInMPlusCheck", consumablesHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.consumablesSuppressInMPlus, function(self)
+        MattActionBarFontDB.consumablesSuppressInMPlus = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+    consumablesSuppressAfterFirstPullCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressAfterFirstPullCheck", consumablesSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.consumablesSuppressAfterFirstPull, function(self)
+        MattActionBarFontDB.consumablesSuppressAfterFirstPull = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+    consumablesHideWhenLFGCompleteCheck = CreateConsumablesSubCheckbox("MABFConsumablesHideWhenLFGCompleteCheck", consumablesSuppressAfterFirstPullCheck, 0, "Hide when LFG run is complete", MattActionBarFontDB.consumablesHideWhenLFGComplete, function(self)
+        MattActionBarFontDB.consumablesHideWhenLFGComplete = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+    consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesHideWhenLFGCompleteCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
+        MattActionBarFontDB.warnConsumableHealthstone = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+
+    function RefreshConsumableSubOptions()
+        local enabled = trackConsumablesCheck:GetChecked() and true or false
+        local subChecks = {
+            consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesSuppressInMPlusCheck,
+            consumablesSuppressAfterFirstPullCheck, consumablesHideWhenLFGCompleteCheck, consumablesHealthstoneCheck,
+        }
+        for _, cb in ipairs(subChecks) do
+            cb:SetEnabled(enabled)
+            local t = _G[cb:GetName().."Text"]
+            if t then t:SetTextColor(enabled and 1 or 0.55, enabled and 1 or 0.55, enabled and 1 or 0.55) end
+        end
+        if consumableScaleSlider then
+            consumableScaleSlider:SetEnabled(enabled)
+        end
+    end
+
+    consumableScaleSlider = CreateFrame("Slider", "MABFConsumableScaleSlider", remindersPages.consumables, "OptionsSliderTemplate")
+    consumableScaleSlider:SetSize(180, 14)
+    consumableScaleSlider:SetPoint("BOTTOM", remindersPages.consumables, "BOTTOM", 0, 74)
+    consumableScaleSlider:SetMinMaxValues(50, 200)
+    consumableScaleSlider:SetValue((MattActionBarFontDB.consumableReminderScale or 1.0) * 100)
+    consumableScaleSlider:SetValueStep(1)
+    consumableScaleSlider:SetObeyStepOnDrag(true)
+    consumableScaleSliderName = consumableScaleSlider:GetName()
+    _G[consumableScaleSliderName.."Low"]:SetText("50%")
+    _G[consumableScaleSliderName.."High"]:SetText("200%")
+    _G[consumableScaleSliderName.."Text"]:SetText("Consumables Size: " .. math.floor((MattActionBarFontDB.consumableReminderScale or 1.0) * 100) .. "%")
+    StyleSlider(consumableScaleSlider)
+    consumableScaleSlider:SetScript("OnValueChanged", function(self, value)
+        local pct = math.floor((value or 100) + 0.5)
+        if pct < 50 then pct = 50 end
+        if pct > 200 then pct = 200 end
+        MattActionBarFontDB.consumableReminderScale = pct / 100
+        _G[consumableScaleSliderName.."Text"]:SetText("Consumables Size: " .. pct .. "%")
+        if MABF and MABF.ApplyConsumableReminderScale then
+            MABF:ApplyConsumableReminderScale()
+        end
+    end)
+
+    -- Buffs sub-page
+    warnMissingClassBuffsCheck = CreateFrame("CheckButton", "MABFWarnMissingClassBuffsCheck", remindersPages.buffs, "InterfaceOptionsCheckButtonTemplate")
+    warnMissingClassBuffsCheck:SetPoint("TOPLEFT", remindersPages.buffs, "TOPLEFT", 0, -4)
+    warnMissingClassBuffsText = _G[warnMissingClassBuffsCheck:GetName().."Text"]
+    warnMissingClassBuffsText:SetText("Warn when class buff is missing")
+    warnMissingClassBuffsText:SetTextColor(1, 1, 1)
+    warnMissingClassBuffsDesc = remindersPages.buffs:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    warnMissingClassBuffsDesc:SetPoint("TOPLEFT", warnMissingClassBuffsCheck, "BOTTOMLEFT", 26, 2)
+    warnMissingClassBuffsDesc:SetText("|cff888888Tracks major class buffs for supported classes|r")
+    warnMissingClassBuffsDesc:SetScale(0.85)
+    warnMissingClassBuffsCheck:SetChecked(MattActionBarFontDB.warnMissingClassBuffs)
+    warnMissingClassBuffsCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.warnMissingClassBuffs = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+        if RefreshBuffSubOptions then
+            RefreshBuffSubOptions()
+        end
+        if RefreshBuffReminderScaleControl then
+            RefreshBuffReminderScaleControl()
+        end
+    end)
+
+    buffReminderScaleSlider = CreateFrame("Slider", "MABFBuffReminderScaleSlider", remindersPages.buffs, "OptionsSliderTemplate")
+    buffReminderScaleSlider:SetSize(180, 14)
+    buffReminderScaleSlider:SetPoint("TOPLEFT", warnMissingClassBuffsDesc, "BOTTOMLEFT", 0, -18)
+    buffReminderScaleSlider:SetMinMaxValues(50, 200)
+    buffReminderScaleSlider:SetValue((MattActionBarFontDB.missingBuffReminderScale or 1.0) * 100)
+    buffReminderScaleSlider:SetValueStep(1)
+    buffReminderScaleSlider:SetObeyStepOnDrag(true)
+    buffReminderScaleSliderName = buffReminderScaleSlider:GetName()
+    _G[buffReminderScaleSliderName.."Low"]:SetText("50%")
+    _G[buffReminderScaleSliderName.."High"]:SetText("200%")
+    _G[buffReminderScaleSliderName.."Text"]:SetText("Buff Reminder Size: " .. math.floor((MattActionBarFontDB.missingBuffReminderScale or 1.0) * 100) .. "%")
+    StyleSlider(buffReminderScaleSlider)
+    buffReminderScaleSlider:SetScript("OnValueChanged", function(self, value)
+        local pct = math.floor((value or 100) + 0.5)
+        if pct < 50 then pct = 50 end
+        if pct > 200 then pct = 200 end
+        MattActionBarFontDB.missingBuffReminderScale = pct / 100
+        _G[buffReminderScaleSliderName.."Text"]:SetText("Buff Reminder Size: " .. pct .. "%")
+        if MABF and MABF.ApplyMissingBuffReminderScale then
+            MABF:ApplyMissingBuffReminderScale()
+        end
+    end)
+    warnMissingClassBuffsResetBtn = CreateReminderResetButton("MABFWarnMissingClassBuffsResetBtn", remindersPages.buffs, function()
+        if MABF and MABF.ResetMissingBuffReminderPosition then
+            MABF:ResetMissingBuffReminderPosition()
+            if MABF.SetupMissingBuffReminder then
+                MABF:SetupMissingBuffReminder()
+            end
+        end
+    end)
+    warnMissingClassBuffsResetSizeBtn = CreateReminderResetSizeButton("MABFWarnMissingClassBuffsResetSizeBtn", remindersPages.buffs, function()
+        if buffReminderScaleSlider then
+            buffReminderScaleSlider:SetValue(100)
+        end
+        MattActionBarFontDB.missingBuffReminderScale = 1.0
+        if MABF and MABF.ApplyMissingBuffReminderScale then
+            MABF:ApplyMissingBuffReminderScale()
+        end
+    end)
+
+    local function CreateBuffSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick)
+        local cb = CreateFrame("CheckButton", name, remindersPages.buffs, "InterfaceOptionsCheckButtonTemplate")
+        cb:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", xOffset or 0, checkSpacing)
+        local label = _G[cb:GetName().."Text"]
+        label:SetText(labelText)
+        label:SetTextColor(1, 1, 1)
+        cb:SetChecked(checkedValue and true or false)
+        cb:SetScript("OnClick", onClick)
+        return cb
+    end
+
+    buffsOnlyInInstanceCheck = CreateBuffSubCheckbox("MABFBuffsOnlyInInstanceCheck", warnMissingClassBuffsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.buffsOnlyInInstance, function(self)
+        MattActionBarFontDB.buffsOnlyInInstance = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+    end)
+    buffsHideInRestAreaCheck = CreateBuffSubCheckbox("MABFBuffsHideInRestAreaCheck", buffsOnlyInInstanceCheck, 0, "Hide while resting", MattActionBarFontDB.buffsHideInRestArea, function(self)
+        MattActionBarFontDB.buffsHideInRestArea = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+    end)
+    buffsSuppressInMPlusCheck = CreateBuffSubCheckbox("MABFBuffsSuppressInMPlusCheck", buffsHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.buffsSuppressInMPlus, function(self)
+        MattActionBarFontDB.buffsSuppressInMPlus = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+    end)
+    buffsSuppressAfterFirstPullCheck = CreateBuffSubCheckbox("MABFBuffsSuppressAfterFirstPullCheck", buffsSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.buffsSuppressAfterFirstPull, function(self)
+        MattActionBarFontDB.buffsSuppressAfterFirstPull = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+    end)
+    buffsHideWhenLFGCompleteCheck = CreateBuffSubCheckbox("MABFBuffsHideWhenLFGCompleteCheck", buffsSuppressAfterFirstPullCheck, 0, "Hide when LFG run is complete", MattActionBarFontDB.buffsHideWhenLFGComplete, function(self)
+        MattActionBarFontDB.buffsHideWhenLFGComplete = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+    end)
+    buffReminderScaleSlider:ClearAllPoints()
+    buffReminderScaleSlider:SetPoint("BOTTOM", remindersPages.buffs, "BOTTOM", 0, 74)
+
+    function RefreshBuffSubOptions()
+        local enabled = warnMissingClassBuffsCheck:GetChecked() and true or false
+        local subChecks = { buffsOnlyInInstanceCheck, buffsHideInRestAreaCheck, buffsSuppressInMPlusCheck, buffsSuppressAfterFirstPullCheck, buffsHideWhenLFGCompleteCheck }
+        for _, cb in ipairs(subChecks) do
+            cb:SetEnabled(enabled)
+            local t = _G[cb:GetName().."Text"]
+            if t then t:SetTextColor(enabled and 1 or 0.55, enabled and 1 or 0.55, enabled and 1 or 0.55) end
+        end
+    end
+
+    function RefreshBuffReminderScaleControl()
+        local enabled = warnMissingClassBuffsCheck:GetChecked() and true or false
+        if buffReminderScaleSlider then
+            buffReminderScaleSlider:SetEnabled(enabled)
+            buffReminderScaleSlider:SetAlpha(enabled and 1 or 0.6)
+        end
+    end
+
+    -- Class Stuff sub-page
+    warnClassSoulstoneCheck = CreateFrame("CheckButton", "MABFWarnClassSoulstoneCheck", remindersPages.classstuff, "InterfaceOptionsCheckButtonTemplate")
+    warnClassSoulstoneCheck:SetPoint("TOPLEFT", remindersPages.classstuff, "TOPLEFT", 0, -4)
+    warnClassSoulstoneText = _G[warnClassSoulstoneCheck:GetName().."Text"]
+    warnClassSoulstoneText:SetText("Warlock: Soulstone someone")
+    warnClassSoulstoneText:SetTextColor(1, 1, 1)
+    warnClassSoulstoneDesc = remindersPages.classstuff:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    warnClassSoulstoneDesc:SetPoint("TOPLEFT", warnClassSoulstoneCheck, "BOTTOMLEFT", 26, 2)
+    warnClassSoulstoneDesc:SetText("|cff888888Warn when no one has Soulstone|r")
+    warnClassSoulstoneDesc:SetScale(0.85)
+    warnClassSoulstoneCheck:SetChecked(MattActionBarFontDB.warnClassSoulstone)
+    warnClassSoulstoneCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.warnClassSoulstone = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+        if RefreshClassStuffSubOptions then
+            RefreshClassStuffSubOptions()
+        end
+        if RefreshClassStuffSubRules then
+            RefreshClassStuffSubRules()
+        end
+        if RefreshClassStuffScaleControl then
+            RefreshClassStuffScaleControl()
+        end
+    end)
+
+    warnClassShamanShieldsCheck = CreateFrame("CheckButton", "MABFWarnClassShamanShieldsCheck", remindersPages.classstuff, "InterfaceOptionsCheckButtonTemplate")
+    warnClassShamanShieldsCheck:SetPoint("TOPLEFT", warnClassSoulstoneCheck, "TOPLEFT", 0, -44)
+    warnClassShamanShieldsText = _G[warnClassShamanShieldsCheck:GetName().."Text"]
+    warnClassShamanShieldsText:SetText("Shaman: Missing shields")
+    warnClassShamanShieldsText:SetTextColor(1, 1, 1)
+    warnClassShamanShieldsDesc = remindersPages.classstuff:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    warnClassShamanShieldsDesc:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "BOTTOMLEFT", 26, 2)
+    warnClassShamanShieldsDesc:SetText("|cff888888Warn when shields are missing|r")
+    warnClassShamanShieldsDesc:SetScale(0.85)
+    warnClassShamanShieldsCheck:SetChecked(MattActionBarFontDB.warnClassShamanShields)
+    warnClassShamanShieldsCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.warnClassShamanShields = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+        if RefreshClassStuffSubOptions then
+            RefreshClassStuffSubOptions()
+        end
+        if RefreshClassStuffSubRules then
+            RefreshClassStuffSubRules()
+        end
+        if RefreshClassStuffScaleControl then
+            RefreshClassStuffScaleControl()
+        end
+    end)
+
+    warnClassPaladinBeaconsCheck = CreateFrame("CheckButton", "MABFWarnClassPaladinBeaconsCheck", remindersPages.classstuff, "InterfaceOptionsCheckButtonTemplate")
+    warnClassPaladinBeaconsCheck:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "TOPLEFT", 0, -44)
+    warnClassPaladinBeaconsText = _G[warnClassPaladinBeaconsCheck:GetName().."Text"]
+    warnClassPaladinBeaconsText:SetText("Paladin: Missing beacons")
+    warnClassPaladinBeaconsText:SetTextColor(1, 1, 1)
+    warnClassPaladinBeaconsDesc = remindersPages.classstuff:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    warnClassPaladinBeaconsDesc:SetPoint("TOPLEFT", warnClassPaladinBeaconsCheck, "BOTTOMLEFT", 26, 2)
+    warnClassPaladinBeaconsDesc:SetText("|cff888888Holy only; hidden with Beacon of Virtue|r")
+    warnClassPaladinBeaconsDesc:SetScale(0.85)
+    warnClassPaladinBeaconsCheck:SetChecked(MattActionBarFontDB.warnClassPaladinBeacons)
+    warnClassPaladinBeaconsCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.warnClassPaladinBeacons = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+        if RefreshClassStuffSubOptions then
+            RefreshClassStuffSubOptions()
+        end
+        if RefreshClassStuffSubRules then
+            RefreshClassStuffSubRules()
+        end
+        if RefreshClassStuffScaleControl then
+            RefreshClassStuffScaleControl()
+        end
+    end)
+
+    local function CreateClassSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick)
+        local cb = CreateFrame("CheckButton", name, remindersPages.classstuff, "InterfaceOptionsCheckButtonTemplate")
+        cb:ClearAllPoints()
+        cb:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", xOffset or 0, checkSpacing)
+        local label = _G[cb:GetName().."Text"]
+        label:SetText(labelText)
+        label:SetTextColor(1, 1, 1)
+        cb:SetChecked(checkedValue and true or false)
+        cb:SetScript("OnClick", onClick)
+        return cb
+    end
+
+    classOnlyInInstanceCheck = CreateClassSubCheckbox("MABFClassOnlyInInstanceCheck", warnClassPaladinBeaconsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.classOnlyInInstance, function(self)
+        MattActionBarFontDB.classOnlyInInstance = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+    end)
+    classHideInRestAreaCheck = CreateClassSubCheckbox("MABFClassHideInRestAreaCheck", classOnlyInInstanceCheck, 0, "Hide while resting", MattActionBarFontDB.classHideInRestArea, function(self)
+        MattActionBarFontDB.classHideInRestArea = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+    end)
+    classSuppressInMPlusCheck = CreateClassSubCheckbox("MABFClassSuppressInMPlusCheck", classHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.classSuppressInMPlus, function(self)
+        MattActionBarFontDB.classSuppressInMPlus = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+    end)
+    classSuppressAfterFirstPullCheck = CreateClassSubCheckbox("MABFClassSuppressAfterFirstPullCheck", classSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.classSuppressAfterFirstPull, function(self)
+        MattActionBarFontDB.classSuppressAfterFirstPull = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+    end)
+    classHideWhenLFGCompleteCheck = CreateClassSubCheckbox("MABFClassHideWhenLFGCompleteCheck", classSuppressAfterFirstPullCheck, 0, "Hide when LFG run is complete", MattActionBarFontDB.classHideWhenLFGComplete, function(self)
+        MattActionBarFontDB.classHideWhenLFGComplete = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+    end)
+
+    classStuffScaleSlider = CreateFrame("Slider", "MABFClassStuffScaleSlider", remindersPages.classstuff, "OptionsSliderTemplate")
+    classStuffScaleSlider:SetSize(180, 14)
+    classStuffScaleSlider:SetPoint("BOTTOM", remindersPages.classstuff, "BOTTOM", 0, 74)
+    classStuffScaleSlider:SetMinMaxValues(50, 200)
+    classStuffScaleSlider:SetValue((MattActionBarFontDB.classStuffReminderScale or 1.0) * 100)
+    classStuffScaleSlider:SetValueStep(1)
+    classStuffScaleSlider:SetObeyStepOnDrag(true)
+    classStuffScaleSliderName = classStuffScaleSlider:GetName()
+    _G[classStuffScaleSliderName.."Low"]:SetText("50%")
+    _G[classStuffScaleSliderName.."High"]:SetText("200%")
+    _G[classStuffScaleSliderName.."Text"]:SetText("Class Reminder Size: " .. math.floor((MattActionBarFontDB.classStuffReminderScale or 1.0) * 100) .. "%")
+    StyleSlider(classStuffScaleSlider)
+    classStuffScaleSlider:SetScript("OnValueChanged", function(self, value)
+        local pct = math.floor((value or 100) + 0.5)
+        if pct < 50 then pct = 50 end
+        if pct > 200 then pct = 200 end
+        MattActionBarFontDB.classStuffReminderScale = pct / 100
+        _G[classStuffScaleSliderName.."Text"]:SetText("Class Reminder Size: " .. pct .. "%")
+        if MABF and MABF.ApplyClassStuffReminderScale then
+            MABF:ApplyClassStuffReminderScale()
+        end
+    end)
+
+    warnClassStuffResetBtn = CreateReminderResetButton("MABFWarnClassStuffResetBtn", remindersPages.classstuff, function()
+        if MABF and MABF.ResetClassStuffReminderPosition then
+            MABF:ResetClassStuffReminderPosition()
+            if MABF.SetupClassStuffReminder then
+                MABF:SetupClassStuffReminder()
+            end
+        end
+    end)
+    warnClassStuffResetSizeBtn = CreateReminderResetSizeButton("MABFWarnClassStuffResetSizeBtn", remindersPages.classstuff, function()
+        if classStuffScaleSlider then
+            classStuffScaleSlider:SetValue(100)
+        end
+        MattActionBarFontDB.classStuffReminderScale = 1.0
+        if MABF and MABF.ApplyClassStuffReminderScale then
+            MABF:ApplyClassStuffReminderScale()
+        end
+    end)
+
+    function RefreshClassStuffSubOptions()
+        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or warnClassPaladinBeaconsCheck:GetChecked()) and true or false
+        local labels = {
+            _G[warnClassSoulstoneCheck:GetName().."Text"],
+            _G[warnClassShamanShieldsCheck:GetName().."Text"],
+            _G[warnClassPaladinBeaconsCheck:GetName().."Text"],
+        }
+        for _, label in ipairs(labels) do
+            if label then
+                label:SetTextColor(enabled and 1 or 0.9, enabled and 1 or 0.9, enabled and 1 or 0.9)
+            end
+        end
+    end
+
+    function RefreshClassStuffSubRules()
+        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or warnClassPaladinBeaconsCheck:GetChecked()) and true or false
+        local subChecks = {
+            classOnlyInInstanceCheck, classHideInRestAreaCheck, classSuppressInMPlusCheck,
+            classSuppressAfterFirstPullCheck, classHideWhenLFGCompleteCheck,
+        }
+        for _, cb in ipairs(subChecks) do
+            cb:SetEnabled(enabled)
+            local t = _G[cb:GetName().."Text"]
+            if t then t:SetTextColor(enabled and 1 or 0.55, enabled and 1 or 0.55, enabled and 1 or 0.55) end
+        end
+    end
+
+    function RefreshClassStuffScaleControl()
+        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or warnClassPaladinBeaconsCheck:GetChecked()) and true or false
+        if classStuffScaleSlider then
+            classStuffScaleSlider:SetEnabled(enabled)
+            classStuffScaleSlider:SetAlpha(enabled and 1 or 0.6)
+        end
+    end
+
+    RefreshMissingPetSubOptions()
+    RefreshPetReminderScaleControl()
+    RefreshConsumableSubOptions()
+    RefreshBuffSubOptions()
+    RefreshBuffReminderScaleControl()
+    RefreshClassStuffSubOptions()
+    RefreshClassStuffSubRules()
+    RefreshClassStuffScaleControl()
+    ShowReminderSubPage("consumables")
+
+    --------------------------------------------------------------------------
     -- Bags Page
     --------------------------------------------------------------------------
     bagsTitle = CreatePageTitle(pageBags, "Bag Tweaks")
@@ -2405,6 +3368,17 @@ function MABF:CreateOptionsWindow()
         hideMicroMenuCheck, hideBagBarCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
         perfHideMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
         autoTurnInCheck, bagIlvlCheck, autoRepairCheck, autoSellCheck,
+        customFontsCheck,
+        warnMissingPetCheck, warnPetPassiveCheck, trackConsumablesCheck,
+        petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petMissingSuppressInMPlusCheck,
+        petMissingSuppressAfterFirstPullCheck, petMissingHideWhenLFGCompleteCheck,
+        consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesSuppressInMPlusCheck,
+        consumablesSuppressAfterFirstPullCheck, consumablesHideWhenLFGCompleteCheck, consumablesHealthstoneCheck,
+        warnMissingClassBuffsCheck, buffsOnlyInInstanceCheck, buffsHideInRestAreaCheck,
+        buffsSuppressInMPlusCheck, buffsSuppressAfterFirstPullCheck, buffsHideWhenLFGCompleteCheck,
+        warnClassSoulstoneCheck, warnClassShamanShieldsCheck, warnClassPaladinBeaconsCheck,
+        classOnlyInInstanceCheck, classHideInRestAreaCheck, classSuppressInMPlusCheck,
+        classSuppressAfterFirstPullCheck, classHideWhenLFGCompleteCheck,
         quickBindCheck, reloadAliasCheck, editModeAliasCheck, pullAliasCheck,
     }
     for _, cb in ipairs(mouseoverBarChecks or {}) do
@@ -2413,6 +3387,15 @@ function MABF:CreateOptionsWindow()
     for _, cb in ipairs(optionChecks) do
         StyleMinimalCheckbox(cb)
     end
+
+    local function EmphasizeReminderPrimaryLabel(label)
+        if not label then return end
+        label:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 14, "OUTLINE")
+        label:SetTextColor(1, 1, 1, 1)
+    end
+    EmphasizeReminderPrimaryLabel(trackConsumablesText)
+    EmphasizeReminderPrimaryLabel(warnMissingPetText)
+    EmphasizeReminderPrimaryLabel(warnMissingClassBuffsText)
 
     tinsert(UISpecialFrames, "MABFOptionsFrame")
 end
