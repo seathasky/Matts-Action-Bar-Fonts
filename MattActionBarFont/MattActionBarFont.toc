@@ -1,0 +1,130 @@
+## Interface: 120001
+## Title: Matt's Action Bar Fonts & UI QoL
+## Notes: Action bar fonts, UI QoL and more!
+## SavedVariables: MattActionBarFontDB
+## Author: Seathasky
+## Version: 8.1.0
+## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
+## AddonCompartmentFunc: MABF_AddonCompartment_Click
+## AddonCompartmentFuncOnEnter: MABF_AddonCompartment_OnEnter
+## AddonCompartmentFuncOnLeave: MABF_AddonCompartment_OnLeave
+## OptionalDeps: Dominos
+
+# Libraries
+Libs/LibStub.lua
+Libs/CallbackHandler-1.0.lua
+Libs/LibPixelPerfect-1.0/lib.xml
+Libs/LibSharedMedia-3.0.lua
+Libs/LibCustomGlow-1.0.xml
+Libs/LibDataBroker-1.1.lua
+Libs/LibDBIcon-1.0.lua
+
+# Core bootstrap
+MABFDefaults.lua
+MABFCore.lua
+Core/Fonts/FontRegistry.lua
+
+# Core systems
+Core/System/DataBroker.lua
+Core/System/Events.lua
+Core/System/Popups.lua
+Core/System/Skins.lua
+Core/Fonts/Manager.lua
+Core/UI/ThemeHelpers.lua
+Core/UI/WidgetHelpers.lua
+Core/UI/OptionsStyling.lua
+Core/UI/OptionsWindowShell.lua
+Core/UI/OptionsContext.lua
+
+#-------------#
+#   SECTION
+#-------------#
+
+# ----- Tabs -------------------
+
+Core/Tabs/Sidebar.lua
+Core/Tabs/SidebarBuilder.lua
+
+# ----- Runtime Modules --------
+Core/Runtime/Fading/MouseoverFade.lua
+Core/Runtime/Fading/PetBarFade.lua
+Core/Runtime/Actionbars/FeaturesRuntime.lua
+Core/Runtime/Actionbars/OffsetsRuntime.lua
+Core/Runtime/Actionbars/TextRuntime.lua
+Core/Runtime/Themes/ActionbarThemeRuntime.lua
+Core/Runtime/UIQOL/QuestTweaksRuntime.lua
+Core/Runtime/UIQOL/BagItemLevelRuntime.lua
+Core/Runtime/UIQOL/MerchantRuntime.lua
+Core/Runtime/UIQOL/UIFeatures/BlizzardUIRuntime.lua
+Core/Runtime/UIQOL/UIFeatures/VisualRuntime.lua
+Core/Runtime/UIQOL/UIFeatures/ToolsRuntime.lua
+Core/Runtime/UIQOL/Reminders/ConsumablesRuntime.lua
+Core/Runtime/UIQOL/Reminders/PetsRuntime.lua
+Core/Runtime/UIQOL/Reminders/BuffsRuntime.lua
+Core/Runtime/UIQOL/Reminders/ClassStuffRuntime.lua
+Core/Runtime/Shortcuts/KeybindsRuntime.lua
+Core/Runtime/Shortcuts/EditModeShortcutRuntime.lua
+Core/Runtime/System/EditModeDeviceManagerRuntime.lua
+Core/Runtime/System/SlashCommandsRuntime.lua
+
+# ----- Action Bars ----------------
+
+Core/Tabs/Section/Actionbars/Text.lua
+Core/Tabs/Section/Actionbars/TextPage.lua
+Core/Tabs/Section/Actionbars/Offsets.lua
+Core/Tabs/Section/Actionbars/OffsetsPage.lua
+Core/Tabs/Section/Actionbars/Themes.lua
+Core/Tabs/Section/Actionbars/ThemesPage.lua
+Core/Tabs/Section/Actionbars/Features.lua
+Core/Tabs/Section/Actionbars/FeaturesPage.lua
+Core/Tabs/Section/Actionbars/Fading.lua
+Core/Tabs/Section/Actionbars/FadingPage.lua
+
+# ----- UI/QOL -----------------
+
+Core/Tabs/Section/UIQOL/UIFeatures/BlizzardUI.lua
+Core/Tabs/Section/UIQOL/UIFeatures/BlizzardUIPage.lua
+Core/Tabs/Section/UIQOL/UIFeatures/Visual.lua
+Core/Tabs/Section/UIQOL/UIFeatures/VisualPage.lua
+Core/Tabs/Section/UIQOL/UIFeatures/Tools.lua
+Core/Tabs/Section/UIQOL/UIFeatures/ToolsPage.lua
+Core/Tabs/Section/UIQOL/UIFeatures/UIFeaturesShell.lua
+Core/Tabs/Section/UIQOL/UIFeatures/UIFeaturesShellPage.lua
+Core/Tabs/Section/UIQOL/QuestTweaks.lua
+Core/Tabs/Section/UIQOL/QuestTweaksPage.lua
+Core/Tabs/Section/UIQOL/BagTweaksPage.lua
+Core/Tabs/Section/UIQOL/Reminders/Pets.lua
+Core/Tabs/Section/UIQOL/Reminders/RemindersShell.lua
+Core/Tabs/Section/UIQOL/Reminders/RemindersShellPage.lua
+Core/Tabs/Section/UIQOL/Reminders/ResetButtons.lua
+Core/Tabs/Section/UIQOL/Reminders/PetsPage.lua
+Core/Tabs/Section/UIQOL/Reminders/Consumables.lua
+Core/Tabs/Section/UIQOL/Reminders/ConsumablesPage.lua
+Core/Tabs/Section/UIQOL/Reminders/Buffs.lua
+Core/Tabs/Section/UIQOL/Reminders/BuffsPage.lua
+Core/Tabs/Section/UIQOL/Reminders/ClassStuff.lua
+Core/Tabs/Section/UIQOL/Reminders/ClassPage.lua
+Core/Tabs/Section/UIQOL/BagItemLevel.lua
+Core/Tabs/Section/UIQOL/Merchant.lua
+Core/Tabs/Section/UIQOL/MerchantPage.lua
+
+
+# ----- Shortcuts --------------
+Core/Tabs/Section/Shortcuts/Keybinds.lua
+Core/Tabs/Section/Shortcuts/EditMode.lua
+
+# ----- System -----------------
+Core/Tabs/Section/System/EditModeDeviceManager.lua
+Core/Tabs/Section/System/SlashCommands.lua
+Core/Tabs/Section/System/QuickCmdsPage.lua
+Core/Tabs/Section/System/SystemPage.lua
+
+#-------------#
+# SECTION END
+#-------------#
+
+# Main options controller
+MABFOptions.lua
+
+# User customizations
+AddYourCustomFonts.lua
