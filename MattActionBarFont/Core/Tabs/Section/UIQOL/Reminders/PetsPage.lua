@@ -16,7 +16,7 @@ function MABF:BuildRemindersPetsPage(opts)
 
     local warnMissingPetCheck = CreateFrame("CheckButton", "MABFWarnMissingPetCheck", page, "InterfaceOptionsCheckButtonTemplate")
     warnMissingPetCheck:ClearAllPoints()
-    warnMissingPetCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -4)
+    warnMissingPetCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 10)
     local warnMissingPetText = _G[warnMissingPetCheck:GetName() .. "Text"]
     warnMissingPetText:SetText("Warn when pet is missing")
     warnMissingPetText:SetTextColor(1, 1, 1)
@@ -46,7 +46,11 @@ function MABF:BuildRemindersPetsPage(opts)
         MattActionBarFontDB.petMissingHideInRestArea = self:GetChecked() and true or false
         MABF:SetupPetPassiveReminder()
     end)
-    local petMissingSuppressInMPlusCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressInMPlusCheck", petMissingHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.petMissingSuppressInMPlus, function(self)
+    local petHideWhileMountedCheck = CreateMissingPetSubCheckbox("MABFPetHideWhileMountedCheck", petMissingHideInRestAreaCheck, 0, "Hide while mounted", MattActionBarFontDB.petHideWhileMounted, function(self)
+        MattActionBarFontDB.petHideWhileMounted = self:GetChecked() and true or false
+        MABF:SetupPetPassiveReminder()
+    end)
+    local petMissingSuppressInMPlusCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressInMPlusCheck", petHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.petMissingSuppressInMPlus, function(self)
         MattActionBarFontDB.petMissingSuppressInMPlus = self:GetChecked() and true or false
         MABF:SetupPetPassiveReminder()
     end)
@@ -61,12 +65,12 @@ function MABF:BuildRemindersPetsPage(opts)
 
     local warnPetPassiveCheck = CreateFrame("CheckButton", "MABFWarnPetPassiveCheck", page, "InterfaceOptionsCheckButtonTemplate")
     warnPetPassiveCheck:ClearAllPoints()
-    warnPetPassiveCheck:SetPoint("TOPLEFT", petMissingHideWhenLFGCompleteCheck, "BOTTOMLEFT", 0, -8)
+    warnPetPassiveCheck:SetPoint("TOPLEFT", petMissingHideWhenLFGCompleteCheck, "BOTTOMLEFT", 0, -4)
     local warnPetPassiveText = _G[warnPetPassiveCheck:GetName() .. "Text"]
     warnPetPassiveText:SetText("Warn when pet is on passive")
     warnPetPassiveText:SetTextColor(1, 1, 1)
     local warnPetPassiveDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    warnPetPassiveDesc:SetPoint("TOPLEFT", warnPetPassiveCheck, "BOTTOMLEFT", 26, 2)
+    warnPetPassiveDesc:SetPoint("TOPLEFT", warnPetPassiveCheck, "BOTTOMLEFT", 26, 0)
     warnPetPassiveDesc:SetText("|cff888888Shows in-combat text for tracked pet classes|r")
     warnPetPassiveDesc:SetScale(0.85)
     warnPetPassiveCheck:SetChecked(MattActionBarFontDB.warnPetPassive)
@@ -117,6 +121,7 @@ function MABF:BuildRemindersPetsPage(opts)
         local subChecks = {
             petMissingOnlyInstanceCheck,
             petMissingHideInRestAreaCheck,
+            petHideWhileMountedCheck,
             petMissingSuppressInMPlusCheck,
             petMissingSuppressAfterFirstPullCheck,
             petMissingHideWhenLFGCompleteCheck,
@@ -156,5 +161,6 @@ function MABF:BuildRemindersPetsPage(opts)
         warnPetPassiveResetSizeBtn = warnPetPassiveResetSizeBtn,
         RefreshMissingPetSubOptions = RefreshMissingPetSubOptions,
         RefreshPetReminderScaleControl = RefreshPetReminderScaleControl,
+        petHideWhileMountedCheck = petHideWhileMountedCheck,
     }
 end

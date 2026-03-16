@@ -56,6 +56,16 @@ do
         return (InCombatLockdown and InCombatLockdown()) or (UnitAffectingCombat and UnitAffectingCombat("player")) or false
     end
 
+    local function IsPlayerMounted()
+        if IsMounted and IsMounted() then
+            return true
+        end
+        if UnitOnTaxi and UnitOnTaxi("player") then
+            return true
+        end
+        return false
+    end
+
     local function SyncDungeonCombatStarted()
         if not IsInSupportedInstanceContent() then
             dungeonCombatStarted = false
@@ -213,6 +223,9 @@ do
             return false
         end
         if db.consumablesHideInRestArea ~= false and IsResting and IsResting() then
+            return false
+        end
+        if db.consumablesHideWhileMounted and IsPlayerMounted() then
             return false
         end
         if db.consumablesSuppressAfterFirstPull and dungeonCombatStarted and IsInSupportedInstanceContent() then
@@ -420,6 +433,7 @@ do
         evf:RegisterEvent("PLAYER_REGEN_DISABLED")
         evf:RegisterEvent("PLAYER_REGEN_ENABLED")
         evf:RegisterEvent("PLAYER_UPDATE_RESTING")
+        evf:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
         evf:RegisterEvent("ZONE_CHANGED_NEW_AREA")
         evf:RegisterEvent("UNIT_AURA")
         evf:RegisterEvent("UNIT_INVENTORY_CHANGED")

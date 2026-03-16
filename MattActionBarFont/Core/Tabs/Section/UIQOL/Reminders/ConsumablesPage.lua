@@ -16,7 +16,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
 
     local trackConsumablesCheck = CreateFrame("CheckButton", "MABFTrackConsumablesCheck", page, "InterfaceOptionsCheckButtonTemplate")
     trackConsumablesCheck:ClearAllPoints()
-    trackConsumablesCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -4)
+    trackConsumablesCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 10)
     local trackConsumablesText = _G[trackConsumablesCheck:GetName() .. "Text"]
     trackConsumablesText:SetText("Track consumables")
     trackConsumablesText:SetTextColor(1, 1, 1)
@@ -46,7 +46,11 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.consumablesHideInRestArea = self:GetChecked() and true or false
         MABF:SetupConsumableReminder()
     end)
-    local consumablesSuppressInMPlusCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressInMPlusCheck", consumablesHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.consumablesSuppressInMPlus, function(self)
+    local consumablesHideWhileMountedCheck = CreateConsumablesSubCheckbox("MABFConsumablesHideWhileMountedCheck", consumablesHideInRestAreaCheck, 0, "Hide while mounted", MattActionBarFontDB.consumablesHideWhileMounted, function(self)
+        MattActionBarFontDB.consumablesHideWhileMounted = self:GetChecked() and true or false
+        MABF:SetupConsumableReminder()
+    end)
+    local consumablesSuppressInMPlusCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressInMPlusCheck", consumablesHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.consumablesSuppressInMPlus, function(self)
         MattActionBarFontDB.consumablesSuppressInMPlus = self:GetChecked() and true or false
         MABF:SetupConsumableReminder()
     end)
@@ -109,6 +113,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
         local subChecks = {
             consumablesOnlyInstanceCheck,
             consumablesHideInRestAreaCheck,
+            consumablesHideWhileMountedCheck,
             consumablesSuppressInMPlusCheck,
             consumablesSuppressAfterFirstPullCheck,
             consumablesHideWhenLFGCompleteCheck,
@@ -137,6 +142,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
         trackConsumablesResetSizeBtn = trackConsumablesResetSizeBtn,
         consumablesOnlyInstanceCheck = consumablesOnlyInstanceCheck,
         consumablesHideInRestAreaCheck = consumablesHideInRestAreaCheck,
+        consumablesHideWhileMountedCheck = consumablesHideWhileMountedCheck,
         consumablesSuppressInMPlusCheck = consumablesSuppressInMPlusCheck,
         consumablesSuppressAfterFirstPullCheck = consumablesSuppressAfterFirstPullCheck,
         consumablesHideWhenLFGCompleteCheck = consumablesHideWhenLFGCompleteCheck,

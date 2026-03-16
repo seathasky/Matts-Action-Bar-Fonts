@@ -3,7 +3,7 @@
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version: 8.1.1
+## Version: 8.1.2
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## AddonCompartmentFunc: MABF_AddonCompartment_Click
 ## AddonCompartmentFuncOnEnter: MABF_AddonCompartment_OnEnter
@@ -94,16 +94,12 @@ Core/Tabs/Section/UIQOL/UIFeatures/UIFeaturesShellPage.lua
 Core/Tabs/Section/UIQOL/QuestTweaks.lua
 Core/Tabs/Section/UIQOL/QuestTweaksPage.lua
 Core/Tabs/Section/UIQOL/BagTweaksPage.lua
-Core/Tabs/Section/UIQOL/Reminders/Pets.lua
 Core/Tabs/Section/UIQOL/Reminders/RemindersShell.lua
 Core/Tabs/Section/UIQOL/Reminders/RemindersShellPage.lua
 Core/Tabs/Section/UIQOL/Reminders/ResetButtons.lua
 Core/Tabs/Section/UIQOL/Reminders/PetsPage.lua
-Core/Tabs/Section/UIQOL/Reminders/Consumables.lua
 Core/Tabs/Section/UIQOL/Reminders/ConsumablesPage.lua
-Core/Tabs/Section/UIQOL/Reminders/Buffs.lua
 Core/Tabs/Section/UIQOL/Reminders/BuffsPage.lua
-Core/Tabs/Section/UIQOL/Reminders/ClassStuff.lua
 Core/Tabs/Section/UIQOL/Reminders/ClassPage.lua
 Core/Tabs/Section/UIQOL/BagItemLevel.lua
 Core/Tabs/Section/UIQOL/Merchant.lua

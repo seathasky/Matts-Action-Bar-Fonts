@@ -15,7 +15,7 @@ function MABF:BuildRemindersBuffsPage(opts)
     end
 
     local warnMissingClassBuffsCheck = CreateFrame("CheckButton", "MABFWarnMissingClassBuffsCheck", page, "InterfaceOptionsCheckButtonTemplate")
-    warnMissingClassBuffsCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -4)
+    warnMissingClassBuffsCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 10)
     local warnMissingClassBuffsText = _G[warnMissingClassBuffsCheck:GetName() .. "Text"]
     warnMissingClassBuffsText:SetText("Warn when class buff is missing")
     warnMissingClassBuffsText:SetTextColor(1, 1, 1)
@@ -85,7 +85,11 @@ function MABF:BuildRemindersBuffsPage(opts)
         MattActionBarFontDB.buffsHideInRestArea = self:GetChecked() and true or false
         MABF:SetupMissingBuffReminder()
     end)
-    local buffsSuppressInMPlusCheck = CreateBuffSubCheckbox("MABFBuffsSuppressInMPlusCheck", buffsHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.buffsSuppressInMPlus, function(self)
+    local buffsHideWhileMountedCheck = CreateBuffSubCheckbox("MABFBuffsHideWhileMountedCheck", buffsHideInRestAreaCheck, 0, "Hide while mounted", MattActionBarFontDB.buffsHideWhileMounted, function(self)
+        MattActionBarFontDB.buffsHideWhileMounted = self:GetChecked() and true or false
+        MABF:SetupMissingBuffReminder()
+    end)
+    local buffsSuppressInMPlusCheck = CreateBuffSubCheckbox("MABFBuffsSuppressInMPlusCheck", buffsHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.buffsSuppressInMPlus, function(self)
         MattActionBarFontDB.buffsSuppressInMPlus = self:GetChecked() and true or false
         MABF:SetupMissingBuffReminder()
     end)
@@ -106,6 +110,7 @@ function MABF:BuildRemindersBuffsPage(opts)
         local subChecks = {
             buffsOnlyInInstanceCheck,
             buffsHideInRestAreaCheck,
+            buffsHideWhileMountedCheck,
             buffsSuppressInMPlusCheck,
             buffsSuppressAfterFirstPullCheck,
             buffsHideWhenLFGCompleteCheck,
@@ -139,6 +144,7 @@ function MABF:BuildRemindersBuffsPage(opts)
         warnMissingClassBuffsResetSizeBtn = warnMissingClassBuffsResetSizeBtn,
         buffsOnlyInInstanceCheck = buffsOnlyInInstanceCheck,
         buffsHideInRestAreaCheck = buffsHideInRestAreaCheck,
+        buffsHideWhileMountedCheck = buffsHideWhileMountedCheck,
         buffsSuppressInMPlusCheck = buffsSuppressInMPlusCheck,
         buffsSuppressAfterFirstPullCheck = buffsSuppressAfterFirstPullCheck,
         buffsHideWhenLFGCompleteCheck = buffsHideWhenLFGCompleteCheck,

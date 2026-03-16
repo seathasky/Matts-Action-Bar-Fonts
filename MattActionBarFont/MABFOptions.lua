@@ -177,6 +177,7 @@ function MABF:CreateOptionsWindow()
     warnPetPassiveResetSizeBtn = remindersShellPage and remindersShellPage.warnPetPassiveResetSizeBtn
     petMissingOnlyInstanceCheck = remindersShellPage and remindersShellPage.petMissingOnlyInstanceCheck
     petMissingHideInRestAreaCheck = remindersShellPage and remindersShellPage.petMissingHideInRestAreaCheck
+    petHideWhileMountedCheck = remindersShellPage and remindersShellPage.petHideWhileMountedCheck
     petMissingSuppressInMPlusCheck = remindersShellPage and remindersShellPage.petMissingSuppressInMPlusCheck
     petMissingSuppressAfterFirstPullCheck = remindersShellPage and remindersShellPage.petMissingSuppressAfterFirstPullCheck
     petMissingHideWhenLFGCompleteCheck = remindersShellPage and remindersShellPage.petMissingHideWhenLFGCompleteCheck
@@ -188,6 +189,7 @@ function MABF:CreateOptionsWindow()
     trackConsumablesResetSizeBtn = remindersShellPage and remindersShellPage.trackConsumablesResetSizeBtn
     consumablesOnlyInstanceCheck = remindersShellPage and remindersShellPage.consumablesOnlyInstanceCheck
     consumablesHideInRestAreaCheck = remindersShellPage and remindersShellPage.consumablesHideInRestAreaCheck
+    consumablesHideWhileMountedCheck = remindersShellPage and remindersShellPage.consumablesHideWhileMountedCheck
     consumablesSuppressInMPlusCheck = remindersShellPage and remindersShellPage.consumablesSuppressInMPlusCheck
     consumablesSuppressAfterFirstPullCheck = remindersShellPage and remindersShellPage.consumablesSuppressAfterFirstPullCheck
     consumablesHideWhenLFGCompleteCheck = remindersShellPage and remindersShellPage.consumablesHideWhenLFGCompleteCheck
@@ -199,6 +201,7 @@ function MABF:CreateOptionsWindow()
     warnMissingClassBuffsResetSizeBtn = remindersShellPage and remindersShellPage.warnMissingClassBuffsResetSizeBtn
     buffsOnlyInInstanceCheck = remindersShellPage and remindersShellPage.buffsOnlyInInstanceCheck
     buffsHideInRestAreaCheck = remindersShellPage and remindersShellPage.buffsHideInRestAreaCheck
+    buffsHideWhileMountedCheck = remindersShellPage and remindersShellPage.buffsHideWhileMountedCheck
     buffsSuppressInMPlusCheck = remindersShellPage and remindersShellPage.buffsSuppressInMPlusCheck
     buffsSuppressAfterFirstPullCheck = remindersShellPage and remindersShellPage.buffsSuppressAfterFirstPullCheck
     buffsHideWhenLFGCompleteCheck = remindersShellPage and remindersShellPage.buffsHideWhenLFGCompleteCheck
@@ -210,6 +213,7 @@ function MABF:CreateOptionsWindow()
     warnClassStuffResetSizeBtn = remindersShellPage and remindersShellPage.warnClassStuffResetSizeBtn
     classOnlyInInstanceCheck = remindersShellPage and remindersShellPage.classOnlyInInstanceCheck
     classHideInRestAreaCheck = remindersShellPage and remindersShellPage.classHideInRestAreaCheck
+    classHideWhileMountedCheck = remindersShellPage and remindersShellPage.classHideWhileMountedCheck
     classSuppressInMPlusCheck = remindersShellPage and remindersShellPage.classSuppressInMPlusCheck
     classSuppressAfterFirstPullCheck = remindersShellPage and remindersShellPage.classSuppressAfterFirstPullCheck
     classHideWhenLFGCompleteCheck = remindersShellPage and remindersShellPage.classHideWhenLFGCompleteCheck
@@ -251,14 +255,14 @@ function MABF:CreateOptionsWindow()
         autoTurnInCheck, bagIlvlCheck, autoRepairCheck, autoSellCheck,
         customFontsCheck,
         warnMissingPetCheck, warnPetPassiveCheck, trackConsumablesCheck,
-        petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petMissingSuppressInMPlusCheck,
+        petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petHideWhileMountedCheck, petMissingSuppressInMPlusCheck,
         petMissingSuppressAfterFirstPullCheck, petMissingHideWhenLFGCompleteCheck,
-        consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesSuppressInMPlusCheck,
+        consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesHideWhileMountedCheck, consumablesSuppressInMPlusCheck,
         consumablesSuppressAfterFirstPullCheck, consumablesHideWhenLFGCompleteCheck, consumablesHealthstoneCheck,
-        warnMissingClassBuffsCheck, buffsOnlyInInstanceCheck, buffsHideInRestAreaCheck,
+        warnMissingClassBuffsCheck, buffsOnlyInInstanceCheck, buffsHideInRestAreaCheck, buffsHideWhileMountedCheck,
         buffsSuppressInMPlusCheck, buffsSuppressAfterFirstPullCheck, buffsHideWhenLFGCompleteCheck,
         warnClassSoulstoneCheck, warnClassShamanShieldsCheck, warnClassPaladinBeaconsCheck,
-        classOnlyInInstanceCheck, classHideInRestAreaCheck, classSuppressInMPlusCheck,
+        classOnlyInInstanceCheck, classHideInRestAreaCheck, classHideWhileMountedCheck, classSuppressInMPlusCheck,
         classSuppressAfterFirstPullCheck, classHideWhenLFGCompleteCheck,
         quickBindCheck, reloadAliasCheck, editModeAliasCheck, pullAliasCheck,
     }

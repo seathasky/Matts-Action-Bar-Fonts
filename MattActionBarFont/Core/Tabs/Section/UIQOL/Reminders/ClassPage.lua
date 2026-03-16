@@ -9,13 +9,14 @@ function MABF:BuildRemindersClassPage(opts)
     local StyleSlider = opts.StyleSlider
     local CreateReminderResetButton = opts.CreateReminderResetButton
     local CreateReminderResetSizeButton = opts.CreateReminderResetSizeButton
+    local classRuleSpacing = -3
 
     if not page or not checkSpacing or not StyleSlider or not CreateReminderResetButton or not CreateReminderResetSizeButton then
         return nil
     end
 
     local warnClassSoulstoneCheck = CreateFrame("CheckButton", "MABFWarnClassSoulstoneCheck", page, "InterfaceOptionsCheckButtonTemplate")
-    warnClassSoulstoneCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -4)
+    warnClassSoulstoneCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 10)
     local warnClassSoulstoneText = _G[warnClassSoulstoneCheck:GetName() .. "Text"]
     warnClassSoulstoneText:SetText("Warlock: Soulstone someone")
     warnClassSoulstoneText:SetTextColor(1, 1, 1)
@@ -26,7 +27,7 @@ function MABF:BuildRemindersClassPage(opts)
     warnClassSoulstoneCheck:SetChecked(MattActionBarFontDB.warnClassSoulstone)
 
     local warnClassShamanShieldsCheck = CreateFrame("CheckButton", "MABFWarnClassShamanShieldsCheck", page, "InterfaceOptionsCheckButtonTemplate")
-    warnClassShamanShieldsCheck:SetPoint("TOPLEFT", warnClassSoulstoneCheck, "TOPLEFT", 0, -44)
+    warnClassShamanShieldsCheck:SetPoint("TOPLEFT", warnClassSoulstoneCheck, "TOPLEFT", 0, -36)
     local warnClassShamanShieldsText = _G[warnClassShamanShieldsCheck:GetName() .. "Text"]
     warnClassShamanShieldsText:SetText("Shaman: Missing shields")
     warnClassShamanShieldsText:SetTextColor(1, 1, 1)
@@ -37,7 +38,7 @@ function MABF:BuildRemindersClassPage(opts)
     warnClassShamanShieldsCheck:SetChecked(MattActionBarFontDB.warnClassShamanShields)
 
     local warnClassPaladinBeaconsCheck = CreateFrame("CheckButton", "MABFWarnClassPaladinBeaconsCheck", page, "InterfaceOptionsCheckButtonTemplate")
-    warnClassPaladinBeaconsCheck:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "TOPLEFT", 0, -44)
+    warnClassPaladinBeaconsCheck:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "TOPLEFT", 0, -36)
     local warnClassPaladinBeaconsText = _G[warnClassPaladinBeaconsCheck:GetName() .. "Text"]
     warnClassPaladinBeaconsText:SetText("Paladin: Missing beacons")
     warnClassPaladinBeaconsText:SetTextColor(1, 1, 1)
@@ -47,10 +48,10 @@ function MABF:BuildRemindersClassPage(opts)
     warnClassPaladinBeaconsDesc:SetScale(0.85)
     warnClassPaladinBeaconsCheck:SetChecked(MattActionBarFontDB.warnClassPaladinBeacons)
 
-    local function CreateClassSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick)
+    local function CreateClassSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick, yOffset)
         local cb = CreateFrame("CheckButton", name, page, "InterfaceOptionsCheckButtonTemplate")
         cb:ClearAllPoints()
-        cb:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", xOffset or 0, checkSpacing)
+        cb:SetPoint("TOPLEFT", anchorTo, "BOTTOMLEFT", xOffset or 0, (yOffset ~= nil) and yOffset or classRuleSpacing)
         local label = _G[cb:GetName() .. "Text"]
         label:SetText(labelText)
         label:SetTextColor(1, 1, 1)
@@ -62,12 +63,16 @@ function MABF:BuildRemindersClassPage(opts)
     local classOnlyInInstanceCheck = CreateClassSubCheckbox("MABFClassOnlyInInstanceCheck", warnClassPaladinBeaconsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.classOnlyInInstance, function(self)
         MattActionBarFontDB.classOnlyInInstance = self:GetChecked() and true or false
         MABF:SetupClassStuffReminder()
-    end)
+    end, -10)
     local classHideInRestAreaCheck = CreateClassSubCheckbox("MABFClassHideInRestAreaCheck", classOnlyInInstanceCheck, 0, "Hide while resting", MattActionBarFontDB.classHideInRestArea, function(self)
         MattActionBarFontDB.classHideInRestArea = self:GetChecked() and true or false
         MABF:SetupClassStuffReminder()
     end)
-    local classSuppressInMPlusCheck = CreateClassSubCheckbox("MABFClassSuppressInMPlusCheck", classHideInRestAreaCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.classSuppressInMPlus, function(self)
+    local classHideWhileMountedCheck = CreateClassSubCheckbox("MABFClassHideWhileMountedCheck", classHideInRestAreaCheck, 0, "Hide while mounted", MattActionBarFontDB.classHideWhileMounted, function(self)
+        MattActionBarFontDB.classHideWhileMounted = self:GetChecked() and true or false
+        MABF:SetupClassStuffReminder()
+    end)
+    local classSuppressInMPlusCheck = CreateClassSubCheckbox("MABFClassSuppressInMPlusCheck", classHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.classSuppressInMPlus, function(self)
         MattActionBarFontDB.classSuppressInMPlus = self:GetChecked() and true or false
         MABF:SetupClassStuffReminder()
     end)
@@ -140,6 +145,7 @@ function MABF:BuildRemindersClassPage(opts)
         local subChecks = {
             classOnlyInInstanceCheck,
             classHideInRestAreaCheck,
+            classHideWhileMountedCheck,
             classSuppressInMPlusCheck,
             classSuppressAfterFirstPullCheck,
             classHideWhenLFGCompleteCheck,
@@ -185,6 +191,7 @@ function MABF:BuildRemindersClassPage(opts)
         warnClassStuffResetSizeBtn = warnClassStuffResetSizeBtn,
         classOnlyInInstanceCheck = classOnlyInInstanceCheck,
         classHideInRestAreaCheck = classHideInRestAreaCheck,
+        classHideWhileMountedCheck = classHideWhileMountedCheck,
         classSuppressInMPlusCheck = classSuppressInMPlusCheck,
         classSuppressAfterFirstPullCheck = classSuppressAfterFirstPullCheck,
         classHideWhenLFGCompleteCheck = classHideWhenLFGCompleteCheck,
