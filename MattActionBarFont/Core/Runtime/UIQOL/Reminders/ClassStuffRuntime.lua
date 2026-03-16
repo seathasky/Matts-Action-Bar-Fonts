@@ -591,6 +591,9 @@ do
         end
 
         self:ApplyClassStuffReminderScale()
+        if self.ApplyRemindersClickthroughLock then
+            self:ApplyRemindersClickthroughLock()
+        end
 
         if not self._classStuffReminderEvents then
             self._classStuffReminderEvents = CreateFrame("Frame")

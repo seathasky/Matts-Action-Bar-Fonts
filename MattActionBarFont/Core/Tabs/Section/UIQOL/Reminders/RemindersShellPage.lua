@@ -15,17 +15,81 @@ function MABF:BuildRemindersShellPage(opts)
     end
 
     local remindersTitle = CreatePageTitle(pageReminders, "Reminders")
-    local remindersMoveHint = pageReminders:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    remindersMoveHint:SetPoint("LEFT", remindersTitle, "RIGHT", 10, 0)
-    remindersMoveHint:SetText("|cff888888Shift+Drag reminders to move|r")
-    remindersMoveHint:SetScale(0.9)
 
     local remindersShell = MABF:BuildRemindersSubTabs({
         pageReminders = pageReminders,
         remindersTitle = remindersTitle,
     })
+    local remindersSubTabContainer = remindersShell and remindersShell.subTabContainer
     local remindersPages = remindersShell and remindersShell.pages or {}
     local ShowReminderSubPage = remindersShell and remindersShell.showSubPage or function() end
+
+    local remindersLockButton = CreateFrame("Button", "MABFRemindersClickthroughLockButton", pageReminders, "BackdropTemplate")
+    if remindersSubTabContainer then
+        remindersLockButton:SetPoint("TOPLEFT", remindersSubTabContainer, "BOTTOMLEFT", 0, -8)
+    else
+        remindersLockButton:SetPoint("TOPLEFT", remindersTitle, "BOTTOMLEFT", 0, -34)
+    end
+    remindersLockButton:SetSize(146, 20)
+    remindersLockButton:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    })
+    local remindersLockButtonText = remindersLockButton:CreateFontString(nil, "OVERLAY")
+    remindersLockButtonText:SetPoint("CENTER", remindersLockButton, "CENTER", 0, 0)
+    remindersLockButtonText:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 11, "OUTLINE")
+
+    local remindersHeaderDivider = pageReminders:CreateTexture(nil, "ARTWORK")
+    remindersHeaderDivider:SetColorTexture(1, 1, 1, 0.12)
+    remindersHeaderDivider:SetPoint("TOPLEFT", remindersLockButton, "BOTTOMLEFT", 0, -2)
+    remindersHeaderDivider:SetPoint("TOPRIGHT", pageReminders, "TOPRIGHT", -18, -2)
+    remindersHeaderDivider:SetHeight(1)
+
+    local remindersMoveHint = pageReminders:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    remindersMoveHint:SetPoint("TOPLEFT", remindersHeaderDivider, "BOTTOMLEFT", 0, -4)
+    remindersMoveHint:SetPoint("RIGHT", pageReminders, "RIGHT", -18, 0)
+    remindersMoveHint:SetJustifyH("LEFT")
+    remindersMoveHint:SetWordWrap(true)
+    remindersMoveHint:SetScale(0.9)
+
+    local function IsRemindersLockEnabled()
+        return MattActionBarFontDB and MattActionBarFontDB.remindersClickthroughLock and true or false
+    end
+
+    local function RefreshRemindersLockButton()
+        if IsRemindersLockEnabled() then
+            remindersLockButtonText:SetText("Locked")
+            remindersLockButtonText:SetTextColor(0.35, 1.0, 0.35, 1)
+            remindersLockButton:SetBackdropColor(0.08, 0.1, 0.08, 1)
+            remindersLockButton:SetBackdropBorderColor(0.35, 1.0, 0.35, 0.85)
+        else
+            remindersLockButtonText:SetText("Unlocked")
+            remindersLockButtonText:SetTextColor(1.0, 0.35, 0.35, 1)
+            remindersLockButton:SetBackdropColor(0.1, 0.08, 0.08, 1)
+            remindersLockButton:SetBackdropBorderColor(1.0, 0.35, 0.35, 0.85)
+        end
+    end
+
+    local function RefreshRemindersMoveHint()
+        if IsRemindersLockEnabled() then
+            remindersMoveHint:SetText("|cff55ff55Locked:|r |cff888888reminders are now click-through.|r")
+        else
+            remindersMoveHint:SetText("|cffff5555Unlocked:|r |cff888888Shift+Left-Drag to move reminders.|r")
+        end
+    end
+    RefreshRemindersLockButton()
+    RefreshRemindersMoveHint()
+
+    remindersLockButton:SetScript("OnClick", function()
+        MattActionBarFontDB.remindersClickthroughLock = not IsRemindersLockEnabled()
+        RefreshRemindersLockButton()
+        RefreshRemindersMoveHint()
+        if MABF and MABF.ApplyRemindersClickthroughLock then
+            MABF:ApplyRemindersClickthroughLock()
+        end
+    end)
 
     local function CreateReminderResetButton(name, parent, onClick)
         return MABF:CreateReminderResetButton(name, parent, onClick)
@@ -88,6 +152,7 @@ function MABF:BuildRemindersShellPage(opts)
 
     return {
         remindersTitle = remindersTitle,
+        remindersLockButton = remindersLockButton,
         remindersMoveHint = remindersMoveHint,
         remindersPages = remindersPages,
 

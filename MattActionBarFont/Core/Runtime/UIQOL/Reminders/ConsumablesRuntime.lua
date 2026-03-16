@@ -394,6 +394,9 @@ do
         end
 
         self:ApplyConsumableReminderScale()
+        if self.ApplyRemindersClickthroughLock then
+            self:ApplyRemindersClickthroughLock()
+        end
 
         if not self._consumableReminderEvents then
             self._consumableReminderEvents = CreateFrame("Frame")

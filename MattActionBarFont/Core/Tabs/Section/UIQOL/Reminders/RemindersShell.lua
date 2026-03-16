@@ -56,7 +56,8 @@ function MABF:BuildRemindersSubTabs(opts)
         classstuff = CreateFrame("Frame", nil, pageReminders),
     }
     for _, subPage in pairs(remindersPages) do
-        subPage:SetPoint("TOPLEFT", subTabContainer, "BOTTOMLEFT", 0, -8)
+        -- Reserve vertical space under tabs for the global lock row + helper text.
+        subPage:SetPoint("TOPLEFT", subTabContainer, "BOTTOMLEFT", 0, -62)
         subPage:SetPoint("BOTTOMRIGHT", pageReminders, "BOTTOMRIGHT", -8, 8)
     end
 
@@ -93,5 +94,6 @@ function MABF:BuildRemindersSubTabs(opts)
     return {
         pages = remindersPages,
         showSubPage = ShowReminderSubPage,
+        subTabContainer = subTabContainer,
     }
 end

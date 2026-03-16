@@ -370,6 +370,9 @@ do
         end
 
         self:ApplyMissingBuffReminderScale()
+        if self.ApplyRemindersClickthroughLock then
+            self:ApplyRemindersClickthroughLock()
+        end
 
         if not self._missingBuffReminderEvents then
             self._missingBuffReminderEvents = CreateFrame("Frame")

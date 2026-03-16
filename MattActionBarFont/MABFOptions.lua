@@ -167,6 +167,7 @@ function MABF:CreateOptionsWindow()
         StyleSlider = StyleSlider,
     })
     remindersTitle = remindersShellPage and remindersShellPage.remindersTitle
+    remindersLockButton = remindersShellPage and remindersShellPage.remindersLockButton
     remindersMoveHint = remindersShellPage and remindersShellPage.remindersMoveHint
     local remindersPages = remindersShellPage and remindersShellPage.remindersPages
 

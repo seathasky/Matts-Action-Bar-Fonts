@@ -390,6 +390,9 @@ do
         end
 
         self:ApplyPetReminderScale()
+        if self.ApplyRemindersClickthroughLock then
+            self:ApplyRemindersClickthroughLock()
+        end
 
         if not self._petPassiveReminderEvents then
             self._petPassiveReminderEvents = CreateFrame("Frame")

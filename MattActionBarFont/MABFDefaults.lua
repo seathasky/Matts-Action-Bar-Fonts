@@ -85,6 +85,7 @@ MABF.defaults = {
     consumablesSuppressAfterFirstPull = false, -- Hide after first pull starts in-instance
     consumablesHideWhenLFGComplete = true, -- Hide when LFG dungeon run is completed
     warnConsumableHealthstone = false, -- Track missing Healthstone when a warlock is in group
+    remindersClickthroughLock = false, -- Global lock: make reminder frames click-through (no dragging)
     consumableReminderPos = nil, -- Saved screen-center position for consumables reminder
     petPassiveReminderPos = nil, -- Saved screen-center position for pet passive reminder
     petReminderScale = 1.0, -- Scale for pet reminder frame (0.5-2.0)
