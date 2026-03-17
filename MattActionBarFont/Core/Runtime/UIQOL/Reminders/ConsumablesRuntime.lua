@@ -97,7 +97,8 @@ do
     local function PlayerHasFoodBuff()
         return AnyPlayerBuffMatches(function(auraData)
             local auraName = auraData and auraData.name
-            local lowerName = type(auraName) == "string" and auraName:lower() or ""
+            local ok, lowerName = pcall(function() return type(auraName) == "string" and auraName:lower() or "" end)
+            if not ok then return false end
             return lowerName:find("well fed", 1, true) ~= nil
         end)
     end
@@ -133,7 +134,8 @@ do
     local function PlayerHasFlaskBuff()
         return AnyPlayerBuffMatches(function(auraData)
             local auraName = auraData and auraData.name
-            local lowerName = type(auraName) == "string" and auraName:lower() or ""
+            local ok, lowerName = pcall(function() return type(auraName) == "string" and auraName:lower() or "" end)
+            if not ok then return false end
             return (lowerName:find("flask", 1, true) ~= nil) or (lowerName:find("phial", 1, true) ~= nil)
         end)
     end
