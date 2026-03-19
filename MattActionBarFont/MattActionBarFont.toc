@@ -53,7 +53,7 @@ Core/Runtime/Actionbars/OffsetsRuntime.lua
 Core/Runtime/Actionbars/TextRuntime.lua
 Core/Runtime/Themes/ActionbarThemeRuntime.lua
 Core/Runtime/UIQOL/QuestTweaksRuntime.lua
-Core/Runtime/UIQOL/BagItemLevelRuntime.lua
+Core/Runtime/UIQOL/BagRuntime.lua
 Core/Runtime/UIQOL/MerchantRuntime.lua
 Core/Runtime/UIQOL/UIFeatures/BlizzardUIRuntime.lua
 Core/Runtime/UIQOL/UIFeatures/VisualRuntime.lua

@@ -114,7 +114,9 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:SetupMissingBuffReminder()
         MABF:SetupClassStuffReminder()
         MABF:SetupMerchantTweaks()
-        if MattActionBarFontDB.enableBagItemLevels then
+        if MABF.RefreshBagItemOverlays then
+            MABF:RefreshBagItemOverlays()
+        elseif MattActionBarFontDB.enableBagItemLevels then
             MABF:EnableBagItemLevels()
         end
 

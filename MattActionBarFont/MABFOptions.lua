@@ -224,6 +224,7 @@ function MABF:CreateOptionsWindow()
         CreatePageTitle = CreatePageTitle,
     })
     bagIlvlCheck = bagsPage and bagsPage.bagIlvlCheck
+    bagEquipLabelCheck = bagsPage and bagsPage.bagEquipLabelCheck
 
     -- UI / QoL > Merchant controls.
     local merchantPage = MABF:BuildMerchantTweaksPage({
@@ -252,7 +253,7 @@ function MABF:CreateOptionsWindow()
         objectiveTrackerCheck, scaleStatusBarCheck, scaleTalkingHeadCheck,
         hideMicroMenuCheck, hideBagBarCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
         perfHideMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
-        autoTurnInCheck, bagIlvlCheck, autoRepairCheck, autoSellCheck,
+        autoTurnInCheck, bagIlvlCheck, bagEquipLabelCheck, autoRepairCheck, autoSellCheck,
         customFontsCheck,
         warnMissingPetCheck, warnPetPassiveCheck, trackConsumablesCheck,
         petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petHideWhileMountedCheck, petMissingSuppressInMPlusCheck,

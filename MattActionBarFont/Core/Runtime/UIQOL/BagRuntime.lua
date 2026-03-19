@@ -1,7 +1,7 @@
 local addonName, MABF = ...
 
 -----------------------------------------------------------
--- Bag Item Levels
+-- Bag Overlays (Item Levels + Equipment Set Labels)
 -----------------------------------------------------------
 do
     local _SCANNER = "MABF_ScannerTooltip"
@@ -17,19 +17,27 @@ do
         [8] = {79/255,196/255,225/255},
     }
     local C_Container_GetContainerItemInfo = C_Container and C_Container.GetContainerItemInfo
+    local C_Container_GetContainerItemEquipmentSetInfo = C_Container and C_Container.GetContainerItemEquipmentSetInfo
     local C_TooltipInfo = C_TooltipInfo
     local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
     local hooksApplied = false
+    local strtrim = strtrim
 
     local function ClearItemLevelText(button)
         local cache = Cache[button]
         if cache and cache.ilvl then cache.ilvl:SetText("") end
+        if cache and cache.setLabel then cache.setLabel:SetText("") end
         local upgrade = button.UpgradeIcon
         if upgrade and upgrade.mabfMoved then
             upgrade:ClearAllPoints()
             upgrade:SetPoint("TOPLEFT", 0, 0)
             upgrade.mabfMoved = nil
         end
+    end
+
+    local function IsAnyBagOverlayEnabled()
+        return MattActionBarFontDB
+            and (MattActionBarFontDB.enableBagItemLevels or MattActionBarFontDB.enableBagEquipmentLabels)
     end
 
     local function ClearAllVisible()
@@ -61,11 +69,24 @@ do
         end
     end
 
+    local function GetPrimarySetLabel(setList)
+        -- Keep labels compact on bag buttons: "Frost+" means item is in Frost and at least one other set.
+        if type(setList) ~= "string" or setList == "" then return nil end
+        local firstName = string.match(setList, "([^,]+)")
+        if not firstName then return nil end
+        if strtrim then firstName = strtrim(firstName) end
+        if firstName == "" then return nil end
+        if string.find(setList, ",", 1, true) then
+            return firstName .. "+"
+        end
+        return firstName
+    end
+
     local function UpdateButton(button, bag, slot)
-        if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then
+        if not IsAnyBagOverlayEnabled() then
             ClearItemLevelText(button); return
         end
-        local message, rarity, itemLink
+        local message, rarity, itemLink, setLabel
         local r, g, b = 240/255, 240/255, 240/255
         if C_Container_GetContainerItemInfo then
             local ci = C_Container_GetContainerItemInfo(bag, slot)
@@ -74,7 +95,7 @@ do
             local _, _, _, _, _, _, il = GetContainerItemInfo(bag, slot)
             itemLink = il
         end
-        if itemLink then
+        if itemLink and MattActionBarFontDB.enableBagItemLevels then
             local _, _, itemQuality, itemLevel, _, _, _, _, itemEquipLoc = GetItemInfo(itemLink)
             if itemEquipLoc == "INVTYPE_BAG" then
                 if C_TooltipInfo then
@@ -107,7 +128,17 @@ do
                 if tipLevel and tipLevel > 1 then message = tipLevel; rarity = itemQuality end
             end
         end
-        if message and message > 1 then
+
+        if MattActionBarFontDB.enableBagEquipmentLabels and C_Container_GetContainerItemEquipmentSetInfo then
+            local inSet, setList = C_Container_GetContainerItemEquipmentSetInfo(bag, slot)
+            if inSet and setList then
+                setLabel = GetPrimarySetLabel(setList)
+            end
+        end
+
+        local hasILevel = message and message > 1
+        local hasSetLabel = setLabel and setLabel ~= ""
+        if hasILevel or hasSetLabel then
             local container = Cache[button]
             if not container then
                 container = CreateFrame("Frame", nil, button)
@@ -115,36 +146,73 @@ do
                 container:SetAllPoints()
                 Cache[button] = container
             end
-            if not container.ilvl then
-                container.ilvl = container:CreateFontString(nil, "OVERLAY")
-                container.ilvl:SetDrawLayer("ARTWORK", 1)
-                container.ilvl:SetPoint("TOPLEFT", 2, -2)
-                container.ilvl:SetFontObject(NumberFont_Outline_Med or NumberFontNormal)
-                container.ilvl:SetShadowOffset(1, -1)
-                container.ilvl:SetShadowColor(0, 0, 0, .5)
+
+            if hasILevel then
+                if not container.ilvl then
+                    container.ilvl = container:CreateFontString(nil, "OVERLAY")
+                    container.ilvl:SetDrawLayer("ARTWORK", 1)
+                    container.ilvl:SetPoint("TOPLEFT", 2, -2)
+                    container.ilvl:SetFontObject(NumberFont_Outline_Med or NumberFontNormal)
+                    container.ilvl:SetShadowOffset(1, -1)
+                    container.ilvl:SetShadowColor(0, 0, 0, .5)
+                end
+                local upgrade = button.UpgradeIcon
+                if upgrade and not upgrade.mabfMoved then
+                    upgrade:ClearAllPoints()
+                    upgrade:SetPoint("BOTTOMRIGHT", 2, 0)
+                    upgrade.mabfMoved = true
+                end
+                if rarity and colors[rarity] then
+                    local col = colors[rarity]; r, g, b = col[1], col[2], col[3]
+                end
+                container.ilvl:SetTextColor(r, g, b)
+                container.ilvl:SetText(message)
+            elseif container.ilvl then
+                container.ilvl:SetText("")
+                local upgrade = button.UpgradeIcon
+                if upgrade and upgrade.mabfMoved then
+                    upgrade:ClearAllPoints()
+                    upgrade:SetPoint("TOPLEFT", 0, 0)
+                    upgrade.mabfMoved = nil
+                end
             end
-            local upgrade = button.UpgradeIcon
-            if upgrade and not upgrade.mabfMoved then
-                upgrade:ClearAllPoints()
-                upgrade:SetPoint("BOTTOMRIGHT", 2, 0)
-                upgrade.mabfMoved = true
+
+            if hasSetLabel then
+                if not container.setLabel then
+                    container.setLabel = container:CreateFontString(nil, "OVERLAY")
+                    container.setLabel:SetDrawLayer("ARTWORK", 1)
+                    container.setLabel:SetPoint("BOTTOMLEFT", 2, 2)
+                    container.setLabel:SetFontObject(NumberFontNormalSmall or NumberFontNormal)
+                    container.setLabel:SetJustifyH("LEFT")
+                    container.setLabel:SetShadowOffset(1, -1)
+                    container.setLabel:SetShadowColor(0, 0, 0, .5)
+                    container.setLabel:SetMaxLines(1)
+                    container.setLabel:SetWordWrap(false)
+                end
+                container.setLabel:SetWidth((button:GetWidth() or 36) - 4)
+                container.setLabel:SetTextColor(110/255, 1, 110/255)
+                container.setLabel:SetText(setLabel)
+            elseif container.setLabel then
+                container.setLabel:SetText("")
             end
-            if rarity and colors[rarity] then
-                local col = colors[rarity]; r, g, b = col[1], col[2], col[3]
-            end
-            container.ilvl:SetTextColor(r, g, b)
-            container.ilvl:SetText(message)
         else
             ClearItemLevelText(button)
         end
     end
 
     local function UpdateContainer(frame)
-        if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then return end
         local bag = frame:GetID()
         local name = frame:GetName()
         local id = 1
         local button = _G[name.."Item"..id]
+        if not IsAnyBagOverlayEnabled() then
+            while button do
+                ClearItemLevelText(button)
+                id = id + 1
+                button = _G[name.."Item"..id]
+            end
+            return
+        end
         while button do
             if button.hasItem then UpdateButton(button, bag, button:GetID()) else ClearItemLevelText(button) end
             id = id + 1; button = _G[name.."Item"..id]
@@ -152,7 +220,18 @@ do
     end
 
     local function UpdateCombinedContainer(frame)
-        if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then return end
+        if not IsAnyBagOverlayEnabled() then
+            if frame.EnumerateValidItems then
+                for _,button in frame:EnumerateValidItems() do
+                    ClearItemLevelText(button)
+                end
+            elseif frame.Items then
+                for _,button in ipairs(frame.Items) do
+                    ClearItemLevelText(button)
+                end
+            end
+            return
+        end
         if frame.EnumerateValidItems then
             for _,button in frame:EnumerateValidItems() do
                 if button.hasItem then UpdateButton(button, button:GetBagID(), button:GetID()) else ClearItemLevelText(button) end
@@ -165,13 +244,18 @@ do
     end
 
     local function UpdateBank()
-        if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then return end
         if _G.BankSlotsFrame and NUM_BANKGENERIC_SLOTS then
             local bag = _G.BankSlotsFrame:GetID()
             for id = 1, NUM_BANKGENERIC_SLOTS do
                 local button = _G.BankSlotsFrame["Item"..id]
                 if button and not button.isBag then
-                    if button.hasItem then UpdateButton(button, bag, button:GetID()) else ClearItemLevelText(button) end
+                    if not IsAnyBagOverlayEnabled() then
+                        ClearItemLevelText(button)
+                    elseif button.hasItem then
+                        UpdateButton(button, bag, button:GetID())
+                    else
+                        ClearItemLevelText(button)
+                    end
                 end
             end
         elseif _G.BankFrame and _G.BankFrame.BankPanel and _G.BankFrame.BankPanel.EnumerateValidItems then
@@ -179,7 +263,13 @@ do
                 local bankTabID = button:GetBankTabID()
                 local slotID = button:GetContainerSlotID()
                 local info = C_Container_GetContainerItemInfo and C_Container_GetContainerItemInfo(bankTabID, slotID)
-                if info then UpdateButton(button, bankTabID, slotID) else ClearItemLevelText(button) end
+                if not IsAnyBagOverlayEnabled() then
+                    ClearItemLevelText(button)
+                elseif info then
+                    UpdateButton(button, bankTabID, slotID)
+                else
+                    ClearItemLevelText(button)
+                end
             end
         end
     end
@@ -216,7 +306,7 @@ do
                 hooksecurefunc("BankFrame_UpdateItems", UpdateBank)
             elseif _G.BankFrameItemButton_UpdateLocked then
                 hooksecurefunc("BankFrameItemButton_UpdateLocked", function(button)
-                    if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then ClearItemLevelText(button); return end
+                    if not IsAnyBagOverlayEnabled() then ClearItemLevelText(button); return end
                     if button and not button.isBag and _G.BankSlotsFrame then
                         UpdateButton(button, _G.BankSlotsFrame:GetID(), button:GetID())
                     else ClearItemLevelText(button) end
@@ -224,7 +314,7 @@ do
             end
             if BankPanelItemButtonMixin and BankPanelItemButtonMixin.Refresh then
                 hooksecurefunc(BankPanelItemButtonMixin, "Refresh", function(button)
-                    if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then ClearItemLevelText(button); return end
+                    if not IsAnyBagOverlayEnabled() then ClearItemLevelText(button); return end
                     local bankTabID = button.GetBankTabID and button:GetBankTabID()
                     local slotID = button.GetContainerSlotID and button:GetContainerSlotID()
                     if bankTabID and slotID then UpdateButton(button, bankTabID, slotID) end
@@ -233,8 +323,13 @@ do
             hooksApplied = true
         end
         bagEventFrame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
-        bagEventFrame:SetScript("OnEvent", function(_, _, slot)
-            if not MattActionBarFontDB or not MattActionBarFontDB.enableBagItemLevels then return end
+        bagEventFrame:RegisterEvent("EQUIPMENT_SETS_CHANGED")
+        bagEventFrame:SetScript("OnEvent", function(_, event, slot)
+            if not IsAnyBagOverlayEnabled() then return end
+            if event == "EQUIPMENT_SETS_CHANGED" then
+                UpdateAllVisible()
+                return
+            end
             if NUM_BANKGENERIC_SLOTS and slot and slot <= NUM_BANKGENERIC_SLOTS and _G.BankSlotsFrame then
                 local button = _G.BankSlotsFrame["Item"..slot]
                 if button and not button.isBag then UpdateButton(button, _G.BankSlotsFrame:GetID(), button:GetID()) end
@@ -243,6 +338,14 @@ do
             end
         end)
         UpdateAllVisible()
+    end
+
+    function MABF:RefreshBagItemOverlays()
+        if IsAnyBagOverlayEnabled() then
+            MABF:EnableBagItemLevels()
+        else
+            MABF:DisableBagItemLevels()
+        end
     end
 
     function MABF:DisableBagItemLevels()

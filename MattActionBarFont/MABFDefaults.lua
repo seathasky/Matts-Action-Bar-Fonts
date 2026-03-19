@@ -120,6 +120,7 @@ MABF.defaults = {
 
     -- Bag tweaks
     enableBagItemLevels = false, -- Show item levels in bags & bank
+    enableBagEquipmentLabels = false, -- Show Equipment Manager set names on bag/bank gear
 
     -- Minimap button
     minimap           = { hide = false },
