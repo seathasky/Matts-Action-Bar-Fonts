@@ -32,6 +32,8 @@ MABF.defaults = {
 
     -- Toggles
     hideMacroText     = false,    -- Show macro text by default
+    hideStanceBarText = false,    -- Show stance bar text by default
+    hidePetBarText    = false,    -- Show pet bar text by default
     mouseoverFade     = false,    -- Keep bars 4/5 always visible
     mouseoverFadeBars = {         -- Bars managed by action bar mouseover fade
         bar1 = false,

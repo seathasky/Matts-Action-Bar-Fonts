@@ -287,6 +287,10 @@ local function ApplyPetHotKeyVisualOverrides(button)
             hotKeyFont:Show()
         end
     end
+
+    if MABF and MABF.ApplySpecialBarHotKeyVisibility then
+        MABF:ApplySpecialBarHotKeyVisibility(button)
+    end
 end
 
 local function QueuePetBarFontSettingsUpdate(delay)
@@ -372,6 +376,10 @@ function MABF:ApplyFontSettings()
             hotKeyFont:SetAlpha(1)
         else
             SetFontSizeOnlyIfChanged(hotKeyFont, effectiveFontSize)
+        end
+
+        if MABF and MABF.ApplySpecialBarHotKeyVisibility then
+            MABF:ApplySpecialBarHotKeyVisibility(button)
         end
     end
 

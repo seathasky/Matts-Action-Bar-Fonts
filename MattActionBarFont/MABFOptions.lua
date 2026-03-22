@@ -95,6 +95,8 @@ function MABF:CreateOptionsWindow()
         CreateBasicCheckbox = CreateBasicCheckbox,
     })
     hideMacroTextCheck = featuresPage and featuresPage.hideMacroTextCheck
+    hideStanceBarTextCheck = featuresPage and featuresPage.hideStanceBarTextCheck
+    hidePetBarTextCheck = featuresPage and featuresPage.hidePetBarTextCheck
     reverseBarGrowthCheck = featuresPage and featuresPage.reverseBarGrowthCheck
 
     -- UI / QoL > Reminders root page.
@@ -249,7 +251,7 @@ function MABF:CreateOptionsWindow()
 
     -- Final global control styling pass.
     local optionChecks = {
-        mouseoverFadeCheck, petBarFadeCheck, hideMacroTextCheck, reverseBarGrowthCheck,
+        mouseoverFadeCheck, petBarFadeCheck, hideMacroTextCheck, hideStanceBarTextCheck, hidePetBarTextCheck, reverseBarGrowthCheck,
         objectiveTrackerCheck, scaleStatusBarCheck, scaleTalkingHeadCheck,
         hideMicroMenuCheck, hideBagBarCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
         perfHideMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,

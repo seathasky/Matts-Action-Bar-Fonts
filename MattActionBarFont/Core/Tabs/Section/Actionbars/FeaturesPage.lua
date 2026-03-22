@@ -30,10 +30,44 @@ function MABF:BuildActionBarFeaturesPage(opts)
         end
     )
 
+    local hideStanceBarTextCheck = CreateBasicCheckbox(
+        pageABFeatures,
+        "MABFHideStanceBarTextCheck",
+        hideMacroTextCheck,
+        "TOPLEFT",
+        0,
+        -4,
+        "Hide Stance Bar Text",
+        MattActionBarFontDB.hideStanceBarText,
+        function(self)
+            MattActionBarFontDB.hideStanceBarText = self:GetChecked() and true or false
+            MABF:UpdateMacroText()
+            MABF:ApplyFontSettings()
+            MABF:UpdatePetBarFontSettings()
+        end
+    )
+
+    local hidePetBarTextCheck = CreateBasicCheckbox(
+        pageABFeatures,
+        "MABFHidePetBarTextCheck",
+        hideStanceBarTextCheck,
+        "TOPLEFT",
+        0,
+        -4,
+        "Hide Pet Bar Text",
+        MattActionBarFontDB.hidePetBarText,
+        function(self)
+            MattActionBarFontDB.hidePetBarText = self:GetChecked() and true or false
+            MABF:UpdateMacroText()
+            MABF:ApplyFontSettings()
+            MABF:UpdatePetBarFontSettings()
+        end
+    )
+
     local reverseBarGrowthCheck = CreateBasicCheckbox(
         pageABFeatures,
         "MABFReverseBarGrowthCheck",
-        hideMacroTextCheck,
+        hidePetBarTextCheck,
         "TOPLEFT",
         0,
         -4,
@@ -48,6 +82,8 @@ function MABF:BuildActionBarFeaturesPage(opts)
     return {
         page = pageABFeatures,
         hideMacroTextCheck = hideMacroTextCheck,
+        hideStanceBarTextCheck = hideStanceBarTextCheck,
+        hidePetBarTextCheck = hidePetBarTextCheck,
         reverseBarGrowthCheck = reverseBarGrowthCheck,
     }
 end
