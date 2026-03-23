@@ -12,8 +12,37 @@ local function FormatText(text)
     end
 end
 
+local HOTKEY_HIDDEN_GLYPHS = {
+    string.char(226, 128, 162), -- bullet (•)
+    string.char(194, 183),      -- middle dot (·)
+    string.char(226, 151, 143), -- black circle (●)
+    string.char(226, 151, 166), -- white bullet (◦)
+    string.char(226, 151, 139), -- white circle (○)
+    string.char(226, 150, 161), -- white square (□)
+    string.char(239, 191, 189), -- replacement glyph (�)
+}
+
+local function ShouldHideHotKeyGlyph(text)
+    if type(text) ~= "string" or text == "" then
+        return false
+    end
+    for _, glyph in ipairs(HOTKEY_HIDDEN_GLYPHS) do
+        if text:find(glyph, 1, true) then
+            return true
+        end
+    end
+    -- Hide only glyph-like single-character indicators (dot/box), not normal hotkey strings.
+    local trimmed = text:gsub("^%s+", ""):gsub("%s+$", "")
+    if trimmed:find("[\128-\255]") and #trimmed <= 4 then
+        return true
+    end
+    return false
+end
+
 local function NormalizeHotKeyText(text)
     local hotKeyText = FormatText(text or "")
+    hotKeyText = hotKeyText:gsub("^%s+", ""):gsub("%s+$", "")
+
     if hotKeyText == "-" then
         return hotKeyText
     elseif #hotKeyText == 2 and (hotKeyText:sub(1,1) == "A" or hotKeyText:sub(1,1) == "S" or hotKeyText:sub(1,1) == "C") and hotKeyText:sub(2,2) == "-" then
@@ -350,10 +379,11 @@ function MABF:ApplyFontSettings()
         if customFontsEnabled then
             if not fPath then return end
             local currentText = hotKeyFont:GetText() or ""
-            local normalizedText = NormalizeHotKeyText(currentText)
-            if not hotKeyFont._MABF_FormattingText and normalizedText ~= currentText and hotKeyFont.SetText then
+            local hideGlyphOnlyHotkey = ShouldHideHotKeyGlyph(currentText)
+            local displayText = hideGlyphOnlyHotkey and "" or NormalizeHotKeyText(currentText)
+            if not hotKeyFont._MABF_FormattingText and displayText ~= currentText and hotKeyFont.SetText then
                 hotKeyFont._MABF_FormattingText = true
-                hotKeyFont:SetText(normalizedText)
+                hotKeyFont:SetText(displayText)
                 hotKeyFont._MABF_FormattingText = nil
             end
 
