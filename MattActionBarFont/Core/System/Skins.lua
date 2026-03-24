@@ -157,10 +157,27 @@ local function CacheButtonBaseRegions(button)
     button._mabfBaseRegionsCached = true
     button._mabfBaseRegions = {}
 
+    local stateTextures = {}
+    if button.GetPushedTexture then
+        local pushed = button:GetPushedTexture()
+        if pushed then stateTextures[pushed] = true end
+    end
+    if button.GetHighlightTexture then
+        local highlight = button:GetHighlightTexture()
+        if highlight then stateTextures[highlight] = true end
+    end
+    if button.GetCheckedTexture then
+        local checked = button:GetCheckedTexture()
+        if checked then stateTextures[checked] = true end
+    end
+    if button.SpellHighlightTexture then
+        stateTextures[button.SpellHighlightTexture] = true
+    end
+
     for _, region in ipairs({ button:GetRegions() }) do
         if region and region:IsObjectType("Texture") then
             local texture = region:GetTexture()
-            if IsActionButtonBaseTexture(texture) then
+            if not stateTextures[region] and IsActionButtonBaseTexture(texture) then
                 table.insert(button._mabfBaseRegions, region)
             end
         end
@@ -268,15 +285,24 @@ local function SkinButton(button)
 
     -- Hide Blizzard's default button frame textures.
     if button.GetNormalTexture then HideTex(button:GetNormalTexture()) end
-    if button.GetPushedTexture then HideTex(button:GetPushedTexture()) end
-    if button.GetHighlightTexture then HideTex(button:GetHighlightTexture()) end
-    if button.GetCheckedTexture then HideTex(button:GetCheckedTexture()) end
+    -- Keep Blizzard state textures intact so Blizzard can control their visibility.
+    if button.GetPushedTexture and button:GetPushedTexture() then
+        button:GetPushedTexture():SetAlpha(1)
+    end
+    if button.GetHighlightTexture and button:GetHighlightTexture() then
+        button:GetHighlightTexture():SetAlpha(1)
+    end
+    if button.GetCheckedTexture and button:GetCheckedTexture() then
+        button:GetCheckedTexture():SetAlpha(1)
+    end
 
     -- Dragonflight/12.x slot-art atlases that create the inner bevel.
     HideTex(button.SlotBackground)
     HideTex(button.SlotArt)
     HideTex(button.NewActionTexture)
-    HideTex(button.SpellHighlightTexture)
+    if button.SpellHighlightTexture then
+        button.SpellHighlightTexture:SetAlpha(1)
+    end
     HideTex(button.Border)
     HideTex(button.QuickKeybindHighlightTexture)
     if button.HookScript and not button._mabfHideSlotArtHooked then
@@ -285,7 +311,9 @@ local function SkinButton(button)
                 HideTex(self.SlotBackground)
                 HideTex(self.SlotArt)
                 HideTex(self.NewActionTexture)
-                HideTex(self.SpellHighlightTexture)
+                if self.SpellHighlightTexture then
+                    self.SpellHighlightTexture:SetAlpha(1)
+                end
                 HideTex(self.Border)
                 HideTex(self.QuickKeybindHighlightTexture)
             end
