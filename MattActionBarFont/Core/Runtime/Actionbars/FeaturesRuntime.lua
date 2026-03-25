@@ -73,10 +73,15 @@ function MABF:ApplySpecialBarHotKeyVisibility(button)
     end
 
     local db = MattActionBarFontDB
+    local petBarFaded = IsPetButton(button)
+        and self
+        and self.IsPetBarFadedOut
+        and self:IsPetBarFadedOut()
     local shouldHide = db and (
         (db.hideStanceBarText and IsStanceButton(button))
         or (db.hidePetBarText and IsPetButton(button))
     )
+    shouldHide = shouldHide or petBarFaded
 
     if shouldHide then
         hotKeyFont._MABFBypassColorLock = true

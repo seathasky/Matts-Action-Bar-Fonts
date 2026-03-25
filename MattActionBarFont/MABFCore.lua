@@ -6,9 +6,33 @@ local MIN_FONT_SIZE = 10
 
 local LCG = LibStub and LibStub("LibCustomGlow-1.0", true)
 
+local function ApplyNumpadBindingLabels()
+    local keyLabelMap = {
+        KEY_NUMPAD0 = "N0",
+        KEY_NUMPAD1 = "N1",
+        KEY_NUMPAD2 = "N2",
+        KEY_NUMPAD3 = "N3",
+        KEY_NUMPAD4 = "N4",
+        KEY_NUMPAD5 = "N5",
+        KEY_NUMPAD6 = "N6",
+        KEY_NUMPAD7 = "N7",
+        KEY_NUMPAD8 = "N8",
+        KEY_NUMPAD9 = "N9",
+        KEY_NUMPADDECIMAL = "N.",
+        KEY_NUMPADDIVIDE = "N/",
+        KEY_NUMPADMINUS = "N-",
+        KEY_NUMPADMULTIPLY = "N*",
+        KEY_NUMPADPLUS = "N+",
+    }
+    for keyName, label in pairs(keyLabelMap) do
+        _G[keyName] = label
+    end
+end
+
 -- Initialization and font scanning.
 function MABF:Init()
     self:ApplyDefaults()
+    ApplyNumpadBindingLabels()
 
     MattActionBarFontDB.fontSize = math.min(math.max(MattActionBarFontDB.fontSize, MIN_FONT_SIZE), MAX_FONT_SIZE)
     if type(MattActionBarFontDB.fontFamilyPath) == "string" then
