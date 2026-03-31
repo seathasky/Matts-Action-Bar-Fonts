@@ -102,6 +102,7 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:ApplyStatusBarScale()
         MABF:ApplyHideMicroMenu()
         MABF:ApplyHideBagBar()
+        MABF:ApplyBuffDebuffRightClickCamera()
         MABF:ApplyPetBarMouseoverFade()
         MABF:ApplyScaleTalkingHead()
         MABF:SetupCursorCircle()
@@ -153,6 +154,7 @@ events:SetScript("OnEvent", function(self, event, arg1)
             print("|cFF00FF00MattActionBarFont|r: Options closed for combat.")
         end
     elseif event == "PLAYER_REGEN_ENABLED" then
+        MABF:ApplyDeferredBuffDebuffRightClickCamera()
         if (optionsOpenQueuedForCombatEnd or optionsAutoClosedByCombat) and MABF and MABF.optionsFrame then
             optionsOpenQueuedForCombatEnd = false
             optionsAutoClosedByCombat = false

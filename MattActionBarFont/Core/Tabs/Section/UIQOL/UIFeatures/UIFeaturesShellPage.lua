@@ -26,10 +26,12 @@ function MABF:BuildUIFeaturesShellPage(opts)
     local hideMicroMenuCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.hideMicroMenuCheck
     local hideMicroDesc = uiFeaturesBlizzard and uiFeaturesBlizzard.hideMicroDesc
     local hideBagBarCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.hideBagBarCheck
+    local buffDebuffRightClickCameraCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.buffDebuffRightClickCameraCheck
+    local buffDebuffRightClickCameraDesc = uiFeaturesBlizzard and uiFeaturesBlizzard.buffDebuffRightClickCameraDesc
 
     local uiFeaturesVisual = MABF:BuildUIFeaturesVisualPage({
         pageUIFeatures = pageUIFeatures,
-        anchorControl = hideBagBarCheck,
+        anchorControl = buffDebuffRightClickCameraCheck or hideBagBarCheck,
         CreateMinimalDropdown = CreateMinimalDropdown,
         StyleSlider = StyleSlider,
     })
@@ -64,6 +66,8 @@ function MABF:BuildUIFeaturesShellPage(opts)
             hideMicroMenuCheck,
             hideMicroDesc,
             hideBagBarCheck,
+            buffDebuffRightClickCameraCheck,
+            buffDebuffRightClickCameraDesc,
         },
         visualControls = {
             cursorCircleCheck,
@@ -92,6 +96,8 @@ function MABF:BuildUIFeaturesShellPage(opts)
         hideMicroMenuCheck = hideMicroMenuCheck,
         hideMicroDesc = hideMicroDesc,
         hideBagBarCheck = hideBagBarCheck,
+        buffDebuffRightClickCameraCheck = buffDebuffRightClickCameraCheck,
+        buffDebuffRightClickCameraDesc = buffDebuffRightClickCameraDesc,
         cursorCircleCheck = cursorCircleCheck,
         cursorCircleColorLabel = cursorCircleColorLabel,
         cursorCircleColorDropdown = cursorCircleColorDropdown,

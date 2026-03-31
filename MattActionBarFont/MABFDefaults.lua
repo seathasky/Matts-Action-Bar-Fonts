@@ -49,6 +49,7 @@ MABF.defaults = {
     scaleStatusBar    = false,    -- Scale status/exp bar to 0.7
     hideMicroMenu     = false,    -- Hide micro menu buttons
     hideBagBar        = false,    -- Hide bag bar buttons
+    buffDebuffRightClickCamera = false, -- Let right-click drag camera over buffs/debuffs while keeping hover tooltips
     petBarMouseoverFade = false,  -- Mouseover fade on pet action bar
     scaleTalkingHead  = false,    -- Scale talking head frame to 0.7
     enableCursorCircle = false,   -- Show colored cursor circle

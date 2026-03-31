@@ -74,6 +74,22 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
+    local buffDebuffRightClickCameraCheck = CreateFrame("CheckButton", "MABFBuffDebuffRightClickCameraCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    buffDebuffRightClickCameraCheck:ClearAllPoints()
+    buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, -4)
+    local buffDebuffRightClickCameraText = _G[buffDebuffRightClickCameraCheck:GetName() .. "Text"]
+    buffDebuffRightClickCameraText:SetText("Buff/Debuff Camera Drag")
+    buffDebuffRightClickCameraText:SetTextColor(1, 1, 1)
+    local buffDebuffRightClickCameraDesc = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    buffDebuffRightClickCameraDesc:SetPoint("TOPLEFT", buffDebuffRightClickCameraCheck, "BOTTOMLEFT", 26, 2)
+    buffDebuffRightClickCameraDesc:SetText("|cff888888Clickthrough on buff/debuff icons for camera drag.|r")
+    buffDebuffRightClickCameraDesc:SetScale(0.85)
+    buffDebuffRightClickCameraCheck:SetChecked(MattActionBarFontDB.buffDebuffRightClickCamera)
+    buffDebuffRightClickCameraCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.buffDebuffRightClickCamera = self:GetChecked()
+        MABF:ApplyBuffDebuffRightClickCamera()
+    end)
+
     return {
         objectiveTrackerCheck = objectiveTrackerCheck,
         scaleStatusBarCheck = scaleStatusBarCheck,
@@ -81,5 +97,7 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
         hideMicroMenuCheck = hideMicroMenuCheck,
         hideMicroDesc = hideMicroDesc,
         hideBagBarCheck = hideBagBarCheck,
+        buffDebuffRightClickCameraCheck = buffDebuffRightClickCameraCheck,
+        buffDebuffRightClickCameraDesc = buffDebuffRightClickCameraDesc,
     }
 end

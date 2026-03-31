@@ -131,6 +131,7 @@ function MABF:CreateOptionsWindow()
     hideMicroMenuCheck = uiFeaturesShellPage and uiFeaturesShellPage.hideMicroMenuCheck
     hideMicroDesc = uiFeaturesShellPage and uiFeaturesShellPage.hideMicroDesc
     hideBagBarCheck = uiFeaturesShellPage and uiFeaturesShellPage.hideBagBarCheck
+    buffDebuffRightClickCameraCheck = uiFeaturesShellPage and uiFeaturesShellPage.buffDebuffRightClickCameraCheck
     cursorCircleCheck = uiFeaturesShellPage and uiFeaturesShellPage.cursorCircleCheck
     cursorCircleColorLabel = uiFeaturesShellPage and uiFeaturesShellPage.cursorCircleColorLabel
     cursorCircleColorDropdown = uiFeaturesShellPage and uiFeaturesShellPage.cursorCircleColorDropdown
@@ -254,7 +255,7 @@ function MABF:CreateOptionsWindow()
     local optionChecks = {
         mouseoverFadeCheck, petBarFadeCheck, hideMacroTextCheck, hideStanceBarTextCheck, hidePetBarTextCheck, reverseBarGrowthCheck,
         objectiveTrackerCheck, scaleStatusBarCheck, scaleTalkingHeadCheck,
-        hideMicroMenuCheck, hideBagBarCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
+        hideMicroMenuCheck, hideBagBarCheck, buffDebuffRightClickCameraCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
         perfHideMSCheck, perfShowWorldMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
         autoTurnInCheck, bagIlvlCheck, bagEquipLabelCheck, autoRepairCheck, autoSellCheck,
         customFontsCheck,

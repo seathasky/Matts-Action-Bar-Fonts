@@ -3,6 +3,124 @@ local addonName, MABF = ...
 -----------------------------------------------------------
 -- UIFeatures (Blizzard UI)
 -----------------------------------------------------------
+local auraClickthroughHooksInstalled = false
+local auraClickthroughDeferred = false
+
+local function ApplyAuraOwnerMouseBehavior(frame, enabled)
+    if not frame then
+        return
+    end
+
+    if frame.SetMouseMotionEnabled then
+        frame:SetMouseMotionEnabled(true)
+    end
+    if frame.SetPropagateMouseMotion then
+        frame:SetPropagateMouseMotion(enabled and true or false)
+    end
+    if frame.SetPropagateMouseClicks then
+        frame:SetPropagateMouseClicks(enabled and true or false)
+    end
+end
+
+local function ApplyAuraButtonMouseBehavior(button, enabled)
+    if not button then
+        return
+    end
+
+    if button.SetMouseMotionEnabled then
+        button:SetMouseMotionEnabled(true)
+    end
+    if button.SetPropagateMouseMotion then
+        button:SetPropagateMouseMotion(enabled and true or false)
+    end
+
+    if enabled then
+        if button.RegisterForClicks then
+            button:RegisterForClicks("LeftButtonUp")
+        end
+        if button.SetPassThroughButtons then
+            button:SetPassThroughButtons("RightButton")
+        end
+        if button.SetPropagateMouseClicks then
+            button:SetPropagateMouseClicks(true)
+        end
+        if button.SetMouseClickEnabled then
+            button:SetMouseClickEnabled(true)
+        end
+    else
+        if button.RegisterForClicks then
+            button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        end
+        if button.SetPassThroughButtons then
+            button:SetPassThroughButtons()
+        end
+        if button.SetPropagateMouseClicks then
+            button:SetPropagateMouseClicks(false)
+        end
+        if button.SetMouseClickEnabled then
+            button:SetMouseClickEnabled(true)
+        end
+    end
+end
+
+function MABF:ApplyBuffDebuffRightClickCamera()
+    if not MattActionBarFontDB then
+        return false
+    end
+
+    if InCombatLockdown and InCombatLockdown() then
+        auraClickthroughDeferred = true
+        return false
+    end
+
+    local enabled = MattActionBarFontDB.buffDebuffRightClickCamera and true or false
+
+    if BuffFrame and type(BuffFrame.auraFrames) == "table" then
+        ApplyAuraOwnerMouseBehavior(BuffFrame, enabled)
+        ApplyAuraOwnerMouseBehavior(BuffFrame.AuraContainer, enabled)
+        for _, button in ipairs(BuffFrame.auraFrames) do
+            ApplyAuraButtonMouseBehavior(button, enabled)
+        end
+    end
+
+    if DebuffFrame and type(DebuffFrame.auraFrames) == "table" then
+        ApplyAuraOwnerMouseBehavior(DebuffFrame, enabled)
+        ApplyAuraOwnerMouseBehavior(DebuffFrame.AuraContainer, enabled)
+        for _, button in ipairs(DebuffFrame.auraFrames) do
+            ApplyAuraButtonMouseBehavior(button, enabled)
+        end
+    end
+
+    if DeadlyDebuffFrame and DeadlyDebuffFrame.Debuff then
+        ApplyAuraOwnerMouseBehavior(DeadlyDebuffFrame, enabled)
+        ApplyAuraButtonMouseBehavior(DeadlyDebuffFrame.Debuff, enabled)
+    end
+
+    if not auraClickthroughHooksInstalled then
+        auraClickthroughHooksInstalled = true
+
+        if BuffFrame and BuffFrame.UpdateAuraButtons then
+            hooksecurefunc(BuffFrame, "UpdateAuraButtons", function()
+                MABF:ApplyBuffDebuffRightClickCamera()
+            end)
+        end
+
+        if DebuffFrame and DebuffFrame.UpdateAuraButtons then
+            hooksecurefunc(DebuffFrame, "UpdateAuraButtons", function()
+                MABF:ApplyBuffDebuffRightClickCamera()
+            end)
+        end
+    end
+
+    auraClickthroughDeferred = false
+    return true
+end
+
+function MABF:ApplyDeferredBuffDebuffRightClickCamera()
+    if auraClickthroughDeferred then
+        self:ApplyBuffDebuffRightClickCamera()
+    end
+end
 
 function MABF:ApplyStatusBarScale()
     if MattActionBarFontDB.scaleStatusBar then
