@@ -90,17 +90,47 @@ function MABF:BuildUIFeaturesToolsPage(opts)
         MABF:ApplyPerfMonitorStyle()
     end)
 
+    local perfShowWorldMSCheck = CreateFrame("CheckButton", "MABFPerfShowWorldMSCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+    perfShowWorldMSCheck:ClearAllPoints()
+    perfShowWorldMSCheck:SetPoint("TOPLEFT", perfVerticalCheck, "BOTTOMLEFT", 0, -4)
+    local perfShowWorldMSText = _G[perfShowWorldMSCheck:GetName() .. "Text"]
+    perfShowWorldMSText:SetText("Show World MS")
+    perfShowWorldMSText:SetTextColor(0.8, 0.8, 0.8)
+    perfShowWorldMSCheck:SetChecked(MattActionBarFontDB.perfMonitorShowWorldMS)
+
     local perfHideMSCheck = CreateFrame("CheckButton", "MABFPerfHideMSCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     perfHideMSCheck:ClearAllPoints()
-    perfHideMSCheck:SetPoint("TOPLEFT", perfVerticalCheck, "BOTTOMLEFT", 0, -4)
+    perfHideMSCheck:SetPoint("TOPLEFT", perfShowWorldMSCheck, "BOTTOMLEFT", 0, -4)
     local perfHideMSText = _G[perfHideMSCheck:GetName() .. "Text"]
     perfHideMSText:SetText("Hide MS")
     perfHideMSText:SetTextColor(0.8, 0.8, 0.8)
     perfHideMSCheck:SetChecked(MattActionBarFontDB.perfMonitorHideMS)
-    perfHideMSCheck:SetScript("OnClick", function(self)
-        MattActionBarFontDB.perfMonitorHideMS = self:GetChecked()
+
+    local function UpdateWorldMSControlState()
+        local hideMS = MattActionBarFontDB.perfMonitorHideMS and true or false
+        if hideMS then
+            perfShowWorldMSCheck:Disable()
+            perfShowWorldMSCheck:SetAlpha(0.5)
+            perfShowWorldMSText:SetTextColor(0.5, 0.5, 0.5)
+        else
+            perfShowWorldMSCheck:Enable()
+            perfShowWorldMSCheck:SetAlpha(1.0)
+            perfShowWorldMSText:SetTextColor(0.8, 0.8, 0.8)
+        end
+    end
+
+    perfShowWorldMSCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.perfMonitorShowWorldMS = self:GetChecked()
         MABF:ApplyPerfMonitorStyle()
     end)
+
+    perfHideMSCheck:SetScript("OnClick", function(self)
+        MattActionBarFontDB.perfMonitorHideMS = self:GetChecked()
+        UpdateWorldMSControlState()
+        MABF:ApplyPerfMonitorStyle()
+    end)
+
+    UpdateWorldMSControlState()
 
     return {
         perfMonitorCheck = perfMonitorCheck,
@@ -110,5 +140,6 @@ function MABF:BuildUIFeaturesToolsPage(opts)
         perfColorDropdown = perfColorDropdown,
         perfVerticalCheck = perfVerticalCheck,
         perfHideMSCheck = perfHideMSCheck,
+        perfShowWorldMSCheck = perfShowWorldMSCheck,
     }
 end

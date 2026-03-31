@@ -143,6 +143,7 @@ function MABF:CreateOptionsWindow()
     perfColorDropdown = uiFeaturesShellPage and uiFeaturesShellPage.perfColorDropdown
     perfVerticalCheck = uiFeaturesShellPage and uiFeaturesShellPage.perfVerticalCheck
     perfHideMSCheck = uiFeaturesShellPage and uiFeaturesShellPage.perfHideMSCheck
+    perfShowWorldMSCheck = uiFeaturesShellPage and uiFeaturesShellPage.perfShowWorldMSCheck
 
     -- System page controls.
     local systemPage = MABF:BuildSystemPage({
@@ -254,7 +255,7 @@ function MABF:CreateOptionsWindow()
         mouseoverFadeCheck, petBarFadeCheck, hideMacroTextCheck, hideStanceBarTextCheck, hidePetBarTextCheck, reverseBarGrowthCheck,
         objectiveTrackerCheck, scaleStatusBarCheck, scaleTalkingHeadCheck,
         hideMicroMenuCheck, hideBagBarCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
-        perfHideMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
+        perfHideMSCheck, perfShowWorldMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
         autoTurnInCheck, bagIlvlCheck, bagEquipLabelCheck, autoRepairCheck, autoSellCheck,
         customFontsCheck,
         warnMissingPetCheck, warnPetPassiveCheck, trackConsumablesCheck,

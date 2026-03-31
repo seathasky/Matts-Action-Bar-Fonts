@@ -52,6 +52,7 @@ function MABF:BuildUIFeaturesShellPage(opts)
     local perfColorDropdown = uiFeaturesTools and uiFeaturesTools.perfColorDropdown
     local perfVerticalCheck = uiFeaturesTools and uiFeaturesTools.perfVerticalCheck
     local perfHideMSCheck = uiFeaturesTools and uiFeaturesTools.perfHideMSCheck
+    local perfShowWorldMSCheck = uiFeaturesTools and uiFeaturesTools.perfShowWorldMSCheck
 
     MABF:SetupUIFeaturesSubTabs({
         pageUIFeatures = pageUIFeatures,
@@ -79,6 +80,7 @@ function MABF:BuildUIFeaturesShellPage(opts)
             perfColorDropdown,
             perfVerticalCheck,
             perfHideMSCheck,
+            perfShowWorldMSCheck,
         },
     })
 
@@ -102,5 +104,6 @@ function MABF:BuildUIFeaturesShellPage(opts)
         perfColorDropdown = perfColorDropdown,
         perfVerticalCheck = perfVerticalCheck,
         perfHideMSCheck = perfHideMSCheck,
+        perfShowWorldMSCheck = perfShowWorldMSCheck,
     }
 end

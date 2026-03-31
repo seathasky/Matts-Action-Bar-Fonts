@@ -63,14 +63,27 @@ function MABF:SetupPerformanceMonitor()
             return
         end
         local fps = math.floor(GetFramerate())
-        local _, _, latencyHome = GetNetStats()
+        local _, _, latencyHome, latencyWorld = GetNetStats()
         local showMS = not MattActionBarFontDB.perfMonitorHideMS
+        local showWorldMS = showMS and MattActionBarFontDB.perfMonitorShowWorldMS
         if MattActionBarFontDB.perfMonitorVertical then
             frame.text:SetFormattedText("%d FPS", fps)
-            frame.text2:SetText(showMS and string.format("%dms", latencyHome) or "")
+            if showMS then
+                if showWorldMS then
+                    frame.text2:SetFormattedText("H:%d W:%d", latencyHome, latencyWorld or 0)
+                else
+                    frame.text2:SetFormattedText("%dms", latencyHome)
+                end
+            else
+                frame.text2:SetText("")
+            end
         else
             if showMS then
-                frame.text:SetFormattedText("%d FPS  %dms", fps, latencyHome)
+                if showWorldMS then
+                    frame.text:SetFormattedText("%d FPS  H:%dms W:%dms", fps, latencyHome, latencyWorld or 0)
+                else
+                    frame.text:SetFormattedText("%d FPS  %dms", fps, latencyHome)
+                end
             else
                 frame.text:SetFormattedText("%d FPS", fps)
             end
@@ -172,10 +185,12 @@ function MABF:ApplyPerfMonitorStyle()
     end
 
     local showMS = not MattActionBarFontDB.perfMonitorHideMS
+    local showWorldMS = showMS and MattActionBarFontDB.perfMonitorShowWorldMS
 
     if MattActionBarFontDB.perfMonitorVertical then
         local h = showMS and 24 or 14
-        f:SetSize(50, h)
+        local w = showMS and (showWorldMS and 85 or 50) or 50
+        f:SetSize(w, h)
         f.text:ClearAllPoints()
         if showMS then
             f.text:SetPoint("TOP", f, "TOP", 0, -2)
@@ -187,7 +202,7 @@ function MABF:ApplyPerfMonitorStyle()
             f.text2:Hide()
         end
     else
-        local w = showMS and 110 or 60
+        local w = showMS and (showWorldMS and 185 or 110) or 60
         f:SetSize(w, 22)
         f.text:ClearAllPoints()
         f.text:SetPoint("CENTER")

@@ -68,6 +68,7 @@ MABF.defaults = {
     perfMonitorColor  = "green",      -- Text color: white, red, green, yellow, blue
     perfMonitorVertical = false,      -- Vertical layout (FPS above MS)
     perfMonitorHideMS  = false,       -- Hide MS text
+    perfMonitorShowWorldMS = true,    -- Show world latency alongside home latency
     perfMonitorPos    = nil,          -- Saved position for perf monitor
 
 
