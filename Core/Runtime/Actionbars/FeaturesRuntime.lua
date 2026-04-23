@@ -20,12 +20,28 @@ local function GetMainBarFrame()
     return _G.MainActionBar or _G.MainMenuBar
 end
 
+local function ShouldHideMainBarEndCaps(mainBar, overrideHideEndCaps)
+    if overrideHideEndCaps then
+        return true
+    end
+
+    if mainBar and mainBar.hideBarArt then
+        return true
+    end
+
+    if MABF and MABF.IsMinimalActionBarThemeSelected and MABF:IsMinimalActionBarThemeSelected() then
+        return true
+    end
+
+    return false
+end
+
 local function ApplyMainBarEndCapsVisibility(mainBar, overrideHideEndCaps)
     if not (mainBar and mainBar.EndCaps) then
         return
     end
 
-    local shouldHide = (overrideHideEndCaps and true) or (mainBar.hideBarArt and true) or false
+    local shouldHide = ShouldHideMainBarEndCaps(mainBar, overrideHideEndCaps)
     if shouldHide then
         mainBar.EndCaps:SetAlpha(0)
         mainBar.EndCaps:Hide()
@@ -54,9 +70,36 @@ function MABF:SetupMainActionBarEndCapsFix()
     hooksecurefunc(mainBar, "UpdateEndCaps", function(bar, overrideHideEndCaps)
         ApplyMainBarEndCapsVisibility(bar, overrideHideEndCaps)
     end)
+    if mainBar.EndCaps and mainBar.EndCaps.HookScript then
+        mainBar.EndCaps:HookScript("OnShow", function(endCaps)
+            ApplyMainBarEndCapsVisibility(endCaps:GetParent())
+        end)
+    end
 
     self._mainBarEndCapsFixInstalled = true
     ApplyMainBarEndCapsVisibility(mainBar)
+
+    if not self._mainBarEndCapsFixEventFrame then
+        local f = CreateFrame("Frame")
+        f:RegisterEvent("PLAYER_ENTERING_WORLD")
+        f:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+        f:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
+        f:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
+        f:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
+        f:RegisterEvent("UNIT_ENTERED_VEHICLE")
+        f:RegisterEvent("UNIT_EXITED_VEHICLE")
+        f:RegisterEvent("CINEMATIC_START")
+        f:RegisterEvent("CINEMATIC_STOP")
+        f:SetScript("OnEvent", function(_, _, unit)
+            if unit and unit ~= "player" then
+                return
+            end
+            C_Timer.After(0, function()
+                ApplyMainBarEndCapsVisibility(GetMainBarFrame())
+            end)
+        end)
+        self._mainBarEndCapsFixEventFrame = f
+    end
 end
 
 function MABF:ApplyReverseBarGrowth()
