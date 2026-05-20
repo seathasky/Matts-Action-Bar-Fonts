@@ -5,6 +5,11 @@ local addonName, MABF = ...
 -----------------------------------------------------------
 local auraClickthroughHooksInstalled = false
 local auraClickthroughDeferred = false
+local auraModifierWatcherInstalled = false
+
+local function IsCtrlRightClickBypassActive()
+    return IsControlKeyDown and IsControlKeyDown()
+end
 
 local function ApplyAuraOwnerMouseBehavior(frame, enabled)
     if not frame then
@@ -22,7 +27,7 @@ local function ApplyAuraOwnerMouseBehavior(frame, enabled)
     end
 end
 
-local function ApplyAuraButtonMouseBehavior(button, enabled)
+local function ApplyAuraButtonMouseBehavior(button, enabled, allowRightClick)
     if not button then
         return
     end
@@ -34,7 +39,7 @@ local function ApplyAuraButtonMouseBehavior(button, enabled)
         button:SetPropagateMouseMotion(enabled and true or false)
     end
 
-    if enabled then
+    if enabled and not allowRightClick then
         if button.RegisterForClicks then
             button:RegisterForClicks("LeftButtonUp")
         end
@@ -74,12 +79,13 @@ function MABF:ApplyBuffDebuffRightClickCamera()
     end
 
     local enabled = MattActionBarFontDB.buffDebuffRightClickCamera and true or false
+    local ctrlBypass = enabled and IsCtrlRightClickBypassActive() or false
 
     if BuffFrame and type(BuffFrame.auraFrames) == "table" then
         ApplyAuraOwnerMouseBehavior(BuffFrame, enabled)
         ApplyAuraOwnerMouseBehavior(BuffFrame.AuraContainer, enabled)
         for _, button in ipairs(BuffFrame.auraFrames) do
-            ApplyAuraButtonMouseBehavior(button, enabled)
+            ApplyAuraButtonMouseBehavior(button, enabled, ctrlBypass)
         end
     end
 
@@ -87,13 +93,13 @@ function MABF:ApplyBuffDebuffRightClickCamera()
         ApplyAuraOwnerMouseBehavior(DebuffFrame, enabled)
         ApplyAuraOwnerMouseBehavior(DebuffFrame.AuraContainer, enabled)
         for _, button in ipairs(DebuffFrame.auraFrames) do
-            ApplyAuraButtonMouseBehavior(button, enabled)
+            ApplyAuraButtonMouseBehavior(button, enabled, ctrlBypass)
         end
     end
 
     if DeadlyDebuffFrame and DeadlyDebuffFrame.Debuff then
         ApplyAuraOwnerMouseBehavior(DeadlyDebuffFrame, enabled)
-        ApplyAuraButtonMouseBehavior(DeadlyDebuffFrame.Debuff, enabled)
+        ApplyAuraButtonMouseBehavior(DeadlyDebuffFrame.Debuff, enabled, ctrlBypass)
     end
 
     if not auraClickthroughHooksInstalled then
@@ -110,6 +116,17 @@ function MABF:ApplyBuffDebuffRightClickCamera()
                 MABF:ApplyBuffDebuffRightClickCamera()
             end)
         end
+    end
+
+    if not auraModifierWatcherInstalled then
+        auraModifierWatcherInstalled = true
+        local watcher = CreateFrame("Frame")
+        watcher:RegisterEvent("MODIFIER_STATE_CHANGED")
+        watcher:SetScript("OnEvent", function(_, _, key)
+            if key == "LCTRL" or key == "RCTRL" then
+                MABF:ApplyBuffDebuffRightClickCamera()
+            end
+        end)
     end
 
     auraClickthroughDeferred = false
