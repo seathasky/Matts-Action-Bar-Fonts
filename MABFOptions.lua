@@ -191,6 +191,10 @@ function MABF:CreateOptionsWindow()
     trackConsumablesText = remindersShellPage and remindersShellPage.trackConsumablesText
     trackConsumablesResetBtn = remindersShellPage and remindersShellPage.trackConsumablesResetBtn
     trackConsumablesResetSizeBtn = remindersShellPage and remindersShellPage.trackConsumablesResetSizeBtn
+    consumablesFoodCheck = remindersShellPage and remindersShellPage.consumablesFoodCheck
+    consumablesFlaskCheck = remindersShellPage and remindersShellPage.consumablesFlaskCheck
+    consumablesOilCheck = remindersShellPage and remindersShellPage.consumablesOilCheck
+    consumablesAugmentRuneCheck = remindersShellPage and remindersShellPage.consumablesAugmentRuneCheck
     consumablesOnlyInstanceCheck = remindersShellPage and remindersShellPage.consumablesOnlyInstanceCheck
     consumablesHideInRestAreaCheck = remindersShellPage and remindersShellPage.consumablesHideInRestAreaCheck
     consumablesHideWhileMountedCheck = remindersShellPage and remindersShellPage.consumablesHideWhileMountedCheck
@@ -262,6 +266,7 @@ function MABF:CreateOptionsWindow()
         warnMissingPetCheck, warnPetPassiveCheck, trackConsumablesCheck,
         petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petHideWhileMountedCheck, petMissingSuppressInMPlusCheck,
         petMissingSuppressAfterFirstPullCheck, petMissingHideWhenLFGCompleteCheck,
+        consumablesFoodCheck, consumablesFlaskCheck, consumablesOilCheck, consumablesAugmentRuneCheck,
         consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesHideWhileMountedCheck, consumablesSuppressInMPlusCheck,
         consumablesSuppressAfterFirstPullCheck, consumablesHideWhenLFGCompleteCheck, consumablesHealthstoneCheck,
         warnMissingClassBuffsCheck, buffsOnlyInInstanceCheck, buffsHideInRestAreaCheck, buffsHideWhileMountedCheck,

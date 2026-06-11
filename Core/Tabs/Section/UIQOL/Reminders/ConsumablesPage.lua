@@ -14,15 +14,39 @@ function MABF:BuildRemindersConsumablesPage(opts)
         return nil
     end
 
+    local scrollFrame = CreateFrame("ScrollFrame", "MABFConsumablesScrollFrame", page, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 0)
+    scrollFrame:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", 0, 0)
+    scrollFrame:EnableMouseWheel(true)
+
+    local scrollContent = CreateFrame("Frame", nil, scrollFrame)
+    scrollContent:SetSize(1, 680)
+    scrollFrame:SetScrollChild(scrollContent)
+    scrollFrame:SetScript("OnSizeChanged", function(_, width)
+        scrollContent:SetWidth(math.max(width, 1))
+    end)
+    scrollFrame:HookScript("OnShow", function(self)
+        scrollContent:SetWidth(math.max(self:GetWidth(), 1))
+    end)
+    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local scrollBar = _G[self:GetName() .. "ScrollBar"]
+        if not scrollBar then return end
+        local minValue, maxValue = scrollBar:GetMinMaxValues()
+        local nextValue = math.max(minValue, math.min(maxValue, scrollBar:GetValue() - (delta * 36)))
+        scrollBar:SetValue(nextValue)
+    end)
+    scrollContent:SetWidth(math.max(scrollFrame:GetWidth(), page:GetWidth(), 1))
+    page = scrollContent
+
     local trackConsumablesCheck = CreateFrame("CheckButton", "MABFTrackConsumablesCheck", page, "InterfaceOptionsCheckButtonTemplate")
     trackConsumablesCheck:ClearAllPoints()
-    trackConsumablesCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 10)
+    trackConsumablesCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -4)
     local trackConsumablesText = _G[trackConsumablesCheck:GetName() .. "Text"]
     trackConsumablesText:SetText("Track consumables")
     trackConsumablesText:SetTextColor(1, 1, 1)
     local trackConsumablesDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     trackConsumablesDesc:SetPoint("TOPLEFT", trackConsumablesCheck, "BOTTOMLEFT", 26, 2)
-    trackConsumablesDesc:SetText("|cff888888Warns when food/flask/oil are missing|r")
+    trackConsumablesDesc:SetText("|cff888888Warns when selected consumables are missing|r")
     trackConsumablesDesc:SetScale(0.85)
     trackConsumablesCheck:SetChecked(MattActionBarFontDB.trackConsumables)
 
@@ -38,7 +62,28 @@ function MABF:BuildRemindersConsumablesPage(opts)
         return cb
     end
 
-    local consumablesOnlyInstanceCheck = CreateConsumablesSubCheckbox("MABFConsumablesOnlyInstanceCheck", trackConsumablesDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.consumablesOnlyInInstance, function(self)
+    local consumablesFoodCheck = CreateConsumablesSubCheckbox("MABFConsumablesFoodCheck", trackConsumablesDesc, 26, "Track Food", MattActionBarFontDB.warnConsumableFood ~= false, function(self)
+        MattActionBarFontDB.warnConsumableFood = self:GetChecked() and true or false
+        MABF:UpdateConsumableReminder()
+    end)
+    local consumablesFlaskCheck = CreateConsumablesSubCheckbox("MABFConsumablesFlaskCheck", consumablesFoodCheck, 0, "Track Flask/Phial", MattActionBarFontDB.warnConsumableFlask ~= false, function(self)
+        MattActionBarFontDB.warnConsumableFlask = self:GetChecked() and true or false
+        MABF:UpdateConsumableReminder()
+    end)
+    local consumablesOilCheck = CreateConsumablesSubCheckbox("MABFConsumablesOilCheck", consumablesFlaskCheck, 0, "Track Weapon Oil", MattActionBarFontDB.warnConsumableOil ~= false, function(self)
+        MattActionBarFontDB.warnConsumableOil = self:GetChecked() and true or false
+        MABF:UpdateConsumableReminder()
+    end)
+    local consumablesAugmentRuneCheck = CreateConsumablesSubCheckbox("MABFConsumablesAugmentRuneCheck", consumablesOilCheck, 0, "Track Augment Rune", MattActionBarFontDB.warnConsumableAugmentRune ~= false, function(self)
+        MattActionBarFontDB.warnConsumableAugmentRune = self:GetChecked() and true or false
+        MABF:UpdateConsumableReminder()
+    end)
+    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
+        MattActionBarFontDB.warnConsumableHealthstone = self:GetChecked() and true or false
+        MABF:UpdateConsumableReminder()
+    end)
+
+    local consumablesOnlyInstanceCheck = CreateConsumablesSubCheckbox("MABFConsumablesOnlyInstanceCheck", consumablesHealthstoneCheck, 0, "Only in dungeons/raids/scenarios", MattActionBarFontDB.consumablesOnlyInInstance, function(self)
         MattActionBarFontDB.consumablesOnlyInInstance = self:GetChecked() and true or false
         MABF:SetupConsumableReminder()
     end)
@@ -62,11 +107,6 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.consumablesHideWhenLFGComplete = self:GetChecked() and true or false
         MABF:SetupConsumableReminder()
     end)
-    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesHideWhenLFGCompleteCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
-        MattActionBarFontDB.warnConsumableHealthstone = self:GetChecked() and true or false
-        MABF:SetupConsumableReminder()
-    end)
-
     local consumableScaleSlider = CreateFrame("Slider", "MABFConsumableScaleSlider", page, "OptionsSliderTemplate")
     consumableScaleSlider:SetSize(180, 14)
     consumableScaleSlider:SetPoint("BOTTOM", page, "BOTTOM", 0, 74)
@@ -111,13 +151,17 @@ function MABF:BuildRemindersConsumablesPage(opts)
     local function RefreshConsumableSubOptions()
         local enabled = trackConsumablesCheck:GetChecked() and true or false
         local subChecks = {
+            consumablesFoodCheck,
+            consumablesFlaskCheck,
+            consumablesOilCheck,
+            consumablesAugmentRuneCheck,
+            consumablesHealthstoneCheck,
             consumablesOnlyInstanceCheck,
             consumablesHideInRestAreaCheck,
             consumablesHideWhileMountedCheck,
             consumablesSuppressInMPlusCheck,
             consumablesSuppressAfterFirstPullCheck,
             consumablesHideWhenLFGCompleteCheck,
-            consumablesHealthstoneCheck,
         }
         for _, cb in ipairs(subChecks) do
             cb:SetEnabled(enabled)
@@ -140,6 +184,10 @@ function MABF:BuildRemindersConsumablesPage(opts)
         trackConsumablesText = trackConsumablesText,
         trackConsumablesResetBtn = trackConsumablesResetBtn,
         trackConsumablesResetSizeBtn = trackConsumablesResetSizeBtn,
+        consumablesFoodCheck = consumablesFoodCheck,
+        consumablesFlaskCheck = consumablesFlaskCheck,
+        consumablesOilCheck = consumablesOilCheck,
+        consumablesAugmentRuneCheck = consumablesAugmentRuneCheck,
         consumablesOnlyInstanceCheck = consumablesOnlyInstanceCheck,
         consumablesHideInRestAreaCheck = consumablesHideInRestAreaCheck,
         consumablesHideWhileMountedCheck = consumablesHideWhileMountedCheck,

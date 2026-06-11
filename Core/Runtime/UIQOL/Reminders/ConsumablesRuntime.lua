@@ -106,6 +106,8 @@ do
     local FOOD_ICON_FILE_ID = 136000
     local FLASK_ICON_FILE_ID = "Interface\\Icons\\UI_Profession_Alchemy"
     local OIL_ICON_FILE_ID = "Interface\\Icons\\INV_Potion_38"
+    local AUGMENT_RUNE_SPELL_ID = 1264426
+    local AUGMENT_RUNE_ICON_FILE_ID = 4549099
     local HEALTHSTONE_ITEM_IDS = { 6262, 5512 }
     local HEALTHSTONE_ICON_FILE_ID = 538745
     local CONSUMABLE_GLOW_KEY = "mabf_consumable_missing"
@@ -146,6 +148,12 @@ do
         end
         local hasMainHandEnchant, _, _, hasOffHandEnchant = GetWeaponEnchantInfo()
         return (hasMainHandEnchant and true) or (hasOffHandEnchant and true) or false
+    end
+
+    local function PlayerHasAugmentRuneBuff()
+        return AnyPlayerBuffMatches(function(auraData)
+            return auraData and auraData.spellId == AUGMENT_RUNE_SPELL_ID
+        end)
     end
 
     local function PlayerHasHealthstone()
@@ -252,6 +260,7 @@ do
             SetConsumableGlow(reminderFrame.entries.food, false)
             SetConsumableGlow(reminderFrame.entries.flask, false)
             SetConsumableGlow(reminderFrame.entries.oil, false)
+            SetConsumableGlow(reminderFrame.entries.rune, false)
             SetConsumableGlow(reminderFrame.entries.healthstone, false)
             reminderFrame:Hide()
             return
@@ -260,16 +269,19 @@ do
         local hasFood = PlayerHasFoodBuff()
         local hasFlask = PlayerHasFlaskBuff()
         local hasOil = PlayerHasWeaponOil()
+        local hasRune = PlayerHasAugmentRuneBuff()
         local trackHealthstone = (MattActionBarFontDB and MattActionBarFontDB.warnConsumableHealthstone) and GroupHasWarlock() or false
         local hasHealthstone = PlayerHasHealthstone()
 
-        reminderFrame.entries.food:SetShown(not hasFood)
-        reminderFrame.entries.flask:SetShown(not hasFlask)
-        reminderFrame.entries.oil:SetShown(not hasOil)
+        reminderFrame.entries.food:SetShown(MattActionBarFontDB.warnConsumableFood ~= false and (not hasFood))
+        reminderFrame.entries.flask:SetShown(MattActionBarFontDB.warnConsumableFlask ~= false and (not hasFlask))
+        reminderFrame.entries.oil:SetShown(MattActionBarFontDB.warnConsumableOil ~= false and (not hasOil))
+        reminderFrame.entries.rune:SetShown(MattActionBarFontDB.warnConsumableAugmentRune ~= false and (not hasRune))
         reminderFrame.entries.healthstone:SetShown(trackHealthstone and (not hasHealthstone))
         SetConsumableGlow(reminderFrame.entries.food, reminderFrame.entries.food:IsShown())
         SetConsumableGlow(reminderFrame.entries.flask, reminderFrame.entries.flask:IsShown())
         SetConsumableGlow(reminderFrame.entries.oil, reminderFrame.entries.oil:IsShown())
+        SetConsumableGlow(reminderFrame.entries.rune, reminderFrame.entries.rune:IsShown())
         SetConsumableGlow(reminderFrame.entries.healthstone, reminderFrame.entries.healthstone:IsShown())
 
         local visibleEntries = reminderFrame._visibleEntries or {}
@@ -283,6 +295,9 @@ do
         if reminderFrame.entries.oil:IsShown() then
             visibleEntries[#visibleEntries + 1] = reminderFrame.entries.oil
         end
+        if reminderFrame.entries.rune:IsShown() then
+            visibleEntries[#visibleEntries + 1] = reminderFrame.entries.rune
+        end
         if reminderFrame.entries.healthstone:IsShown() then
             visibleEntries[#visibleEntries + 1] = reminderFrame.entries.healthstone
         end
@@ -291,6 +306,7 @@ do
             SetConsumableGlow(reminderFrame.entries.food, false)
             SetConsumableGlow(reminderFrame.entries.flask, false)
             SetConsumableGlow(reminderFrame.entries.oil, false)
+            SetConsumableGlow(reminderFrame.entries.rune, false)
             SetConsumableGlow(reminderFrame.entries.healthstone, false)
             reminderFrame:Hide()
             return
@@ -395,13 +411,15 @@ do
                 food = CreateConsumableBlock(reminderFrame, FOOD_ICON_FILE_ID, "Food"),
                 flask = CreateConsumableBlock(reminderFrame, FLASK_ICON_FILE_ID, "Flask"),
                 oil = CreateConsumableBlock(reminderFrame, OIL_ICON_FILE_ID, "Oil"),
+                rune = CreateConsumableBlock(reminderFrame, AUGMENT_RUNE_ICON_FILE_ID, "Rune"),
                 healthstone = CreateConsumableBlock(reminderFrame, HEALTHSTONE_ICON_FILE_ID, "Stone"),
             }
             reminderFrame._visibleEntries = {}
             reminderFrame.entries.food:SetPoint("TOPLEFT", reminderFrame, "TOPLEFT", 0, 0)
             reminderFrame.entries.flask:SetPoint("TOPLEFT", reminderFrame.entries.food, "TOPRIGHT", 14, 0)
             reminderFrame.entries.oil:SetPoint("TOPLEFT", reminderFrame.entries.flask, "TOPRIGHT", 14, 0)
-            reminderFrame.entries.healthstone:SetPoint("TOPLEFT", reminderFrame.entries.oil, "TOPRIGHT", 14, 0)
+            reminderFrame.entries.rune:SetPoint("TOPLEFT", reminderFrame.entries.oil, "TOPRIGHT", 14, 0)
+            reminderFrame.entries.healthstone:SetPoint("TOPLEFT", reminderFrame.entries.rune, "TOPRIGHT", 14, 0)
 
             RestorePosition()
             reminderFrame:Hide()
