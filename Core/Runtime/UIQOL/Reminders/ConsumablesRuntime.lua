@@ -84,7 +84,8 @@ do
             local index = 1
             local auraData = C_UnitAuras.GetBuffDataByIndex("player", index)
             while auraData do
-                if predicate(auraData) then
+                local ok, matched = pcall(predicate, auraData)
+                if ok and matched then
                     return true
                 end
                 index = index + 1
@@ -152,7 +153,21 @@ do
 
     local function PlayerHasAugmentRuneBuff()
         return AnyPlayerBuffMatches(function(auraData)
-            return auraData and auraData.spellId == AUGMENT_RUNE_SPELL_ID
+            if not auraData then
+                return false
+            end
+
+            local ok, spellId = pcall(function()
+                return auraData.spellId
+            end)
+            if not ok or spellId == nil then
+                return false
+            end
+            if issecretvalue and issecretvalue(spellId) then
+                return false
+            end
+
+            return spellId == AUGMENT_RUNE_SPELL_ID
         end)
     end
 
