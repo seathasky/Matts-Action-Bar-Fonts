@@ -75,11 +75,11 @@ end
 
 local function IsMouseOverBarOrButtons(barFrame, buttonPrefix)
     if not barFrame or not buttonPrefix then return false end
-    if MouseIsOver(barFrame) then return true end
+    if barFrame:IsMouseOver() then return true end
 
     for i = 1, 12 do
         local button = _G[buttonPrefix .. i]
-        if button and MouseIsOver(button) then
+        if button and button:IsMouseOver() then
             return true
         end
     end

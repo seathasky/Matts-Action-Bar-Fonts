@@ -84,10 +84,10 @@ do
 
     local function IsPetBarMouseOver()
         local bar = _G["PetActionBar"]
-        if bar and MouseIsOver(bar) then return true end
+        if bar and bar:IsMouseOver() then return true end
         for i = 1, 10 do
             local btn = _G["PetActionButton" .. i]
-            if btn and MouseIsOver(btn) then return true end
+            if btn and btn:IsMouseOver() then return true end
         end
         return false
     end
