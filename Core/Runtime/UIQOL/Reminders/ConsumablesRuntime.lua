@@ -81,15 +81,19 @@ do
             return false
         end
         if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
-            local index = 1
-            local auraData = C_UnitAuras.GetBuffDataByIndex("player", index)
-            while auraData do
-                local ok, matched = pcall(predicate, auraData)
-                if ok and matched then
-                    return true
+            for index = 1, 255 do
+                local isSecret = C_Secrets and C_Secrets.ShouldUnitAuraIndexBeSecret
+                    and C_Secrets.ShouldUnitAuraIndexBeSecret("player", index, "HELPFUL")
+                if not isSecret then
+                    local auraData = C_UnitAuras.GetBuffDataByIndex("player", index)
+                    if not auraData then
+                        break
+                    end
+                    local ok, matched = pcall(predicate, auraData)
+                    if ok and matched then
+                        return true
+                    end
                 end
-                index = index + 1
-                auraData = C_UnitAuras.GetBuffDataByIndex("player", index)
             end
         end
         return false
@@ -260,6 +264,11 @@ do
             return false
         end
         if IsPlayerInCombat() then
+            return false
+        end
+        -- Combat restrictions can outlive the combat-state event briefly in
+        -- 12.1.  Wait until player auras are readable before scanning buffs.
+        if C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() then
             return false
         end
         return true
