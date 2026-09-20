@@ -71,17 +71,18 @@ function MABF:SetupUIFeaturesSubTabs(opts)
         subPage:SetPoint("BOTTOMRIGHT", pageUIFeatures, "BOTTOMRIGHT", -8, 8)
     end
 
-    for _, control in ipairs(blizzard) do
+    -- The Forever-only control leaves holes in this list on Retail.
+    for _, control in pairs(blizzard) do
         if control and control.SetParent then
             control:SetParent(uiFeaturePages.blizzard)
         end
     end
-    for _, control in ipairs(visual) do
+    for _, control in pairs(visual) do
         if control and control.SetParent then
             control:SetParent(uiFeaturePages.visual)
         end
     end
-    for _, control in ipairs(tools) do
+    for _, control in pairs(tools) do
         if control and control.SetParent then
             control:SetParent(uiFeaturePages.tools)
         end

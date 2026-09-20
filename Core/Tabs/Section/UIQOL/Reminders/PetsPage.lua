@@ -9,6 +9,7 @@ function MABF:BuildRemindersPetsPage(opts)
     local StyleSlider = opts.StyleSlider
     local CreateReminderResetButton = opts.CreateReminderResetButton
     local CreateReminderResetSizeButton = opts.CreateReminderResetSizeButton
+    local isWoWForever = select(4, GetBuildInfo()) == 16001
 
     if not page or not checkSpacing or not StyleSlider or not CreateReminderResetButton or not CreateReminderResetSizeButton then
         return nil
@@ -50,11 +51,14 @@ function MABF:BuildRemindersPetsPage(opts)
         MattActionBarFontDB.petHideWhileMounted = self:GetChecked() and true or false
         MABF:SetupPetPassiveReminder()
     end)
-    local petMissingSuppressInMPlusCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressInMPlusCheck", petHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.petMissingSuppressInMPlus, function(self)
-        MattActionBarFontDB.petMissingSuppressInMPlus = self:GetChecked() and true or false
-        MABF:SetupPetPassiveReminder()
-    end)
-    local petMissingSuppressAfterFirstPullCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressAfterFirstPullCheck", petMissingSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.petMissingSuppressAfterFirstPull, function(self)
+    local petMissingSuppressInMPlusCheck
+    if not isWoWForever then
+        petMissingSuppressInMPlusCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressInMPlusCheck", petHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.petMissingSuppressInMPlus, function(self)
+            MattActionBarFontDB.petMissingSuppressInMPlus = self:GetChecked() and true or false
+            MABF:SetupPetPassiveReminder()
+        end)
+    end
+    local petMissingSuppressAfterFirstPullCheck = CreateMissingPetSubCheckbox("MABFPetMissingSuppressAfterFirstPullCheck", petMissingSuppressInMPlusCheck or petHideWhileMountedCheck, 0, "Hide after first pull", MattActionBarFontDB.petMissingSuppressAfterFirstPull, function(self)
         MattActionBarFontDB.petMissingSuppressAfterFirstPull = self:GetChecked() and true or false
         MABF:SetupPetPassiveReminder()
     end)
@@ -122,10 +126,12 @@ function MABF:BuildRemindersPetsPage(opts)
             petMissingOnlyInstanceCheck,
             petMissingHideInRestAreaCheck,
             petHideWhileMountedCheck,
-            petMissingSuppressInMPlusCheck,
             petMissingSuppressAfterFirstPullCheck,
             petMissingHideWhenLFGCompleteCheck,
         }
+        if petMissingSuppressInMPlusCheck then
+            table.insert(subChecks, 4, petMissingSuppressInMPlusCheck)
+        end
         for _, cb in ipairs(subChecks) do
             cb:SetEnabled(enabled)
             local t = _G[cb:GetName() .. "Text"]

@@ -6,6 +6,11 @@ local addonName, MABF = ...
 local auraClickthroughHooksInstalled = false
 local auraClickthroughDeferred = false
 local auraModifierWatcherInstalled = false
+local foreverMicroMenuHooked = false
+local foreverBagsBarHooked = false
+local foreverRangeBarHooked = false
+local foreverRangeBarEvents
+local foreverWandAutoRepeatActive = false
 
 local function IsCtrlRightClickBypassActive()
     return IsControlKeyDown and IsControlKeyDown()
@@ -153,6 +158,22 @@ end
 
 function MABF:ApplyHideMicroMenu()
     if not MattActionBarFontDB.hideMicroMenu then return end
+
+    -- WoW Forever 16001 uses a top-level MicroMenu frame. Keep the
+    -- existing button handling below for clients that expose the legacy
+    -- micro-button globals.
+    if MicroMenu then
+        MicroMenu:Hide()
+        if not foreverMicroMenuHooked then
+            hooksecurefunc(MicroMenu, "Show", function(self)
+                if MattActionBarFontDB and MattActionBarFontDB.hideMicroMenu then
+                    self:Hide()
+                end
+            end)
+            foreverMicroMenuHooked = true
+        end
+    end
+
     local buttonsToHide = {
         "CharacterMicroButton", "PlayerSpellsMicroButton", "ProfessionMicroButton",
         "AchievementMicroButton", "QuestLogMicroButton", "GuildMicroButton",
@@ -172,6 +193,22 @@ end
 
 function MABF:ApplyHideBagBar()
     if not MattActionBarFontDB.hideBagBar then return end
+
+    -- WoW Forever 16001 moved the bag controls under the BagsBar frame.
+    -- Keep the legacy individual-button handling below as-is for other
+    -- clients and UI layouts.
+    if BagsBar then
+        BagsBar:Hide()
+        if not foreverBagsBarHooked then
+            hooksecurefunc(BagsBar, "Show", function(self)
+                if MattActionBarFontDB and MattActionBarFontDB.hideBagBar then
+                    self:Hide()
+                end
+            end)
+            foreverBagsBarHooked = true
+        end
+    end
+
     if MainMenuBarBackpackButton then MainMenuBarBackpackButton:Hide() end
     if BagBarExpandToggle then BagBarExpandToggle:Hide() end
     if CharacterReagentBag0Slot then CharacterReagentBag0Slot:Hide() end
@@ -189,6 +226,97 @@ function MABF:ApplyHideBagBar()
     end
     if CharacterReagentBag0Slot then
         CharacterReagentBag0Slot:SetScript("OnShow", CharacterReagentBag0Slot.Hide)
+    end
+end
+
+local function IsWandEquipped()
+    if not GetInventoryItemLink then
+        return false
+    end
+
+    local link = GetInventoryItemLink("player", 18)
+    if not link then
+        return false
+    end
+
+    local getInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+    if not getInstant then
+        return false
+    end
+
+    local _, itemType, itemSubType, _, _, classID, subclassID = getInstant(link)
+    local wandSubclass = Enum and Enum.ItemWeaponSubclass and Enum.ItemWeaponSubclass.Wand or 19
+    local weaponClass = Enum and Enum.ItemClass and Enum.ItemClass.Weapon or 2
+    if classID == weaponClass and subclassID == wandSubclass then
+        return true
+    end
+
+    -- Fallback for clients exposing the legacy subtype string.
+    return itemType == "Weapon" and itemSubType == "Wand"
+end
+
+function MABF:ApplyRangeBarWandVisibility()
+    if select(4, GetBuildInfo()) ~= 16001 then
+        return
+    end
+
+    if not foreverRangeBarEvents then
+        foreverRangeBarEvents = CreateFrame("Frame")
+        foreverRangeBarEvents:RegisterEvent("START_AUTOREPEAT_SPELL")
+        foreverRangeBarEvents:RegisterEvent("STOP_AUTOREPEAT_SPELL")
+        foreverRangeBarEvents:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        foreverRangeBarEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
+        foreverRangeBarEvents:RegisterEvent("SPELLS_CHANGED")
+        foreverRangeBarEvents:SetScript("OnEvent", function(_, event)
+            local frame = SwingTimerRangedFrame
+            if not frame or not MattActionBarFontDB.showRangeBarOnlyWhileWandShooting then
+                return
+            end
+
+            if event == "START_AUTOREPEAT_SPELL" then
+                if IsWandEquipped() then
+                    foreverWandAutoRepeatActive = true
+                    frame:Show()
+                else
+                    foreverWandAutoRepeatActive = false
+                    frame:Hide()
+                end
+            elseif event == "STOP_AUTOREPEAT_SPELL" then
+                foreverWandAutoRepeatActive = false
+                frame:Hide()
+            else
+                foreverWandAutoRepeatActive = false
+                MABF:ApplyRangeBarWandVisibility()
+            end
+        end)
+    end
+
+    local frame = SwingTimerRangedFrame
+    if not frame then
+        return
+    end
+
+    if not foreverRangeBarHooked then
+        frame:HookScript("OnShow", function(self)
+            -- Blizzard owns the ranged-swing timing, but the frame can also
+            -- appear during combat or Edit Mode. Require an active wand
+            -- auto-repeat state before allowing it to remain visible.
+            if MattActionBarFontDB.showRangeBarOnlyWhileWandShooting
+                and (not foreverWandAutoRepeatActive or not IsWandEquipped()) then
+                self:Hide()
+            end
+        end)
+        foreverRangeBarHooked = true
+    end
+
+    if MattActionBarFontDB.showRangeBarOnlyWhileWandShooting then
+        -- Start hidden; Blizzard's show path and START_AUTOREPEAT_SPELL
+        -- will reveal it only for an active wand swing.
+        foreverWandAutoRepeatActive = false
+        frame:Hide()
+    else
+        foreverWandAutoRepeatActive = false
+        frame:Show()
     end
 end
 

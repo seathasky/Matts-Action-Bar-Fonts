@@ -1,4 +1,5 @@
 local addonName, MABF = ...
+local isWoWForever = select(4, GetBuildInfo()) == 16001
 
 local function RefreshBagOverlayRuntime()
     if MABF and MABF.RefreshBagItemOverlays then
@@ -26,25 +27,29 @@ function MABF:BuildBagTweaksPage(opts)
 
     local bagsTitle = CreatePageTitle(pageBags, "Bag Tweaks")
 
-    local bagIlvlCheck = CreateFrame("CheckButton", "MABFBagIlvlCheck", pageBags, "InterfaceOptionsCheckButtonTemplate")
-    bagIlvlCheck:ClearAllPoints()
-    bagIlvlCheck:SetPoint("TOPLEFT", bagsTitle, "BOTTOMLEFT", 0, -8)
-    local bagIlvlText = _G[bagIlvlCheck:GetName() .. "Text"]
-    bagIlvlText:SetText("Show Item Levels in Bags")
-    bagIlvlText:SetTextColor(1, 1, 1)
-    local bagIlvlDesc = pageBags:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    bagIlvlDesc:SetPoint("TOPLEFT", bagIlvlCheck, "BOTTOMLEFT", 26, 2)
-    bagIlvlDesc:SetText("|cff888888Displays ilvl on gear in bags & bank|r")
-    bagIlvlDesc:SetScale(0.85)
-    bagIlvlCheck:SetChecked(MattActionBarFontDB.enableBagItemLevels)
-    bagIlvlCheck:SetScript("OnClick", function(self)
-        MattActionBarFontDB.enableBagItemLevels = self:GetChecked()
-        RefreshBagOverlayRuntime()
-    end)
+    local bagIlvlCheck
+    local bagIlvlDesc
+    if not isWoWForever then
+        bagIlvlCheck = CreateFrame("CheckButton", "MABFBagIlvlCheck", pageBags, "InterfaceOptionsCheckButtonTemplate")
+        bagIlvlCheck:ClearAllPoints()
+        bagIlvlCheck:SetPoint("TOPLEFT", bagsTitle, "BOTTOMLEFT", 0, -8)
+        local bagIlvlText = _G[bagIlvlCheck:GetName() .. "Text"]
+        bagIlvlText:SetText("Show Item Levels in Bags")
+        bagIlvlText:SetTextColor(1, 1, 1)
+        bagIlvlDesc = pageBags:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        bagIlvlDesc:SetPoint("TOPLEFT", bagIlvlCheck, "BOTTOMLEFT", 26, 2)
+        bagIlvlDesc:SetText("|cff888888Displays ilvl on gear in bags & bank|r")
+        bagIlvlDesc:SetScale(0.85)
+        bagIlvlCheck:SetChecked(MattActionBarFontDB.enableBagItemLevels)
+        bagIlvlCheck:SetScript("OnClick", function(self)
+            MattActionBarFontDB.enableBagItemLevels = self:GetChecked()
+            RefreshBagOverlayRuntime()
+        end)
+    end
 
     local bagEquipLabelCheck = CreateFrame("CheckButton", "MABFBagEquipmentLabelCheck", pageBags, "InterfaceOptionsCheckButtonTemplate")
     bagEquipLabelCheck:ClearAllPoints()
-    bagEquipLabelCheck:SetPoint("TOPLEFT", bagIlvlDesc, "BOTTOMLEFT", -26, -10)
+    bagEquipLabelCheck:SetPoint("TOPLEFT", bagIlvlDesc or bagsTitle, "BOTTOMLEFT", isWoWForever and 0 or -26, isWoWForever and -8 or -10)
     local bagEquipLabelText = _G[bagEquipLabelCheck:GetName() .. "Text"]
     bagEquipLabelText:SetText("Show Equipment Set Labels in Bags")
     bagEquipLabelText:SetTextColor(1, 1, 1)

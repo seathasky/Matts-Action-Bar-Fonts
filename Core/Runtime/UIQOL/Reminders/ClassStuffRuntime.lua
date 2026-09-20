@@ -1,4 +1,5 @@
 local addonName, MABF = ...
+local isWoWForever = select(4, GetBuildInfo()) == 16001
 local LCG = LibStub and LibStub("LibCustomGlow-1.0", true)
 
 -----------------------------------------------------------
@@ -298,7 +299,7 @@ do
         if not db then
             return false
         end
-        if not db.warnClassSoulstone and not db.warnClassShamanShields and not db.warnClassPaladinBeacons then
+        if not db.warnClassSoulstone and not db.warnClassShamanShields and (isWoWForever or not db.warnClassPaladinBeacons) then
             return false
         end
         if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then
@@ -416,7 +417,7 @@ do
             return nil
         end
 
-        if classToken == "PALADIN" and db.warnClassPaladinBeacons then
+        if classToken == "PALADIN" and db.warnClassPaladinBeacons and not isWoWForever then
             if not IsHolyPaladinSpec() then
                 return nil
             end

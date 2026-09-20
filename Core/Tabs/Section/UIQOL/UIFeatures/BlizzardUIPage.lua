@@ -9,6 +9,7 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
     if not pageUIFeatures or not uiFeaturesTitle then
         return nil
     end
+    local isWoWForever = select(4, GetBuildInfo()) == 16001
 
     local objectiveTrackerCheck = CreateFrame("CheckButton", "MABFObjectiveTrackerCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     objectiveTrackerCheck:ClearAllPoints()
@@ -64,7 +65,7 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
 
     local hideBagBarCheck = CreateFrame("CheckButton", "MABFHideBagBarCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     hideBagBarCheck:ClearAllPoints()
-    hideBagBarCheck:SetPoint("TOPLEFT", hideMicroMenuCheck, "BOTTOMLEFT", 0, -4)
+    hideBagBarCheck:SetPoint("TOPLEFT", hideMicroDesc, "BOTTOMLEFT", -26, -8)
     local hideBagBarText = _G[hideBagBarCheck:GetName() .. "Text"]
     hideBagBarText:SetText("Hide Bag Bar")
     hideBagBarText:SetTextColor(1, 1, 1)
@@ -74,9 +75,33 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
         StaticPopup_Show("MABF_RELOAD_UI")
     end)
 
+    local rangeBarWandCheck
+    local rangeBarWandDesc
+    if isWoWForever then
+        rangeBarWandCheck = CreateFrame("CheckButton", "MABFRangeBarWandCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
+        rangeBarWandCheck:ClearAllPoints()
+        rangeBarWandCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, -4)
+        local rangeBarWandText = _G[rangeBarWandCheck:GetName() .. "Text"]
+        rangeBarWandText:SetText("Show Range Bar Only While Shooting Wand")
+        rangeBarWandText:SetTextColor(1, 1, 1)
+        rangeBarWandDesc = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        rangeBarWandDesc:SetPoint("TOPLEFT", rangeBarWandCheck, "BOTTOMLEFT", 26, 2)
+        rangeBarWandDesc:SetText("|cff888888(FOREVER ONLY)|r")
+        rangeBarWandDesc:SetScale(0.85)
+        rangeBarWandCheck:SetChecked(MattActionBarFontDB.showRangeBarOnlyWhileWandShooting)
+        rangeBarWandCheck:SetScript("OnClick", function(self)
+            MattActionBarFontDB.showRangeBarOnlyWhileWandShooting = self:GetChecked() and true or false
+            MABF:ApplyRangeBarWandVisibility()
+        end)
+    end
+
     local buffDebuffRightClickCameraCheck = CreateFrame("CheckButton", "MABFBuffDebuffRightClickCameraCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     buffDebuffRightClickCameraCheck:ClearAllPoints()
-    buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, -4)
+    if rangeBarWandDesc then
+        buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", rangeBarWandDesc, "BOTTOMLEFT", -26, -8)
+    else
+        buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, -4)
+    end
     local buffDebuffRightClickCameraText = _G[buffDebuffRightClickCameraCheck:GetName() .. "Text"]
     buffDebuffRightClickCameraText:SetText("Buff/Debuff Camera Drag")
     buffDebuffRightClickCameraText:SetTextColor(1, 1, 1)
@@ -100,6 +125,8 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
         hideMicroMenuCheck = hideMicroMenuCheck,
         hideMicroDesc = hideMicroDesc,
         hideBagBarCheck = hideBagBarCheck,
+        rangeBarWandCheck = rangeBarWandCheck,
+        rangeBarWandDesc = rangeBarWandDesc,
         buffDebuffRightClickCameraCheck = buffDebuffRightClickCameraCheck,
         buffDebuffRightClickCameraDesc = buffDebuffRightClickCameraDesc,
     }

@@ -9,6 +9,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
     local StyleSlider = opts.StyleSlider
     local CreateReminderResetButton = opts.CreateReminderResetButton
     local CreateReminderResetSizeButton = opts.CreateReminderResetSizeButton
+    local isWoWForever = select(4, GetBuildInfo()) == 16001
 
     if not page or not checkSpacing or not StyleSlider or not CreateReminderResetButton or not CreateReminderResetSizeButton then
         return nil
@@ -66,7 +67,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.warnConsumableFood = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
-    local consumablesFlaskCheck = CreateConsumablesSubCheckbox("MABFConsumablesFlaskCheck", consumablesFoodCheck, 0, "Track Flask/Phial", MattActionBarFontDB.warnConsumableFlask ~= false, function(self)
+    local consumablesFlaskCheck = CreateConsumablesSubCheckbox("MABFConsumablesFlaskCheck", consumablesFoodCheck, 0, isWoWForever and "Track Flask" or "Track Flask/Phial", MattActionBarFontDB.warnConsumableFlask ~= false, function(self)
         MattActionBarFontDB.warnConsumableFlask = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
@@ -74,11 +75,14 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.warnConsumableOil = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
-    local consumablesAugmentRuneCheck = CreateConsumablesSubCheckbox("MABFConsumablesAugmentRuneCheck", consumablesOilCheck, 0, "Track Augment Rune", MattActionBarFontDB.warnConsumableAugmentRune ~= false, function(self)
-        MattActionBarFontDB.warnConsumableAugmentRune = self:GetChecked() and true or false
-        MABF:UpdateConsumableReminder()
-    end)
-    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
+    local consumablesAugmentRuneCheck
+    if not isWoWForever then
+        consumablesAugmentRuneCheck = CreateConsumablesSubCheckbox("MABFConsumablesAugmentRuneCheck", consumablesOilCheck, 0, "Track Augment Rune", MattActionBarFontDB.warnConsumableAugmentRune ~= false, function(self)
+            MattActionBarFontDB.warnConsumableAugmentRune = self:GetChecked() and true or false
+            MABF:UpdateConsumableReminder()
+        end)
+    end
+    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck or consumablesOilCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
         MattActionBarFontDB.warnConsumableHealthstone = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
@@ -95,11 +99,14 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.consumablesHideWhileMounted = self:GetChecked() and true or false
         MABF:SetupConsumableReminder()
     end)
-    local consumablesSuppressInMPlusCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressInMPlusCheck", consumablesHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.consumablesSuppressInMPlus, function(self)
-        MattActionBarFontDB.consumablesSuppressInMPlus = self:GetChecked() and true or false
-        MABF:SetupConsumableReminder()
-    end)
-    local consumablesSuppressAfterFirstPullCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressAfterFirstPullCheck", consumablesSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.consumablesSuppressAfterFirstPull, function(self)
+    local consumablesSuppressInMPlusCheck
+    if not isWoWForever then
+        consumablesSuppressInMPlusCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressInMPlusCheck", consumablesHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.consumablesSuppressInMPlus, function(self)
+            MattActionBarFontDB.consumablesSuppressInMPlus = self:GetChecked() and true or false
+            MABF:SetupConsumableReminder()
+        end)
+    end
+    local consumablesSuppressAfterFirstPullCheck = CreateConsumablesSubCheckbox("MABFConsumablesSuppressAfterFirstPullCheck", consumablesSuppressInMPlusCheck or consumablesHideWhileMountedCheck, 0, "Hide after first pull", MattActionBarFontDB.consumablesSuppressAfterFirstPull, function(self)
         MattActionBarFontDB.consumablesSuppressAfterFirstPull = self:GetChecked() and true or false
         MABF:SetupConsumableReminder()
     end)
@@ -154,15 +161,19 @@ function MABF:BuildRemindersConsumablesPage(opts)
             consumablesFoodCheck,
             consumablesFlaskCheck,
             consumablesOilCheck,
-            consumablesAugmentRuneCheck,
             consumablesHealthstoneCheck,
             consumablesOnlyInstanceCheck,
             consumablesHideInRestAreaCheck,
             consumablesHideWhileMountedCheck,
-            consumablesSuppressInMPlusCheck,
             consumablesSuppressAfterFirstPullCheck,
             consumablesHideWhenLFGCompleteCheck,
         }
+        if consumablesAugmentRuneCheck then
+            table.insert(subChecks, 5, consumablesAugmentRuneCheck)
+        end
+        if consumablesSuppressInMPlusCheck then
+            table.insert(subChecks, 9, consumablesSuppressInMPlusCheck)
+        end
         for _, cb in ipairs(subChecks) do
             cb:SetEnabled(enabled)
             local t = _G[cb:GetName() .. "Text"]

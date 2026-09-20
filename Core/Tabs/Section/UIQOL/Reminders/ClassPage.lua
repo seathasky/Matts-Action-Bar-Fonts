@@ -9,6 +9,7 @@ function MABF:BuildRemindersClassPage(opts)
     local StyleSlider = opts.StyleSlider
     local CreateReminderResetButton = opts.CreateReminderResetButton
     local CreateReminderResetSizeButton = opts.CreateReminderResetSizeButton
+    local isWoWForever = select(4, GetBuildInfo()) == 16001
     local classRuleSpacing = -3
 
     if not page or not checkSpacing or not StyleSlider or not CreateReminderResetButton or not CreateReminderResetSizeButton then
@@ -37,16 +38,20 @@ function MABF:BuildRemindersClassPage(opts)
     warnClassShamanShieldsDesc:SetScale(0.85)
     warnClassShamanShieldsCheck:SetChecked(MattActionBarFontDB.warnClassShamanShields)
 
-    local warnClassPaladinBeaconsCheck = CreateFrame("CheckButton", "MABFWarnClassPaladinBeaconsCheck", page, "InterfaceOptionsCheckButtonTemplate")
-    warnClassPaladinBeaconsCheck:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "TOPLEFT", 0, -36)
-    local warnClassPaladinBeaconsText = _G[warnClassPaladinBeaconsCheck:GetName() .. "Text"]
-    warnClassPaladinBeaconsText:SetText("Paladin: Missing beacons")
-    warnClassPaladinBeaconsText:SetTextColor(1, 1, 1)
-    local warnClassPaladinBeaconsDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    warnClassPaladinBeaconsDesc:SetPoint("TOPLEFT", warnClassPaladinBeaconsCheck, "BOTTOMLEFT", 26, 2)
-    warnClassPaladinBeaconsDesc:SetText("|cff888888Holy only; hidden with Beacon of Virtue|r")
-    warnClassPaladinBeaconsDesc:SetScale(0.85)
-    warnClassPaladinBeaconsCheck:SetChecked(MattActionBarFontDB.warnClassPaladinBeacons)
+    local warnClassPaladinBeaconsCheck
+    local warnClassPaladinBeaconsDesc
+    if not isWoWForever then
+        warnClassPaladinBeaconsCheck = CreateFrame("CheckButton", "MABFWarnClassPaladinBeaconsCheck", page, "InterfaceOptionsCheckButtonTemplate")
+        warnClassPaladinBeaconsCheck:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "TOPLEFT", 0, -36)
+        local warnClassPaladinBeaconsText = _G[warnClassPaladinBeaconsCheck:GetName() .. "Text"]
+        warnClassPaladinBeaconsText:SetText("Paladin: Missing beacons")
+        warnClassPaladinBeaconsText:SetTextColor(1, 1, 1)
+        warnClassPaladinBeaconsDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        warnClassPaladinBeaconsDesc:SetPoint("TOPLEFT", warnClassPaladinBeaconsCheck, "BOTTOMLEFT", 26, 2)
+        warnClassPaladinBeaconsDesc:SetText("|cff888888Holy only; hidden with Beacon of Virtue|r")
+        warnClassPaladinBeaconsDesc:SetScale(0.85)
+        warnClassPaladinBeaconsCheck:SetChecked(MattActionBarFontDB.warnClassPaladinBeacons)
+    end
 
     local function CreateClassSubCheckbox(name, anchorTo, xOffset, labelText, checkedValue, onClick, yOffset)
         local cb = CreateFrame("CheckButton", name, page, "InterfaceOptionsCheckButtonTemplate")
@@ -60,7 +65,7 @@ function MABF:BuildRemindersClassPage(opts)
         return cb
     end
 
-    local classOnlyInInstanceCheck = CreateClassSubCheckbox("MABFClassOnlyInInstanceCheck", warnClassPaladinBeaconsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.classOnlyInInstance, function(self)
+    local classOnlyInInstanceCheck = CreateClassSubCheckbox("MABFClassOnlyInInstanceCheck", warnClassPaladinBeaconsDesc or warnClassShamanShieldsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.classOnlyInInstance, function(self)
         MattActionBarFontDB.classOnlyInInstance = self:GetChecked() and true or false
         MABF:SetupClassStuffReminder()
     end, -10)
@@ -72,11 +77,14 @@ function MABF:BuildRemindersClassPage(opts)
         MattActionBarFontDB.classHideWhileMounted = self:GetChecked() and true or false
         MABF:SetupClassStuffReminder()
     end)
-    local classSuppressInMPlusCheck = CreateClassSubCheckbox("MABFClassSuppressInMPlusCheck", classHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.classSuppressInMPlus, function(self)
-        MattActionBarFontDB.classSuppressInMPlus = self:GetChecked() and true or false
-        MABF:SetupClassStuffReminder()
-    end)
-    local classSuppressAfterFirstPullCheck = CreateClassSubCheckbox("MABFClassSuppressAfterFirstPullCheck", classSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.classSuppressAfterFirstPull, function(self)
+    local classSuppressInMPlusCheck
+    if not isWoWForever then
+        classSuppressInMPlusCheck = CreateClassSubCheckbox("MABFClassSuppressInMPlusCheck", classHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.classSuppressInMPlus, function(self)
+            MattActionBarFontDB.classSuppressInMPlus = self:GetChecked() and true or false
+            MABF:SetupClassStuffReminder()
+        end)
+    end
+    local classSuppressAfterFirstPullCheck = CreateClassSubCheckbox("MABFClassSuppressAfterFirstPullCheck", classSuppressInMPlusCheck or classHideWhileMountedCheck, 0, "Hide after first pull", MattActionBarFontDB.classSuppressAfterFirstPull, function(self)
         MattActionBarFontDB.classSuppressAfterFirstPull = self:GetChecked() and true or false
         MABF:SetupClassStuffReminder()
     end)
@@ -127,11 +135,11 @@ function MABF:BuildRemindersClassPage(opts)
     end)
 
     local function RefreshClassStuffSubOptions()
-        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or warnClassPaladinBeaconsCheck:GetChecked()) and true or false
+        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or (warnClassPaladinBeaconsCheck and warnClassPaladinBeaconsCheck:GetChecked())) and true or false
         local labels = {
             _G[warnClassSoulstoneCheck:GetName() .. "Text"],
             _G[warnClassShamanShieldsCheck:GetName() .. "Text"],
-            _G[warnClassPaladinBeaconsCheck:GetName() .. "Text"],
+            warnClassPaladinBeaconsCheck and _G[warnClassPaladinBeaconsCheck:GetName() .. "Text"] or nil,
         }
         for _, label in ipairs(labels) do
             if label then
@@ -141,15 +149,17 @@ function MABF:BuildRemindersClassPage(opts)
     end
 
     local function RefreshClassStuffSubRules()
-        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or warnClassPaladinBeaconsCheck:GetChecked()) and true or false
+        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or (warnClassPaladinBeaconsCheck and warnClassPaladinBeaconsCheck:GetChecked())) and true or false
         local subChecks = {
             classOnlyInInstanceCheck,
             classHideInRestAreaCheck,
             classHideWhileMountedCheck,
-            classSuppressInMPlusCheck,
             classSuppressAfterFirstPullCheck,
             classHideWhenLFGCompleteCheck,
         }
+        if classSuppressInMPlusCheck then
+            table.insert(subChecks, 4, classSuppressInMPlusCheck)
+        end
         for _, cb in ipairs(subChecks) do
             cb:SetEnabled(enabled)
             local t = _G[cb:GetName() .. "Text"]
@@ -158,7 +168,7 @@ function MABF:BuildRemindersClassPage(opts)
     end
 
     local function RefreshClassStuffScaleControl()
-        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or warnClassPaladinBeaconsCheck:GetChecked()) and true or false
+        local enabled = (warnClassSoulstoneCheck:GetChecked() or warnClassShamanShieldsCheck:GetChecked() or (warnClassPaladinBeaconsCheck and warnClassPaladinBeaconsCheck:GetChecked())) and true or false
         if classStuffScaleSlider then
             classStuffScaleSlider:SetEnabled(enabled)
             classStuffScaleSlider:SetAlpha(enabled and 1 or 0.6)
@@ -179,9 +189,11 @@ function MABF:BuildRemindersClassPage(opts)
     warnClassShamanShieldsCheck:SetScript("OnClick", function(self)
         OnAnyPrimaryClassToggle(function(v) MattActionBarFontDB.warnClassShamanShields = v end, self:GetChecked() and true or false)
     end)
-    warnClassPaladinBeaconsCheck:SetScript("OnClick", function(self)
-        OnAnyPrimaryClassToggle(function(v) MattActionBarFontDB.warnClassPaladinBeacons = v end, self:GetChecked() and true or false)
-    end)
+    if warnClassPaladinBeaconsCheck then
+        warnClassPaladinBeaconsCheck:SetScript("OnClick", function(self)
+            OnAnyPrimaryClassToggle(function(v) MattActionBarFontDB.warnClassPaladinBeacons = v end, self:GetChecked() and true or false)
+        end)
+    end
 
     return {
         warnClassSoulstoneCheck = warnClassSoulstoneCheck,

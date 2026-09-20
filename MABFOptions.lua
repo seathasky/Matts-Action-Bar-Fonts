@@ -131,6 +131,7 @@ function MABF:CreateOptionsWindow()
     hideMicroMenuCheck = uiFeaturesShellPage and uiFeaturesShellPage.hideMicroMenuCheck
     hideMicroDesc = uiFeaturesShellPage and uiFeaturesShellPage.hideMicroDesc
     hideBagBarCheck = uiFeaturesShellPage and uiFeaturesShellPage.hideBagBarCheck
+    rangeBarWandCheck = uiFeaturesShellPage and uiFeaturesShellPage.rangeBarWandCheck
     buffDebuffRightClickCameraCheck = uiFeaturesShellPage and uiFeaturesShellPage.buffDebuffRightClickCameraCheck
     cursorCircleCheck = uiFeaturesShellPage and uiFeaturesShellPage.cursorCircleCheck
     cursorCircleColorLabel = uiFeaturesShellPage and uiFeaturesShellPage.cursorCircleColorLabel
@@ -261,21 +262,29 @@ function MABF:CreateOptionsWindow()
         objectiveTrackerCheck, scaleStatusBarCheck, scaleTalkingHeadCheck,
         hideMicroMenuCheck, hideBagBarCheck, buffDebuffRightClickCameraCheck, cursorCircleCheck, perfMonitorCheck, perfVerticalCheck,
         perfHideMSCheck, perfShowWorldMSCheck, edmEnableCheck, minimapCheck, autoAcceptCheck,
-        autoTurnInCheck, bagIlvlCheck, bagEquipLabelCheck, autoRepairCheck, autoSellCheck,
+        autoTurnInCheck, bagEquipLabelCheck, autoRepairCheck, autoSellCheck,
         customFontsCheck,
         warnMissingPetCheck, warnPetPassiveCheck, trackConsumablesCheck,
-        petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petHideWhileMountedCheck, petMissingSuppressInMPlusCheck,
+        petMissingOnlyInstanceCheck, petMissingHideInRestAreaCheck, petHideWhileMountedCheck,
         petMissingSuppressAfterFirstPullCheck, petMissingHideWhenLFGCompleteCheck,
-        consumablesFoodCheck, consumablesFlaskCheck, consumablesOilCheck, consumablesAugmentRuneCheck,
-        consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesHideWhileMountedCheck, consumablesSuppressInMPlusCheck,
+        consumablesFoodCheck, consumablesFlaskCheck, consumablesOilCheck,
+        consumablesOnlyInstanceCheck, consumablesHideInRestAreaCheck, consumablesHideWhileMountedCheck,
         consumablesSuppressAfterFirstPullCheck, consumablesHideWhenLFGCompleteCheck, consumablesHealthstoneCheck,
         warnMissingClassBuffsCheck, buffsOnlyInInstanceCheck, buffsHideInRestAreaCheck, buffsHideWhileMountedCheck,
-        buffsSuppressInMPlusCheck, buffsSuppressAfterFirstPullCheck, buffsHideWhenLFGCompleteCheck,
-        warnClassSoulstoneCheck, warnClassShamanShieldsCheck, warnClassPaladinBeaconsCheck,
-        classOnlyInInstanceCheck, classHideInRestAreaCheck, classHideWhileMountedCheck, classSuppressInMPlusCheck,
+        buffsSuppressAfterFirstPullCheck, buffsHideWhenLFGCompleteCheck,
+        warnClassSoulstoneCheck, warnClassShamanShieldsCheck,
+        classOnlyInInstanceCheck, classHideInRestAreaCheck, classHideWhileMountedCheck,
         classSuppressAfterFirstPullCheck, classHideWhenLFGCompleteCheck,
         quickBindCheck, reloadAliasCheck, editModeAliasCheck, pullAliasCheck,
     }
+    if petMissingSuppressInMPlusCheck then optionChecks[#optionChecks + 1] = petMissingSuppressInMPlusCheck end
+    if consumablesSuppressInMPlusCheck then optionChecks[#optionChecks + 1] = consumablesSuppressInMPlusCheck end
+    if buffsSuppressInMPlusCheck then optionChecks[#optionChecks + 1] = buffsSuppressInMPlusCheck end
+    if classSuppressInMPlusCheck then optionChecks[#optionChecks + 1] = classSuppressInMPlusCheck end
+    if bagIlvlCheck then optionChecks[#optionChecks + 1] = bagIlvlCheck end
+    if consumablesAugmentRuneCheck then optionChecks[#optionChecks + 1] = consumablesAugmentRuneCheck end
+    if warnClassPaladinBeaconsCheck then optionChecks[#optionChecks + 1] = warnClassPaladinBeaconsCheck end
+    if rangeBarWandCheck then optionChecks[#optionChecks + 1] = rangeBarWandCheck end
     MABF:ApplyOptionsControlStyling({
         StyleMinimalCheckbox = StyleMinimalCheckbox,
         mouseoverBarChecks = mouseoverBarChecks,

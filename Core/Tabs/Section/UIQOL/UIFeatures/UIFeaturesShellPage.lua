@@ -26,6 +26,8 @@ function MABF:BuildUIFeaturesShellPage(opts)
     local hideMicroMenuCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.hideMicroMenuCheck
     local hideMicroDesc = uiFeaturesBlizzard and uiFeaturesBlizzard.hideMicroDesc
     local hideBagBarCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.hideBagBarCheck
+    local rangeBarWandCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.rangeBarWandCheck
+    local rangeBarWandDesc = uiFeaturesBlizzard and uiFeaturesBlizzard.rangeBarWandDesc
     local buffDebuffRightClickCameraCheck = uiFeaturesBlizzard and uiFeaturesBlizzard.buffDebuffRightClickCameraCheck
     local buffDebuffRightClickCameraDesc = uiFeaturesBlizzard and uiFeaturesBlizzard.buffDebuffRightClickCameraDesc
 
@@ -66,6 +68,8 @@ function MABF:BuildUIFeaturesShellPage(opts)
             hideMicroMenuCheck,
             hideMicroDesc,
             hideBagBarCheck,
+            rangeBarWandCheck,
+            rangeBarWandDesc,
             buffDebuffRightClickCameraCheck,
             buffDebuffRightClickCameraDesc,
         },
@@ -96,6 +100,8 @@ function MABF:BuildUIFeaturesShellPage(opts)
         hideMicroMenuCheck = hideMicroMenuCheck,
         hideMicroDesc = hideMicroDesc,
         hideBagBarCheck = hideBagBarCheck,
+        rangeBarWandCheck = rangeBarWandCheck,
+        rangeBarWandDesc = rangeBarWandDesc,
         buffDebuffRightClickCameraCheck = buffDebuffRightClickCameraCheck,
         buffDebuffRightClickCameraDesc = buffDebuffRightClickCameraDesc,
         cursorCircleCheck = cursorCircleCheck,

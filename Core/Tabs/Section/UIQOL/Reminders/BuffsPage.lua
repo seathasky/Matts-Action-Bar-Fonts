@@ -9,6 +9,7 @@ function MABF:BuildRemindersBuffsPage(opts)
     local StyleSlider = opts.StyleSlider
     local CreateReminderResetButton = opts.CreateReminderResetButton
     local CreateReminderResetSizeButton = opts.CreateReminderResetSizeButton
+    local isWoWForever = select(4, GetBuildInfo()) == 16001
 
     if not page or not checkSpacing or not StyleSlider or not CreateReminderResetButton or not CreateReminderResetSizeButton then
         return nil
@@ -89,11 +90,14 @@ function MABF:BuildRemindersBuffsPage(opts)
         MattActionBarFontDB.buffsHideWhileMounted = self:GetChecked() and true or false
         MABF:SetupMissingBuffReminder()
     end)
-    local buffsSuppressInMPlusCheck = CreateBuffSubCheckbox("MABFBuffsSuppressInMPlusCheck", buffsHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.buffsSuppressInMPlus, function(self)
-        MattActionBarFontDB.buffsSuppressInMPlus = self:GetChecked() and true or false
-        MABF:SetupMissingBuffReminder()
-    end)
-    local buffsSuppressAfterFirstPullCheck = CreateBuffSubCheckbox("MABFBuffsSuppressAfterFirstPullCheck", buffsSuppressInMPlusCheck, 0, "Hide after first pull", MattActionBarFontDB.buffsSuppressAfterFirstPull, function(self)
+    local buffsSuppressInMPlusCheck
+    if not isWoWForever then
+        buffsSuppressInMPlusCheck = CreateBuffSubCheckbox("MABFBuffsSuppressInMPlusCheck", buffsHideWhileMountedCheck, 0, "Hide during active Mythic+", MattActionBarFontDB.buffsSuppressInMPlus, function(self)
+            MattActionBarFontDB.buffsSuppressInMPlus = self:GetChecked() and true or false
+            MABF:SetupMissingBuffReminder()
+        end)
+    end
+    local buffsSuppressAfterFirstPullCheck = CreateBuffSubCheckbox("MABFBuffsSuppressAfterFirstPullCheck", buffsSuppressInMPlusCheck or buffsHideWhileMountedCheck, 0, "Hide after first pull", MattActionBarFontDB.buffsSuppressAfterFirstPull, function(self)
         MattActionBarFontDB.buffsSuppressAfterFirstPull = self:GetChecked() and true or false
         MABF:SetupMissingBuffReminder()
     end)
@@ -111,10 +115,12 @@ function MABF:BuildRemindersBuffsPage(opts)
             buffsOnlyInInstanceCheck,
             buffsHideInRestAreaCheck,
             buffsHideWhileMountedCheck,
-            buffsSuppressInMPlusCheck,
             buffsSuppressAfterFirstPullCheck,
             buffsHideWhenLFGCompleteCheck,
         }
+        if buffsSuppressInMPlusCheck then
+            table.insert(subChecks, 4, buffsSuppressInMPlusCheck)
+        end
         for _, cb in ipairs(subChecks) do
             cb:SetEnabled(enabled)
             local t = _G[cb:GetName() .. "Text"]

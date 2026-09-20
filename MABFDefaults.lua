@@ -49,6 +49,7 @@ MABF.defaults = {
     scaleStatusBar    = false,    -- Scale status/exp bar to 0.7
     hideMicroMenu     = false,    -- Hide micro menu buttons
     hideBagBar        = false,    -- Hide bag bar buttons
+    showRangeBarOnlyWhileWandShooting = false, -- Forever: show ranged swing bar only during wand auto-repeat
     buffDebuffRightClickCamera = false, -- Let right-click drag camera over buffs/debuffs while keeping hover tooltips
     petBarMouseoverFade = false,  -- Mouseover fade on pet action bar
     scaleTalkingHead  = false,    -- Scale talking head frame to 0.7

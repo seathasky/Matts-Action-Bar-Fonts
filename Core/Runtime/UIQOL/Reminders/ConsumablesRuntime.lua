@@ -1,4 +1,5 @@
 local addonName, MABF = ...
+local isWoWForever = select(4, GetBuildInfo()) == 16001
 
 local LCG = LibStub and LibStub("LibCustomGlow-1.0", true)
 
@@ -293,7 +294,9 @@ do
         local hasFood = PlayerHasFoodBuff()
         local hasFlask = PlayerHasFlaskBuff()
         local hasOil = PlayerHasWeaponOil()
-        local hasRune = PlayerHasAugmentRuneBuff()
+        -- Augment Runes are a Retail-only consumable. Treat the Rune as
+        -- present on Forever so an old Retail saved setting cannot show it.
+        local hasRune = isWoWForever or PlayerHasAugmentRuneBuff()
         local trackHealthstone = (MattActionBarFontDB and MattActionBarFontDB.warnConsumableHealthstone) and GroupHasWarlock() or false
         local hasHealthstone = PlayerHasHealthstone()
 

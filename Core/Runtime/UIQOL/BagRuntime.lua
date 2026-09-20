@@ -1,4 +1,5 @@
 local addonName, MABF = ...
+local isWoWForever = select(4, GetBuildInfo()) == 16001
 
 -----------------------------------------------------------
 -- Bag Overlays (Item Levels + Equipment Set Labels)
@@ -37,7 +38,7 @@ do
 
     local function IsAnyBagOverlayEnabled()
         return MattActionBarFontDB
-            and (MattActionBarFontDB.enableBagItemLevels or MattActionBarFontDB.enableBagEquipmentLabels)
+            and ((not isWoWForever and MattActionBarFontDB.enableBagItemLevels) or MattActionBarFontDB.enableBagEquipmentLabels)
     end
 
     local function ClearAllVisible()
@@ -95,7 +96,7 @@ do
             local _, _, _, _, _, _, il = GetContainerItemInfo(bag, slot)
             itemLink = il
         end
-        if itemLink and MattActionBarFontDB.enableBagItemLevels then
+        if itemLink and not isWoWForever and MattActionBarFontDB.enableBagItemLevels then
             local _, _, itemQuality, itemLevel, _, _, _, _, itemEquipLoc = GetItemInfo(itemLink)
             if itemEquipLoc == "INVTYPE_BAG" then
                 if C_TooltipInfo then
