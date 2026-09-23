@@ -71,18 +71,21 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.warnConsumableFlask = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
-    local consumablesOilCheck = CreateConsumablesSubCheckbox("MABFConsumablesOilCheck", consumablesFlaskCheck, 0, "Track Weapon Oil", MattActionBarFontDB.warnConsumableOil ~= false, function(self)
-        MattActionBarFontDB.warnConsumableOil = self:GetChecked() and true or false
-        MABF:UpdateConsumableReminder()
-    end)
+    local consumablesOilCheck
+    if not isWoWForever then
+        consumablesOilCheck = CreateConsumablesSubCheckbox("MABFConsumablesOilCheck", consumablesFlaskCheck, 0, "Track Weapon Oil", MattActionBarFontDB.warnConsumableOil ~= false, function(self)
+            MattActionBarFontDB.warnConsumableOil = self:GetChecked() and true or false
+            MABF:UpdateConsumableReminder()
+        end)
+    end
     local consumablesAugmentRuneCheck
     if not isWoWForever then
-        consumablesAugmentRuneCheck = CreateConsumablesSubCheckbox("MABFConsumablesAugmentRuneCheck", consumablesOilCheck, 0, "Track Augment Rune", MattActionBarFontDB.warnConsumableAugmentRune ~= false, function(self)
+        consumablesAugmentRuneCheck = CreateConsumablesSubCheckbox("MABFConsumablesAugmentRuneCheck", consumablesOilCheck or consumablesFlaskCheck, 0, "Track Augment Rune", MattActionBarFontDB.warnConsumableAugmentRune ~= false, function(self)
             MattActionBarFontDB.warnConsumableAugmentRune = self:GetChecked() and true or false
             MABF:UpdateConsumableReminder()
         end)
     end
-    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck or consumablesOilCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
+    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck or consumablesOilCheck or consumablesFlaskCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
         MattActionBarFontDB.warnConsumableHealthstone = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
@@ -160,7 +163,6 @@ function MABF:BuildRemindersConsumablesPage(opts)
         local subChecks = {
             consumablesFoodCheck,
             consumablesFlaskCheck,
-            consumablesOilCheck,
             consumablesHealthstoneCheck,
             consumablesOnlyInstanceCheck,
             consumablesHideInRestAreaCheck,
@@ -168,6 +170,9 @@ function MABF:BuildRemindersConsumablesPage(opts)
             consumablesSuppressAfterFirstPullCheck,
             consumablesHideWhenLFGCompleteCheck,
         }
+        if consumablesOilCheck then
+            table.insert(subChecks, 3, consumablesOilCheck)
+        end
         if consumablesAugmentRuneCheck then
             table.insert(subChecks, 5, consumablesAugmentRuneCheck)
         end

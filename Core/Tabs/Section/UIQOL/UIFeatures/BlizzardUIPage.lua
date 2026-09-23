@@ -65,7 +65,9 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
 
     local hideBagBarCheck = CreateFrame("CheckButton", "MABFHideBagBarCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     hideBagBarCheck:ClearAllPoints()
-    hideBagBarCheck:SetPoint("TOPLEFT", hideMicroDesc, "BOTTOMLEFT", -26, -8)
+    -- Anchor checkbox rows to checkbox rows so descriptions don't shift the
+    -- checkbox column horizontally.
+    hideBagBarCheck:SetPoint("TOPLEFT", hideMicroMenuCheck, "BOTTOMLEFT", 0, -20)
     local hideBagBarText = _G[hideBagBarCheck:GetName() .. "Text"]
     hideBagBarText:SetText("Hide Bag Bar")
     hideBagBarText:SetTextColor(1, 1, 1)
@@ -82,13 +84,14 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
         rangeBarWandCheck:ClearAllPoints()
         rangeBarWandCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, -4)
         local rangeBarWandText = _G[rangeBarWandCheck:GetName() .. "Text"]
-        rangeBarWandText:SetText("Show Range Bar Only While Shooting Wand")
+        rangeBarWandText:SetText("Wand-Only Swing Timer")
         rangeBarWandText:SetTextColor(1, 1, 1)
         rangeBarWandDesc = pageUIFeatures:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         rangeBarWandDesc:SetPoint("TOPLEFT", rangeBarWandCheck, "BOTTOMLEFT", 26, 2)
         rangeBarWandDesc:SetText("|cff888888(FOREVER ONLY)|r")
         rangeBarWandDesc:SetScale(0.85)
         rangeBarWandCheck:SetChecked(MattActionBarFontDB.showRangeBarOnlyWhileWandShooting)
+        MABF:StyleMinimalCheckbox(rangeBarWandCheck)
         rangeBarWandCheck:SetScript("OnClick", function(self)
             MattActionBarFontDB.showRangeBarOnlyWhileWandShooting = self:GetChecked() and true or false
             MABF:ApplyRangeBarWandVisibility()
@@ -98,7 +101,7 @@ function MABF:BuildUIFeaturesBlizzardPage(opts)
     local buffDebuffRightClickCameraCheck = CreateFrame("CheckButton", "MABFBuffDebuffRightClickCameraCheck", pageUIFeatures, "InterfaceOptionsCheckButtonTemplate")
     buffDebuffRightClickCameraCheck:ClearAllPoints()
     if rangeBarWandDesc then
-        buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", rangeBarWandDesc, "BOTTOMLEFT", -26, -8)
+        buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", rangeBarWandCheck, "BOTTOMLEFT", 0, -20)
     else
         buffDebuffRightClickCameraCheck:SetPoint("TOPLEFT", hideBagBarCheck, "BOTTOMLEFT", 0, -4)
     end

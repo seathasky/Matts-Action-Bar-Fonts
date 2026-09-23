@@ -97,6 +97,24 @@ do
                 end
             end
         end
+
+        -- Classic clients may not expose the Retail C_UnitAuras iteration
+        -- helpers. Keep the same predicate-based scan as a compatibility
+        -- fallback without changing the Retail path above.
+        if UnitBuff then
+            for index = 1, 255 do
+                local auraName, _, _, _, _, _, _, _, _, spellId = UnitBuff("player", index)
+                if not auraName then
+                    break
+                end
+                local auraData = { name = auraName, spellId = spellId }
+                local ok, matched = pcall(predicate, auraData)
+                if ok and matched then
+                    return true
+                end
+            end
+        end
+
         return false
     end
 
@@ -112,6 +130,12 @@ do
     local FOOD_ICON_FILE_ID = 136000
     local FLASK_ICON_FILE_ID = "Interface\\Icons\\UI_Profession_Alchemy"
     local OIL_ICON_FILE_ID = "Interface\\Icons\\INV_Potion_38"
+    local CLASSIC_FLASK_BUFF_IDS = {
+        [17626] = true, -- Flask of the Titans
+        [17627] = true, -- Flask of Distilled Wisdom
+        [17628] = true, -- Flask of Supreme Power
+        [17629] = true, -- Flask of Chromatic Resistance
+    }
     local AUGMENT_RUNE_SPELL_ID = 1264426
     local AUGMENT_RUNE_ICON_FILE_ID = 4549099
     local HEALTHSTONE_ITEM_IDS = { 6262, 5512 }
@@ -141,10 +165,18 @@ do
 
     local function PlayerHasFlaskBuff()
         return AnyPlayerBuffMatches(function(auraData)
+            local ok, spellId = pcall(function()
+                return auraData and auraData.spellId
+            end)
+            if ok and spellId and not (issecretvalue and issecretvalue(spellId)) and CLASSIC_FLASK_BUFF_IDS[spellId] then
+                return true
+            end
             local auraName = auraData and auraData.name
             local ok, lowerName = pcall(function() return type(auraName) == "string" and auraName:lower() or "" end)
             if not ok then return false end
-            return (lowerName:find("flask", 1, true) ~= nil) or (lowerName:find("phial", 1, true) ~= nil)
+            return (lowerName:find("flask", 1, true) ~= nil)
+                or (lowerName:find("phial", 1, true) ~= nil)
+                or (lowerName:find("elixir", 1, true) ~= nil)
         end)
     end
 
@@ -293,7 +325,9 @@ do
 
         local hasFood = PlayerHasFoodBuff()
         local hasFlask = PlayerHasFlaskBuff()
-        local hasOil = PlayerHasWeaponOil()
+        -- Classic Forever does not use the Retail weapon-oil reminder. Keep
+        -- the entry available in the shared frame, but never show/evaluate it.
+        local hasOil = isWoWForever or PlayerHasWeaponOil()
         -- Augment Runes are a Retail-only consumable. Treat the Rune as
         -- present on Forever so an old Retail saved setting cannot show it.
         local hasRune = isWoWForever or PlayerHasAugmentRuneBuff()
@@ -302,7 +336,7 @@ do
 
         reminderFrame.entries.food:SetShown(MattActionBarFontDB.warnConsumableFood ~= false and (not hasFood))
         reminderFrame.entries.flask:SetShown(MattActionBarFontDB.warnConsumableFlask ~= false and (not hasFlask))
-        reminderFrame.entries.oil:SetShown(MattActionBarFontDB.warnConsumableOil ~= false and (not hasOil))
+        reminderFrame.entries.oil:SetShown(not isWoWForever and MattActionBarFontDB.warnConsumableOil ~= false and (not hasOil))
         reminderFrame.entries.rune:SetShown(MattActionBarFontDB.warnConsumableAugmentRune ~= false and (not hasRune))
         reminderFrame.entries.healthstone:SetShown(trackHealthstone and (not hasHealthstone))
         SetConsumableGlow(reminderFrame.entries.food, reminderFrame.entries.food:IsShown())

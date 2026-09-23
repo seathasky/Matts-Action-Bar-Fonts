@@ -24,29 +24,34 @@ do
     local classBuffs = {
         MAGE = {
             castSpellID = 1459,
-            buffSpellIDs = { 1459, 432778 },
+            castSpellIDs = { 1459, 23028 },
+            -- Retail Arcane Intellect plus every Classic Era rank and Arcane Brilliance.
+            buffSpellIDs = { 1459, 1460, 1461, 10156, 10157, 23028, 432778 },
             label = "Arcane Intellect",
         },
         PRIEST = {
             castSpellID = 21562,
-            buffSpellIDs = { 21562 },
+            castSpellIDs = { 21562, 1243, 1244, 1245, 2791, 10937, 10938 },
+            -- Retail Power Word: Fortitude plus Classic Era ranks and Prayer of Fortitude.
+            buffSpellIDs = { 21562, 1243, 1244, 1245, 2791, 10937, 10938, 21564 },
             label = "Power Word: Fortitude",
         },
         WARRIOR = {
             castSpellID = 6673,
-            buffSpellIDs = { 6673 },
+            castSpellIDs = { 6673, 5242, 6192, 11549, 11550 },
+            -- Retail Battle Shout plus every Classic Era rank.
+            buffSpellIDs = { 6673, 5242, 6192, 11549, 11550 },
             label = "Battle Shout",
         },
         DRUID = {
             castSpellID = 1126,
-            buffSpellIDs = { 1126, 432661 },
+            castSpellIDs = { 1126, 5232, 6756, 8907, 9884, 9885, 21849, 21850, 26990 },
+            -- Retail Mark of the Wild plus Classic Era ranks and Gift of the Wild.
+            buffSpellIDs = { 1126, 5232, 6756, 8907, 9884, 9885, 21849, 21850, 26990, 432661 },
             label = "Mark of the Wild",
         },
         PALADIN = {
-            castSpellID = 465,
-            buffSpellIDs = { 465 },
-            buffNames = { "Devotion Aura", "Devotion" },
-            label = "Devotion Aura",
+
         },
         EVOKER = {
             castSpellID = 364342, -- Blessing of the Bronze cast spell
@@ -136,6 +141,14 @@ do
     end
 
     local function PlayerCanCastSpell(spellID)
+        if type(spellID) == "table" then
+            for _, candidateSpellID in ipairs(spellID) do
+                if PlayerCanCastSpell(candidateSpellID) then
+                    return true
+                end
+            end
+            return false
+        end
         if not spellID or not IsSpellKnown then
             return false
         end
@@ -290,7 +303,7 @@ do
         end
 
         local buffInfo = GetCurrentClassBuff()
-        if not buffInfo or not PlayerCanCastSpell(buffInfo.castSpellID) then
+        if not buffInfo or not PlayerCanCastSpell(buffInfo.castSpellIDs or buffInfo.castSpellID) then
             SetMissingBuffGlow(reminderFrame, false)
             reminderFrame:Hide()
             return

@@ -3,7 +3,7 @@
 ## Notes: Action bar fonts, UI QoL and more!
 ## SavedVariables: MattActionBarFontDB
 ## Author: Seathasky
-## Version: 8.3.0
+## Version: 8.3.1
 ## X-Curse-Project-ID: 1197784
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## AddonCompartmentFunc: MABF_AddonCompartment_Click
@@ -71,28 +71,19 @@ Core/Runtime/System/SlashCommandsRuntime.lua
 
 # ----- Action Bars ----------------
 
-Core/Tabs/Section/Actionbars/Text.lua
 Core/Tabs/Section/Actionbars/TextPage.lua
-Core/Tabs/Section/Actionbars/Offsets.lua
 Core/Tabs/Section/Actionbars/OffsetsPage.lua
-Core/Tabs/Section/Actionbars/Themes.lua
 Core/Tabs/Section/Actionbars/ThemesPage.lua
-Core/Tabs/Section/Actionbars/Features.lua
 Core/Tabs/Section/Actionbars/FeaturesPage.lua
-Core/Tabs/Section/Actionbars/Fading.lua
 Core/Tabs/Section/Actionbars/FadingPage.lua
 
 # ----- UI/QOL -----------------
 
-Core/Tabs/Section/UIQOL/UIFeatures/BlizzardUI.lua
 Core/Tabs/Section/UIQOL/UIFeatures/BlizzardUIPage.lua
-Core/Tabs/Section/UIQOL/UIFeatures/Visual.lua
 Core/Tabs/Section/UIQOL/UIFeatures/VisualPage.lua
-Core/Tabs/Section/UIQOL/UIFeatures/Tools.lua
 Core/Tabs/Section/UIQOL/UIFeatures/ToolsPage.lua
 Core/Tabs/Section/UIQOL/UIFeatures/UIFeaturesShell.lua
 Core/Tabs/Section/UIQOL/UIFeatures/UIFeaturesShellPage.lua
-Core/Tabs/Section/UIQOL/QuestTweaks.lua
 Core/Tabs/Section/UIQOL/QuestTweaksPage.lua
 Core/Tabs/Section/UIQOL/BagTweaksPage.lua
 Core/Tabs/Section/UIQOL/Reminders/RemindersShell.lua
@@ -102,18 +93,12 @@ Core/Tabs/Section/UIQOL/Reminders/PetsPage.lua
 Core/Tabs/Section/UIQOL/Reminders/ConsumablesPage.lua
 Core/Tabs/Section/UIQOL/Reminders/BuffsPage.lua
 Core/Tabs/Section/UIQOL/Reminders/ClassPage.lua
-Core/Tabs/Section/UIQOL/BagItemLevel.lua
-Core/Tabs/Section/UIQOL/Merchant.lua
 Core/Tabs/Section/UIQOL/MerchantPage.lua
 
 
 # ----- Shortcuts --------------
-Core/Tabs/Section/Shortcuts/Keybinds.lua
-Core/Tabs/Section/Shortcuts/EditMode.lua
 
 # ----- System -----------------
-Core/Tabs/Section/System/EditModeDeviceManager.lua
-Core/Tabs/Section/System/SlashCommands.lua
 Core/Tabs/Section/System/QuickCmdsPage.lua
 Core/Tabs/Section/System/SystemPage.lua
 
