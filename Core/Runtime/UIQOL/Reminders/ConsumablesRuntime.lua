@@ -138,7 +138,7 @@ do
     }
     local AUGMENT_RUNE_SPELL_ID = 1264426
     local AUGMENT_RUNE_ICON_FILE_ID = 4549099
-    local HEALTHSTONE_ITEM_IDS = { 6262, 5512 }
+    local HEALTHSTONE_ITEM_IDS = { 6262, 5512, 224464 } -- Includes Demonic Healthstone.
     local HEALTHSTONE_ICON_FILE_ID = 538745
     local CONSUMABLE_GLOW_KEY = "mabf_consumable_missing"
     local CONSUMABLE_GLOW_COLOR = {1.0, 0.85, 0.2, 1.0}
@@ -209,11 +209,13 @@ do
     end
 
     local function PlayerHasHealthstone()
-        if not GetItemCount then
+        local getItemCount = (C_Item and C_Item.GetItemCount) or GetItemCount
+        if not getItemCount then
             return false
         end
         for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
-            if (GetItemCount(itemID, false, false) or 0) > 0 then
+            -- Count carried items, excluding bank contents and use charges.
+            if (getItemCount(itemID, false, false) or 0) > 0 then
                 return true
             end
         end
