@@ -22,6 +22,8 @@ do
     local C_TooltipInfo = C_TooltipInfo
     local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
     local hooksApplied = false
+    local bagnonHooked = false
+    local bagnonButtons = setmetatable({}, { __mode = "k" })
     local strtrim = strtrim
 
     local function ClearItemLevelText(button)
@@ -42,6 +44,7 @@ do
     end
 
     local function ClearAllVisible()
+        for button in pairs(bagnonButtons) do ClearItemLevelText(button) end
         for i = 1, NUM_CONTAINER_FRAMES do
             local frame = _G["ContainerFrame"..i]
             if frame and frame:IsShown() then
@@ -201,6 +204,35 @@ do
         end
     end
 
+    local function UpdateBagnonButton(button)
+        bagnonButtons[button] = true
+        -- Cached characters/banks do not describe the live player's bag slots.
+        if not IsAnyBagOverlayEnabled() or button:IsCached() or not button.hasItem then
+            ClearItemLevelText(button)
+            return
+        end
+        local bag, slot = button:GetSlot()
+        if type(bag) == "number" and type(slot) == "number" then
+            UpdateButton(button, bag, slot)
+        else
+            ClearItemLevelText(button)
+        end
+    end
+
+    local function HookBagnon()
+        local bagnon = _G.Bagnon
+        if bagnonHooked or not bagnon or not bagnon.Item or not bagnon.ContainerItem then return end
+        -- ContainerItem calls its base Item.Update even on buttons whose methods
+        -- Bagnon already copied during construction.
+        hooksecurefunc(bagnon.Item, "Update", UpdateBagnonButton)
+        bagnonHooked = true
+        for button in pairs(bagnon.ContainerItem.__frames or {}) do
+            if type(button) == "table" and button.GetSlot then
+                bagnonButtons[button] = true
+            end
+        end
+    end
+
     local function UpdateContainer(frame)
         local bag = frame:GetID()
         local name = frame:GetName()
@@ -276,6 +308,9 @@ do
     end
 
     local function UpdateAllVisible()
+        for button in pairs(bagnonButtons) do
+            if button:IsShown() then UpdateBagnonButton(button) end
+        end
         for i = 1, NUM_CONTAINER_FRAMES do
             local frame = _G["ContainerFrame"..i]
             if frame and frame:IsShown() then UpdateContainer(frame) end
@@ -289,6 +324,7 @@ do
     local bagEventFrame = CreateFrame("Frame")
 
     function MABF:EnableBagItemLevels()
+        HookBagnon()
         if not hooksApplied then
             if _G.ContainerFrame_Update then
                 hooksecurefunc("ContainerFrame_Update", UpdateContainer)
@@ -325,8 +361,14 @@ do
         end
         bagEventFrame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
         bagEventFrame:RegisterEvent("EQUIPMENT_SETS_CHANGED")
+        bagEventFrame:RegisterEvent("ADDON_LOADED")
         bagEventFrame:SetScript("OnEvent", function(_, event, slot)
             if not IsAnyBagOverlayEnabled() then return end
+            if event == "ADDON_LOADED" then
+                HookBagnon()
+                UpdateAllVisible()
+                return
+            end
             if event == "EQUIPMENT_SETS_CHANGED" then
                 UpdateAllVisible()
                 return
