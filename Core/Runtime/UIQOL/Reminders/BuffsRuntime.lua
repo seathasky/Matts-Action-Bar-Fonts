@@ -177,20 +177,29 @@ do
         -- Scan all auras rather than taking the first spell match: another
         -- paladin's blessing must not mask one of our own on the same player.
         for index = 1, 255 do
+            if C_Secrets and C_Secrets.ShouldUnitAuraIndexBeSecret
+                and C_Secrets.ShouldUnitAuraIndexBeSecret("player", index, "HELPFUL") then
+                return nil -- Unknown until this aura becomes readable.
+            end
             local name, spellID, source
             if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
                 local aura = C_UnitAuras.GetBuffDataByIndex("player", index)
+                if issecretvalue and issecretvalue(aura) then return nil end
                 if not aura then break end
                 name, spellID, source = aura.name, aura.spellId, aura.sourceUnit
             elseif C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
                 local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
+                if issecretvalue and issecretvalue(aura) then return nil end
                 if not aura then break end
                 name, spellID, source = aura.name, aura.spellId, aura.sourceUnit
             elseif UnitBuff then
                 local auraName, _, _, _, _, _, caster, _, _, id = UnitBuff("player", index)
                 name, spellID, source = auraName, id, caster
             else
-                break
+                return nil
+            end
+            if issecretvalue and (issecretvalue(name) or issecretvalue(spellID) or issecretvalue(source)) then
+                return nil
             end
             if not name then break end
             if tracked[spellID] and source and (source == "player" or (UnitIsUnit and UnitIsUnit(source, "player"))) then
@@ -328,6 +337,11 @@ do
         if IsPlayerInCombat() then
             return false
         end
+        -- Aura restrictions can outlast combat; do not call aura readers while
+        -- the client forbids access, even if the player is already out of combat.
+        if C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() then
+            return false
+        end
         return true
     end
 
@@ -392,7 +406,9 @@ do
             return
         end
 
-        if PlayerHasBuff(buffInfo.buffSpellIDs, buffInfo.buffNames, buffInfo.requiresOwnBuff) then
+        -- nil means aura ownership could not be inspected. Hide until the
+        -- existing aura events/ticker can establish that the buff is missing.
+        if PlayerHasBuff(buffInfo.buffSpellIDs, buffInfo.buffNames, buffInfo.requiresOwnBuff) ~= false then
             SetMissingBuffGlow(reminderFrame, false)
             reminderFrame:Hide()
             return
