@@ -1,5 +1,6 @@
 local addonName, MABF = ...
 local LCG = LibStub and LibStub("LibCustomGlow-1.0", true)
+local isWoWForever = select(4, GetBuildInfo()) == 16001
 
 -----------------------------------------------------------
 -- Reminders (Missing Class Buffs)
@@ -50,9 +51,6 @@ do
             buffSpellIDs = { 1126, 5232, 6756, 8907, 9884, 9885, 21849, 21850, 26990, 432661 },
             label = "Mark of the Wild",
         },
-        PALADIN = {
-
-        },
         EVOKER = {
             castSpellID = 364342, -- Blessing of the Bronze cast spell
             buffSpellIDs = { 381732, 381741, 381746, 381748, 381749, 381750, 381751, 381752, 381753, 381754, 381756, 381757, 381758 },
@@ -65,6 +63,23 @@ do
             label = "Skyfury",
         },
     }
+
+    if isWoWForever then
+        -- All Forever ranks of Might, Wisdom and Kings, including Greater Blessings.
+        local blessings = {
+            19740, 19834, 19835, 19836, 19837, 19838, 25291, 25782, 25916,
+            19742, 19850, 19852, 19853, 19854, 25290, 25894, 25918,
+            20217, 25898,
+        }
+        classBuffs.PALADIN = {
+            castSpellID = 19740,
+            castSpellIDs = blessings,
+            buffSpellIDs = blessings,
+            requiresOwnBuff = true,
+            iconSpellIDs = { 19740, 19742, 20217 },
+            label = "Paladin Blessing",
+        }
+    end
 
     local function IsInSupportedInstanceContent()
         if not IsInInstance then
@@ -155,7 +170,40 @@ do
         return IsSpellKnown(spellID) or (IsPlayerSpell and IsPlayerSpell(spellID)) or false
     end
 
-    local function PlayerHasBuff(spellIDs, buffNames)
+    local function PlayerHasOwnBuff(spellIDs)
+        local tracked = {}
+        for _, spellID in ipairs(spellIDs) do tracked[spellID] = true end
+
+        -- Scan all auras rather than taking the first spell match: another
+        -- paladin's blessing must not mask one of our own on the same player.
+        for index = 1, 255 do
+            local name, spellID, source
+            if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
+                local aura = C_UnitAuras.GetBuffDataByIndex("player", index)
+                if not aura then break end
+                name, spellID, source = aura.name, aura.spellId, aura.sourceUnit
+            elseif C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+                local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
+                if not aura then break end
+                name, spellID, source = aura.name, aura.spellId, aura.sourceUnit
+            elseif UnitBuff then
+                local auraName, _, _, _, _, _, caster, _, _, id = UnitBuff("player", index)
+                name, spellID, source = auraName, id, caster
+            else
+                break
+            end
+            if not name then break end
+            if tracked[spellID] and source and (source == "player" or (UnitIsUnit and UnitIsUnit(source, "player"))) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function PlayerHasBuff(spellIDs, buffNames, requiresOwnBuff)
+        if requiresOwnBuff then
+            return PlayerHasOwnBuff(spellIDs)
+        end
         local hasSpellIDs = type(spellIDs) == "table"
         local hasNames = type(buffNames) == "table"
         if not hasSpellIDs and not hasNames then
@@ -220,6 +268,40 @@ do
         return nil
     end
 
+    local function SetMissingBuffIcon(reminderFrame, buffInfo)
+        local segments = reminderFrame.blessingIconSegments
+        if buffInfo.iconSpellIDs then
+            -- One compact badge with three readable icons and dark separators.
+            reminderFrame.iconWidth = 56
+            reminderFrame.icon:SetSize(56, 18)
+            if reminderFrame.iconFrame then reminderFrame.iconFrame:SetSize(58, 20) end
+            if not segments then
+                segments = {}
+                for i = 1, 3 do
+                    local segment = reminderFrame:CreateTexture(nil, "OVERLAY")
+                    segment:SetSize(18, 18)
+                    segment:SetPoint("TOPLEFT", reminderFrame.icon, "TOPLEFT", (i - 1) * 19, 0)
+                    segment:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    segments[i] = segment
+                end
+                reminderFrame.blessingIconSegments = segments
+            end
+            reminderFrame.icon:SetTexture(nil)
+            for i, spellID in ipairs(buffInfo.iconSpellIDs) do
+                segments[i]:SetTexture(GetBuffSpellIcon(spellID) or 134400)
+                segments[i]:Show()
+            end
+        else
+            reminderFrame.iconWidth = 18
+            reminderFrame.icon:SetSize(18, 18)
+            if reminderFrame.iconFrame then reminderFrame.iconFrame:SetSize(20, 20) end
+            if segments then
+                for _, segment in ipairs(segments) do segment:Hide() end
+            end
+            reminderFrame.icon:SetTexture(GetBuffSpellIcon(buffInfo.castSpellID) or 134400)
+        end
+    end
+
     local function ShouldEvaluateMissingBuffReminder()
         local db = MattActionBarFontDB
         if not db or not db.warnMissingClassBuffs then
@@ -254,8 +336,9 @@ do
             return
         end
         local textWidth = reminderFrame.text:GetStringWidth() or 0
-        local totalWidth = 18 + 6 + textWidth
-        local iconCenterX = -math.floor((totalWidth * 0.5) - 9 + 0.5)
+        local iconWidth = reminderFrame.iconWidth or 18
+        local totalWidth = iconWidth + 6 + textWidth
+        local iconCenterX = -math.floor((totalWidth * 0.5) - iconWidth * 0.5 + 0.5)
         if reminderFrame.iconFrame then
             reminderFrame.iconFrame:ClearAllPoints()
             reminderFrame.iconFrame:SetPoint("CENTER", reminderFrame, "CENTER", iconCenterX, 0)
@@ -309,14 +392,13 @@ do
             return
         end
 
-        if PlayerHasBuff(buffInfo.buffSpellIDs, buffInfo.buffNames) then
+        if PlayerHasBuff(buffInfo.buffSpellIDs, buffInfo.buffNames, buffInfo.requiresOwnBuff) then
             SetMissingBuffGlow(reminderFrame, false)
             reminderFrame:Hide()
             return
         end
 
-        local icon = GetBuffSpellIcon(buffInfo.castSpellID)
-        reminderFrame.icon:SetTexture(icon or 134400)
+        SetMissingBuffIcon(reminderFrame, buffInfo)
         reminderFrame.text:SetText("Missing: " .. (buffInfo.label or "Class Buff"))
         LayoutMissingBuffReminder(reminderFrame)
         SetMissingBuffGlow(reminderFrame, true)

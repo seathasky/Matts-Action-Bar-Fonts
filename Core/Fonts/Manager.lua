@@ -39,8 +39,29 @@ local function ShouldHideHotKeyGlyph(text)
     return false
 end
 
+local NUMPAD_LABELS = {
+    { "KEY_NUMPADDECIMAL", "N." }, { "KEY_NUMPADDIVIDE", "N/" },
+    { "KEY_NUMPADMINUS", "N-" }, { "KEY_NUMPADMULTIPLY", "N*" },
+    { "KEY_NUMPADPLUS", "N+" },
+}
+for i = 0, 9 do
+    NUMPAD_LABELS[#NUMPAD_LABELS + 1] = { "KEY_NUMPAD" .. i, "N" .. i }
+end
+
 local function NormalizeHotKeyText(text)
-    local hotKeyText = FormatText(text or "")
+    -- Abbreviate our display only; Blizzard's localized KEY_* globals must stay secure.
+    text = text or ""
+    for _, entry in ipairs(NUMPAD_LABELS) do
+        local label = _G[entry[1]]
+        if type(label) == "string" and label ~= "" then
+            local first, last = text:find(label, 1, true)
+            if first then
+                text = text:sub(1, first - 1) .. entry[2] .. text:sub(last + 1)
+                break
+            end
+        end
+    end
+    local hotKeyText = FormatText(text)
     hotKeyText = hotKeyText:gsub("^%s+", ""):gsub("%s+$", "")
 
     if hotKeyText == "-" then
@@ -194,6 +215,77 @@ end
 
 local function IsCustomFontsEnabled()
     return not MattActionBarFontDB or MattActionBarFontDB.enableCustomFontSection ~= false
+end
+
+-- Blizzard reads HotKey:GetText() during Update(), immediately before the
+-- protected UpdatePingAttributes(). Never write formatted text to that region.
+-- Keep the original reference/text intact and render abbreviations separately.
+local hotKeyDisplays = {}
+local hotKeyDisplayRegions = {}
+
+local function SyncHotKeyDisplay(source)
+    local state = hotKeyDisplays[source]
+    if not state or state.syncing then return end
+    state.syncing = true
+
+    local display = state.display
+    if IsCustomFontsEnabled() then
+        local path, size, flags = source:GetFont()
+        if path then
+            display:SetFont(path, size, flags)
+        end
+        display:SetTextColor(source:GetTextColor())
+        display:SetShadowColor(source:GetShadowColor())
+        display:SetShadowOffset(source:GetShadowOffset())
+        display:SetJustifyH(source:GetJustifyH())
+        display:SetJustifyV(source:GetJustifyV())
+        if source.IsIgnoringParentAlpha and display.SetIgnoreParentAlpha then
+            display:SetIgnoreParentAlpha(source:IsIgnoringParentAlpha())
+        end
+        local text = source:GetText() or ""
+        display:SetText(ShouldHideHotKeyGlyph(text) and "" or NormalizeHotKeyText(text))
+        display:SetAlpha(state.alpha)
+        display:SetShown(source:IsShown())
+        local bypassColorLock = source._MABFBypassColorLock
+        source._MABFBypassColorLock = true
+        source:SetAlpha(0)
+        source._MABFBypassColorLock = bypassColorLock
+    else
+        display:Hide()
+        source:SetAlpha(state.alpha)
+    end
+
+    state.syncing = false
+end
+
+local function UpdateHotKeyDisplay(source)
+    if not hotKeyDisplays[source] then
+        if not IsCustomFontsEnabled() then return end
+        local layer, subLayer = source:GetDrawLayer()
+        local display = source:GetParent():CreateFontString(nil, layer, nil, subLayer)
+        display:SetAllPoints(source)
+        hotKeyDisplays[source] = { display = display, alpha = source:GetAlpha() }
+        hotKeyDisplayRegions[display] = true
+
+        -- Secure post-hooks observe Blizzard updates without replacing any method.
+        for _, method in ipairs({
+            "SetText", "SetFormattedText", "SetFont", "SetFontObject",
+            "SetTextColor", "SetVertexColor", "SetShadowColor", "SetShadowOffset",
+            "SetJustifyH", "SetJustifyV", "SetIgnoreParentAlpha",
+            "Show", "Hide", "SetShown",
+        }) do
+            if type(source[method]) == "function" then
+                hooksecurefunc(source, method, SyncHotKeyDisplay)
+            end
+        end
+        hooksecurefunc(source, "SetAlpha", function(fs, alpha)
+            local state = hotKeyDisplays[fs]
+            if state.syncing then return end
+            state.alpha = alpha
+            SyncHotKeyDisplay(fs)
+        end)
+    end
+    SyncHotKeyDisplay(source)
 end
 
 local function IsQuickKeybindModeActive()
@@ -378,15 +470,6 @@ function MABF:ApplyFontSettings()
 
         if customFontsEnabled then
             if not fPath then return end
-            local currentText = hotKeyFont:GetText() or ""
-            local hideGlyphOnlyHotkey = ShouldHideHotKeyGlyph(currentText)
-            local displayText = hideGlyphOnlyHotkey and "" or NormalizeHotKeyText(currentText)
-            if not hotKeyFont._MABF_FormattingText and displayText ~= currentText and hotKeyFont.SetText then
-                hotKeyFont._MABF_FormattingText = true
-                hotKeyFont:SetText(displayText)
-                hotKeyFont._MABF_FormattingText = nil
-            end
-
             SetFontIfChanged(hotKeyFont, fPath, effectiveFontSize, "OUTLINE")
 
             local xOff, yOff = GetHotKeyOffsets(button)
@@ -411,6 +494,7 @@ function MABF:ApplyFontSettings()
         if MABF and MABF.ApplySpecialBarHotKeyVisibility then
             MABF:ApplySpecialBarHotKeyVisibility(button)
         end
+        UpdateHotKeyDisplay(hotKeyFont)
     end
 
     if not self._MABF_GlobalHotkeyHooksRegistered then
@@ -459,13 +543,13 @@ function MABF:ApplyFontSettings()
         
         local hotKeyFont = button.HotKey or button.bind
         if hotKeyFont then
-            -- Keep this passive: avoid FontString method hooks here to reduce taint risk.
+            -- Style the original region; formatted text lives in our separate display.
             SafeSetFont(hotKeyFont, true, button)
         end
         
         for _, region in ipairs({ button:GetRegions() }) do
             if region:GetObjectType() == "FontString" then
-                if region ~= hotKeyFont and region ~= button.Count and region ~= button.Name then
+                if region ~= hotKeyFont and region ~= button.Count and region ~= button.Name and not hotKeyDisplayRegions[region] then
                     SafeSetFont(region, false, button)
                 end
             end

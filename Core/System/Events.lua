@@ -91,9 +91,6 @@ events:SetScript("OnEvent", function(self, event, arg1)
         MABF:ApplyFontSettings()
         MABF:ApplyReverseBarGrowth()
         MABF:SetupMainActionBarEndCapsFix()
-        C_Timer.After(0.5, function()
-            MABF:ApplyReverseBarGrowth()
-        end)
         MABF:UpdateFontPositions()
         MABF:UpdateActionBarFontPositions()
         MABF:UpdateMacroText()
@@ -156,6 +153,9 @@ events:SetScript("OnEvent", function(self, event, arg1)
             print("|cFF00FF00MattActionBarFont|r: Options closed for combat.")
         end
     elseif event == "PLAYER_REGEN_ENABLED" then
+        if MABF._reverseGrowthPending then
+            MABF:ApplyReverseBarGrowth()
+        end
         MABF:ApplyDeferredBuffDebuffRightClickCamera()
         if (optionsOpenQueuedForCombatEnd or optionsAutoClosedByCombat) and MABF and MABF.optionsFrame then
             optionsOpenQueuedForCombatEnd = false

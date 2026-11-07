@@ -102,9 +102,62 @@ function MABF:SetupMainActionBarEndCapsFix()
     end
 end
 
+local reverseGrowthBars = {}
+
+local function ApplyMainBarGrowthLayout(mainBar)
+    local state = reverseGrowthBars[mainBar]
+    if not state or state.applying then return end
+
+    local reverse = MattActionBarFontDB and MattActionBarFontDB.reverseBarGrowth
+    if not reverse and not state.applied then return end
+    if InCombatLockdown() then
+        MABF._reverseGrowthPending = true
+        return
+    end
+
+    local containers = mainBar.shownButtonContainers
+    if not containers or #containers == 0 or not mainBar.numRows or mainBar.numRows < 1
+        or not GridLayoutUtil or not AnchorUtil then
+        return
+    end
+
+    -- Edit Mode owns addButtonsToTop and resets it when applying orientation.
+    -- Reverse only our layout parameters; leave Blizzard's flag and cache intact.
+    local growUp = mainBar.addButtonsToTop
+    if reverse then growUp = not growUp end
+    local stride = math.ceil(#containers / mainBar.numRows)
+    local padding = math.max(mainBar.minButtonPadding or 0, mainBar.buttonPadding or 0)
+    local xMultiplier = mainBar.addButtonsToRight and 1 or -1
+    local yMultiplier = growUp and 1 or -1
+    local createLayout = mainBar.isHorizontal and GridLayoutUtil.CreateStandardGridLayout
+        or GridLayoutUtil.CreateVerticalGridLayout
+    local layout = createLayout(stride, padding, padding, xMultiplier, yMultiplier)
+    local anchorPoint
+    if mainBar.addButtonsToLeft then
+        anchorPoint = "LEFT"
+    elseif growUp then
+        anchorPoint = mainBar.addButtonsToRight and "BOTTOMLEFT" or "BOTTOMRIGHT"
+    else
+        anchorPoint = mainBar.addButtonsToRight and "TOPLEFT" or "TOPRIGHT"
+    end
+
+    state.applying = true
+    GridLayoutUtil.ApplyGridLayout(containers, AnchorUtil.CreateAnchor(anchorPoint, mainBar, anchorPoint), layout)
+    mainBar:Layout()
+    mainBar:UpdateSpellFlyoutDirection()
+    state.applied = reverse and true or false
+    state.applying = false
+end
+
 function MABF:ApplyReverseBarGrowth()
+    if InCombatLockdown() then
+        self._reverseGrowthPending = true
+        return
+    end
+    self._reverseGrowthPending = false
+
     local mainBar = GetMainBarFrame()
-    if not mainBar then
+    if not mainBar or type(mainBar.UpdateGridLayout) ~= "function" then
         if not self._reverseGrowthRetryQueued then
             self._reverseGrowthRetryQueued = true
             C_Timer.After(1, function()
@@ -115,18 +168,11 @@ function MABF:ApplyReverseBarGrowth()
         return
     end
 
-    if MattActionBarFontDB and MattActionBarFontDB.reverseBarGrowth then
-        if not self._reverseGrowthApplied then
-            mainBar.addButtonsToTop = not mainBar.addButtonsToTop
-            self._reverseGrowthApplied = true
-        end
-    else
-        self._reverseGrowthApplied = false
+    if not reverseGrowthBars[mainBar] then
+        reverseGrowthBars[mainBar] = {}
+        hooksecurefunc(mainBar, "UpdateGridLayout", ApplyMainBarGrowthLayout)
     end
-
-    if type(mainBar.UpdateGridLayout) == "function" then
-        mainBar:UpdateGridLayout()
-    end
+    ApplyMainBarGrowthLayout(mainBar)
 end
 
 function MABF:ApplyMacroTextVisibility(button)
