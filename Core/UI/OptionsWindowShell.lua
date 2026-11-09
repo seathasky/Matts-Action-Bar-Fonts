@@ -58,7 +58,8 @@ function MABF:BuildOptionsWindowShell()
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -12)
-    title:SetText("MABF")
+    local version = C_AddOns.GetAddOnMetadata(addonName, "Version")
+    title:SetText(version and version ~= "" and ("MABF v" .. version) or "MABF")
     title:SetTextColor(1, 1, 1)
     title:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 14, "OUTLINE")
 
