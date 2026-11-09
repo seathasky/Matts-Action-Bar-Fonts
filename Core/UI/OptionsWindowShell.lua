@@ -32,7 +32,7 @@ function MABF:BuildOptionsWindowShell()
     ui.frame = f
 
     f:Hide()
-    f:SetSize(420, 580)
+    f:SetSize(450, 580)
     f:SetClampedToScreen(true)
     RestoreOptionsFramePosition(f)
     f:SetFrameStrata("DIALOG")
@@ -99,7 +99,7 @@ function MABF:BuildOptionsWindowShell()
     leftPanel:SetBackdropBorderColor(0.18, 0.18, 0.22, 1)
 
     local rightPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    rightPanel:SetSize(295, 510)
+    rightPanel:SetSize(325, 510)
     rightPanel:SetPoint("TOPLEFT", leftPanel, "TOPRIGHT", 6, 0)
     rightPanel:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",

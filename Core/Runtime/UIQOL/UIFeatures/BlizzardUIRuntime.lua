@@ -11,6 +11,7 @@ local foreverBagsBarHooked = false
 local foreverRangeBarHooked = false
 local foreverRangeBarEvents
 local foreverWandAutoRepeatActive = false
+local foreverRangeBarEnabled = false
 
 local function IsCtrlRightClickBypassActive()
     return IsControlKeyDown and IsControlKeyDown()
@@ -255,8 +256,44 @@ local function IsWandEquipped()
     return itemType == "Weapon" and itemSubType == "Wand"
 end
 
+local function ApplyRangeBarEditModeSize(frame)
+    local settings = Enum and Enum.EditModeSwingTimerSetting
+    if not settings or not frame.IsInitialized or not frame:IsInitialized() or not frame.HasSetting then
+        return
+    end
+
+    -- Use this bar's active Edit Mode layout, including scale. Showing the
+    -- bar while Blizzard's CVar is off must not leave it at its default size.
+    if frame.UpdateSystemSettingWidth and frame:HasSetting(settings.Width) then
+        frame:UpdateSystemSettingWidth()
+    end
+    if frame.UpdateSystemSettingHeight and frame:HasSetting(settings.Height) then
+        frame:UpdateSystemSettingHeight()
+    end
+    if frame.UpdateSystemSettingScale and frame:HasSetting(settings.Scale) then
+        frame:UpdateSystemSettingScale()
+    end
+end
+
 function MABF:ApplyRangeBarWandVisibility()
     if select(4, GetBuildInfo()) ~= 16001 then
+        return
+    end
+
+    if not MattActionBarFontDB or not MattActionBarFontDB.showRangeBarOnlyWhileWandShooting then
+        foreverWandAutoRepeatActive = false
+        if foreverRangeBarEvents then
+            foreverRangeBarEvents:UnregisterEvent("PLAYER_SWING")
+        end
+        if foreverRangeBarEnabled then
+            foreverRangeBarEnabled = false
+            -- Restore Blizzard's CVar, weapon and Edit Mode visibility rules
+            -- only when releasing control. Leave the frame alone on startup.
+            local frame = SwingTimerRangedFrame
+            if frame and frame.UpdateShownState then
+                frame:UpdateShownState()
+            end
+        end
         return
     end
 
@@ -267,29 +304,48 @@ function MABF:ApplyRangeBarWandVisibility()
         foreverRangeBarEvents:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         foreverRangeBarEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
         foreverRangeBarEvents:RegisterEvent("SPELLS_CHANGED")
-        foreverRangeBarEvents:SetScript("OnEvent", function(_, event)
+        foreverRangeBarEvents:SetScript("OnEvent", function(_, event, ...)
             local frame = SwingTimerRangedFrame
             if not frame or not MattActionBarFontDB.showRangeBarOnlyWhileWandShooting then
                 return
             end
 
-            if event == "START_AUTOREPEAT_SPELL" then
+            if event == "PLAYER_SWING" then
+                local swingDuration, swingType = ...
+                local rangedType = Enum and Enum.PlayerSwingType and Enum.PlayerSwingType.Ranged or 2
+                if swingType == rangedType and IsWandEquipped() and frame.ResetSwingTimer then
+                    -- Blizzard's manager unregisters PLAYER_SWING when its
+                    -- CVar is off, and its OnEvent also skips hidden bars.
+                    -- Feed actual wand swings into the native countdown so
+                    -- Wand-Only works independently of those display settings.
+                    foreverWandAutoRepeatActive = true
+                    frame:Show()
+                    frame:ResetSwingTimer(swingDuration)
+                end
+            elseif event == "START_AUTOREPEAT_SPELL" then
                 if IsWandEquipped() then
                     foreverWandAutoRepeatActive = true
+                    -- Wand-Only explicitly shows the bar while shooting;
+                    -- Blizzard's visibility rules resume when it is disabled.
                     frame:Show()
                 else
                     foreverWandAutoRepeatActive = false
-                    frame:Hide()
+                    if not frame.isInEditMode then
+                        frame:Hide()
+                    end
                 end
             elseif event == "STOP_AUTOREPEAT_SPELL" then
                 foreverWandAutoRepeatActive = false
-                frame:Hide()
+                if not frame.isInEditMode then
+                    frame:Hide()
+                end
             else
                 foreverWandAutoRepeatActive = false
                 MABF:ApplyRangeBarWandVisibility()
             end
         end)
     end
+    foreverRangeBarEvents:RegisterEvent("PLAYER_SWING")
 
     local frame = SwingTimerRangedFrame
     if not frame then
@@ -298,25 +354,32 @@ function MABF:ApplyRangeBarWandVisibility()
 
     if not foreverRangeBarHooked then
         frame:HookScript("OnShow", function(self)
-            -- Blizzard owns the ranged-swing timing, but the frame can also
-            -- appear during combat or Edit Mode. Require an active wand
-            -- auto-repeat state before allowing it to remain visible.
-            if MattActionBarFontDB.showRangeBarOnlyWhileWandShooting
-                and (not foreverWandAutoRepeatActive or not IsWandEquipped()) then
-                self:Hide()
+            if not MattActionBarFontDB.showRangeBarOnlyWhileWandShooting then
+                return
             end
+            -- Keep the actual Ranged bar available for resizing in Edit Mode.
+            if not self.isInEditMode and (not foreverWandAutoRepeatActive or not IsWandEquipped()) then
+                self:Hide()
+                return
+            end
+            ApplyRangeBarEditModeSize(self)
         end)
+        if frame.SetIsInEditMode then
+            hooksecurefunc(frame, "SetIsInEditMode", function(self, isInEditMode)
+                if MattActionBarFontDB.showRangeBarOnlyWhileWandShooting and not isInEditMode then
+                    self:SetShown(foreverWandAutoRepeatActive and IsWandEquipped())
+                end
+            end)
+        end
         foreverRangeBarHooked = true
     end
 
-    if MattActionBarFontDB.showRangeBarOnlyWhileWandShooting then
-        -- Start hidden; Blizzard's show path and START_AUTOREPEAT_SPELL
-        -- will reveal it only for an active wand swing.
-        foreverWandAutoRepeatActive = false
+    -- Start hidden; Blizzard's show path and START_AUTOREPEAT_SPELL
+    -- will reveal it only for an active wand swing.
+    foreverRangeBarEnabled = true
+    foreverWandAutoRepeatActive = false
+    if not frame.isInEditMode then
         frame:Hide()
-    else
-        foreverWandAutoRepeatActive = false
-        frame:Show()
     end
 end
 

@@ -17,7 +17,8 @@ function MABF:BuildRemindersConsumablesPage(opts)
 
     local scrollFrame = CreateFrame("ScrollFrame", "MABFConsumablesScrollFrame", page, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 0)
-    scrollFrame:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", 0, 0)
+    -- Reserve room for the scrollbar inside the widened content panel.
+    scrollFrame:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -20, 0)
     scrollFrame:EnableMouseWheel(true)
 
     local scrollContent = CreateFrame("Frame", nil, scrollFrame)
@@ -36,12 +37,14 @@ function MABF:BuildRemindersConsumablesPage(opts)
         local nextValue = math.max(minValue, math.min(maxValue, scrollBar:GetValue() - (delta * 36)))
         scrollBar:SetValue(nextValue)
     end)
-    scrollContent:SetWidth(math.max(scrollFrame:GetWidth(), page:GetWidth(), 1))
+    scrollContent:SetWidth(math.max(scrollFrame:GetWidth(), page:GetWidth() - 20, 1))
     page = scrollContent
 
     local trackConsumablesCheck = CreateFrame("CheckButton", "MABFTrackConsumablesCheck", page, "InterfaceOptionsCheckButtonTemplate")
     trackConsumablesCheck:ClearAllPoints()
-    trackConsumablesCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -4)
+    -- The MABF border extends one pixel beyond the box; keep it inside
+    -- the scroll viewport so the left edge is not clipped.
+    trackConsumablesCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -4)
     local trackConsumablesText = _G[trackConsumablesCheck:GetName() .. "Text"]
     trackConsumablesText:SetText("Track consumables")
     trackConsumablesText:SetTextColor(1, 1, 1)

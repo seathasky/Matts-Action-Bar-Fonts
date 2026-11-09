@@ -439,37 +439,34 @@ function MABF:StyleMinimalCheckbox(checkButton)
         checkButton:SetHitRectInsets(0, -220, 0, 0)
     end
 
-    local box = CreateFrame("Frame", nil, checkButton)
+    -- Keep the art on the CheckButton so its native checked textures render
+    -- above the box and follow SetChecked, clicks and enable/disable changes.
+    local box = checkButton:CreateTexture(nil, "BORDER")
     box:SetSize(14, 14)
     box:SetPoint("LEFT", checkButton, "LEFT", 0, 0)
+    box:SetColorTexture(0.08, 0.08, 0.1, 1)
     checkButton._mabfBox = box
+    checkButton._mabfBg = box
 
-    local bg = box:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.08, 0.08, 0.1, 1)
-    checkButton._mabfBg = bg
-
-    local border = box:CreateTexture(nil, "BORDER")
-    border:SetPoint("TOPLEFT", -1, 1)
-    border:SetPoint("BOTTOMRIGHT", 1, -1)
+    local border = checkButton:CreateTexture(nil, "BACKGROUND")
+    border:SetPoint("TOPLEFT", box, "TOPLEFT", -1, 1)
+    border:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0.25, 0.25, 0.3, 1)
     checkButton._mabfBorder = border
 
-    local mark = box:CreateTexture(nil, "ARTWORK")
+    local mark = checkButton:CreateTexture(nil, "OVERLAY")
     mark:SetSize(8, 8)
-    mark:SetPoint("CENTER")
+    mark:SetPoint("CENTER", box, "CENTER")
     mark:SetColorTexture(accent[1], accent[2], accent[3], 1)
+    checkButton:SetCheckedTexture(mark)
     checkButton._mabfCheck = mark
 
-    local function UpdateMark(self)
-        if self._mabfCheck then
-            self._mabfCheck:SetShown(self:GetChecked() and true or false)
-        end
-    end
-
-    UpdateMark(checkButton)
-    checkButton:HookScript("OnClick", UpdateMark)
-    checkButton:HookScript("OnShow", UpdateMark)
+    local disabledMark = checkButton:CreateTexture(nil, "OVERLAY")
+    disabledMark:SetSize(8, 8)
+    disabledMark:SetPoint("CENTER", box, "CENTER")
+    disabledMark:SetColorTexture(accent[1], accent[2], accent[3], 0.4)
+    checkButton:SetDisabledCheckedTexture(disabledMark)
+    checkButton:SetChecked(checkButton:GetChecked())
 
     checkButton:HookScript("OnEnter", function(self)
         if self._mabfBorder then
