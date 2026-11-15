@@ -81,12 +81,14 @@ do
         if not predicate then
             return false
         end
-        if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
+        -- Forever may expose the general aura reader without the buff helper.
+        local getAura = C_UnitAuras and (C_UnitAuras.GetBuffDataByIndex or C_UnitAuras.GetAuraDataByIndex)
+        if getAura then
             for index = 1, 255 do
                 local isSecret = C_Secrets and C_Secrets.ShouldUnitAuraIndexBeSecret
                     and C_Secrets.ShouldUnitAuraIndexBeSecret("player", index, "HELPFUL")
                 if not isSecret then
-                    local auraData = C_UnitAuras.GetBuffDataByIndex("player", index)
+                    local auraData = getAura("player", index, "HELPFUL")
                     if not auraData then
                         break
                     end
@@ -118,8 +120,42 @@ do
         return false
     end
 
+    -- Classic food effects can have generic names shared with non-food buffs.
+    -- Match their IDs rather than accepting every regeneration/stat buff.
+    local FOREVER_FOOD_BUFF_IDS = {
+        [18125] = true, -- Blessed Sunfruit
+        [18141] = true, -- Blessed Sunfruit Juice
+        [18191] = true, -- Increased Stamina (Lobster Stew)
+        [18192] = true, -- Increased Agility (Grilled Squid)
+        [18193] = true, -- Increased Spirit (Hot Smoked Bass)
+        [18194] = true, -- Mana Regeneration (Nightfin Soup)
+        [18222] = true, -- Health Regeneration (Poached Sunscale Salmon)
+        [19705] = true, -- Well Fed; also supplies the localized buff name
+        [22730] = true, -- Increased Intellect (Runn Tum Tuber Surprise)
+        [25661] = true, -- Increased Stamina (Dirge's Kickin' Chimaerok Chops)
+    }
+
     local function PlayerHasFoodBuff()
+        local wellFedName
+        if isWoWForever then
+            if C_Spell and C_Spell.GetSpellName then
+                wellFedName = C_Spell.GetSpellName(19705)
+            elseif GetSpellInfo then
+                wellFedName = GetSpellInfo(19705)
+            end
+        end
         return AnyPlayerBuffMatches(function(auraData)
+            if isWoWForever and auraData then
+                local spellId = auraData.spellId
+                if spellId and not (issecretvalue and issecretvalue(spellId)) and FOREVER_FOOD_BUFF_IDS[spellId] then
+                    return true
+                end
+                -- Covers all Forever Well Fed ranks and new foods without
+                -- maintaining a separate list of every dish or stat value.
+                if wellFedName and auraData.name == wellFedName then
+                    return true
+                end
+            end
             local auraName = auraData and auraData.name
             local ok, lowerName = pcall(function() return type(auraName) == "string" and auraName:lower() or "" end)
             if not ok then return false end
@@ -129,6 +165,7 @@ do
 
     local FOOD_ICON_FILE_ID = 136000
     local FLASK_ICON_FILE_ID = "Interface\\Icons\\UI_Profession_Alchemy"
+    local ELIXIR_ICON_FILE_ID = "Interface\\Icons\\INV_Potion_27"
     local OIL_ICON_FILE_ID = "Interface\\Icons\\INV_Potion_38"
     local CLASSIC_FLASK_BUFF_IDS = {
         [17626] = true, -- Flask of the Titans
@@ -136,9 +173,61 @@ do
         [17628] = true, -- Flask of Supreme Power
         [17629] = true, -- Flask of Chromatic Resistance
     }
+    local FOREVER_ELIXIR_BUFF_IDS = {
+        [673] = true, -- Minor Defense
+        [2367] = true, -- Lion's Strength
+        [2374] = true, -- Minor Agility
+        [2378] = true, -- Minor Fortitude
+        [3160] = true, -- Lesser Agility
+        [3164] = true, -- Ogre's Strength
+        [3166] = true, -- Wisdom
+        [3219] = true, -- Minor Troll's Blood
+        [3220] = true, -- Defense
+        [3222] = true, -- Strong Troll's Blood
+        [3223] = true, -- Mighty Troll's Blood
+        [3593] = true, -- Fortitude
+        [6512] = true, -- Detect Lesser Invisibility
+        [7178] = true, -- Water Breathing
+        [7844] = true, -- Firepower
+        [8212] = true, -- Giant Growth
+        [11319] = true, -- Water Walking
+        [11328] = true, -- Agility
+        [11334] = true, -- Greater Agility
+        [11348] = true, -- Superior Defense
+        [11349] = true, -- Greater Defense
+        [11389] = true, -- Detect Undead
+        [11390] = true, -- Arcane Elixir
+        [11396] = true, -- Greater Intellect
+        [11405] = true, -- Giants
+        [11406] = true, -- Demonslaying
+        [11407] = true, -- Detect Demon
+        [11474] = true, -- Shadow Power
+        [17535] = true, -- Sages
+        [17537] = true, -- Brute Force
+        [17538] = true, -- Mongoose
+        [17539] = true, -- Greater Arcane Elixir
+        [21920] = true, -- Frost Power
+        [24361] = true, -- Major Troll's Blood
+        [24363] = true, -- Mageblood Elixir
+        [1245249] = true, -- Minor Force
+        [1250920] = true, -- Phalanx
+    }
+    -- Aura IDs for the additional Forever flasks, not their Alchemy recipes.
+    local FOREVER_FLASK_BUFF_IDS = {
+        [1293740] = true, -- Flask of Natural Accuracy
+        [1293741] = true, -- Flask of Natural Aggression
+        [1293742] = true, -- Flask of Natural Precision
+        [1293743] = true, -- Flask of Natural Swiftness
+    }
     local AUGMENT_RUNE_SPELL_ID = 1264426
     local AUGMENT_RUNE_ICON_FILE_ID = 4549099
-    local HEALTHSTONE_ITEM_IDS = { 6262, 5512, 224464 } -- Includes Demonic Healthstone.
+    local HEALTHSTONE_ITEM_IDS = isWoWForever and {
+        5512, 19004, 19005, -- Minor, including Improved Healthstone variants
+        5511, 19006, 19007, -- Lesser
+        5509, 19008, 19009, -- Healthstone
+        5510, 19010, 19011, -- Greater
+        9421, 19012, 19013, -- Major
+    } or { 6262, 5512, 224464 } -- Includes Retail Demonic Healthstone.
     local HEALTHSTONE_ICON_FILE_ID = 538745
     local CONSUMABLE_GLOW_KEY = "mabf_consumable_missing"
     local CONSUMABLE_GLOW_COLOR = {1.0, 0.85, 0.2, 1.0}
@@ -168,15 +257,29 @@ do
             local ok, spellId = pcall(function()
                 return auraData and auraData.spellId
             end)
-            if ok and spellId and not (issecretvalue and issecretvalue(spellId)) and CLASSIC_FLASK_BUFF_IDS[spellId] then
-                return true
+            if ok and spellId and not (issecretvalue and issecretvalue(spellId)) then
+                if CLASSIC_FLASK_BUFF_IDS[spellId] or (isWoWForever and FOREVER_FLASK_BUFF_IDS[spellId]) then
+                    return true
+                end
             end
             local auraName = auraData and auraData.name
             local ok, lowerName = pcall(function() return type(auraName) == "string" and auraName:lower() or "" end)
             if not ok then return false end
             return (lowerName:find("flask", 1, true) ~= nil)
-                or (lowerName:find("phial", 1, true) ~= nil)
-                or (lowerName:find("elixir", 1, true) ~= nil)
+                or (not isWoWForever and ((lowerName:find("phial", 1, true) ~= nil)
+                    or (lowerName:find("elixir", 1, true) ~= nil)))
+        end)
+    end
+
+    local function PlayerHasElixirBuff()
+        return AnyPlayerBuffMatches(function(auraData)
+            if not auraData then return false end
+            local spellId = auraData.spellId
+            if spellId and not (issecretvalue and issecretvalue(spellId)) and FOREVER_ELIXIR_BUFF_IDS[spellId] then
+                return true
+            end
+            local name = auraData.name
+            return type(name) == "string" and name:lower():find("elixir", 1, true) ~= nil
         end)
     end
 
@@ -318,6 +421,7 @@ do
         if not ShouldEvaluateConsumablesReminder() then
             SetConsumableGlow(reminderFrame.entries.food, false)
             SetConsumableGlow(reminderFrame.entries.flask, false)
+            SetConsumableGlow(reminderFrame.entries.elixir, false)
             SetConsumableGlow(reminderFrame.entries.oil, false)
             SetConsumableGlow(reminderFrame.entries.rune, false)
             SetConsumableGlow(reminderFrame.entries.healthstone, false)
@@ -327,6 +431,8 @@ do
 
         local hasFood = PlayerHasFoodBuff()
         local hasFlask = PlayerHasFlaskBuff()
+        local trackElixir = isWoWForever and MattActionBarFontDB.warnConsumableElixir
+        local hasElixir = trackElixir and PlayerHasElixirBuff()
         -- Classic Forever does not use the Retail weapon-oil reminder. Keep
         -- the entry available in the shared frame, but never show/evaluate it.
         local hasOil = isWoWForever or PlayerHasWeaponOil()
@@ -338,11 +444,13 @@ do
 
         reminderFrame.entries.food:SetShown(MattActionBarFontDB.warnConsumableFood ~= false and (not hasFood))
         reminderFrame.entries.flask:SetShown(MattActionBarFontDB.warnConsumableFlask ~= false and (not hasFlask))
+        reminderFrame.entries.elixir:SetShown(trackElixir and not hasElixir or false)
         reminderFrame.entries.oil:SetShown(not isWoWForever and MattActionBarFontDB.warnConsumableOil ~= false and (not hasOil))
         reminderFrame.entries.rune:SetShown(MattActionBarFontDB.warnConsumableAugmentRune ~= false and (not hasRune))
         reminderFrame.entries.healthstone:SetShown(trackHealthstone and (not hasHealthstone))
         SetConsumableGlow(reminderFrame.entries.food, reminderFrame.entries.food:IsShown())
         SetConsumableGlow(reminderFrame.entries.flask, reminderFrame.entries.flask:IsShown())
+        SetConsumableGlow(reminderFrame.entries.elixir, reminderFrame.entries.elixir:IsShown())
         SetConsumableGlow(reminderFrame.entries.oil, reminderFrame.entries.oil:IsShown())
         SetConsumableGlow(reminderFrame.entries.rune, reminderFrame.entries.rune:IsShown())
         SetConsumableGlow(reminderFrame.entries.healthstone, reminderFrame.entries.healthstone:IsShown())
@@ -354,6 +462,9 @@ do
         end
         if reminderFrame.entries.flask:IsShown() then
             visibleEntries[#visibleEntries + 1] = reminderFrame.entries.flask
+        end
+        if reminderFrame.entries.elixir:IsShown() then
+            visibleEntries[#visibleEntries + 1] = reminderFrame.entries.elixir
         end
         if reminderFrame.entries.oil:IsShown() then
             visibleEntries[#visibleEntries + 1] = reminderFrame.entries.oil
@@ -368,6 +479,7 @@ do
         if #visibleEntries == 0 then
             SetConsumableGlow(reminderFrame.entries.food, false)
             SetConsumableGlow(reminderFrame.entries.flask, false)
+            SetConsumableGlow(reminderFrame.entries.elixir, false)
             SetConsumableGlow(reminderFrame.entries.oil, false)
             SetConsumableGlow(reminderFrame.entries.rune, false)
             SetConsumableGlow(reminderFrame.entries.healthstone, false)
@@ -473,6 +585,7 @@ do
             reminderFrame.entries = {
                 food = CreateConsumableBlock(reminderFrame, FOOD_ICON_FILE_ID, "Food"),
                 flask = CreateConsumableBlock(reminderFrame, FLASK_ICON_FILE_ID, "Flask"),
+                elixir = CreateConsumableBlock(reminderFrame, ELIXIR_ICON_FILE_ID, "Elixir"),
                 oil = CreateConsumableBlock(reminderFrame, OIL_ICON_FILE_ID, "Oil"),
                 rune = CreateConsumableBlock(reminderFrame, AUGMENT_RUNE_ICON_FILE_ID, "Rune"),
                 healthstone = CreateConsumableBlock(reminderFrame, HEALTHSTONE_ICON_FILE_ID, "Stone"),

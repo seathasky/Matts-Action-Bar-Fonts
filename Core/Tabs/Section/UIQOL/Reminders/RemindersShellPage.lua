@@ -167,6 +167,7 @@ function MABF:BuildRemindersShellPage(opts)
         trackConsumablesResetSizeBtn = consumablesPage and consumablesPage.trackConsumablesResetSizeBtn,
         consumablesFoodCheck = consumablesPage and consumablesPage.consumablesFoodCheck,
         consumablesFlaskCheck = consumablesPage and consumablesPage.consumablesFlaskCheck,
+        consumablesElixirCheck = consumablesPage and consumablesPage.consumablesElixirCheck,
         consumablesOilCheck = consumablesPage and consumablesPage.consumablesOilCheck,
         consumablesAugmentRuneCheck = consumablesPage and consumablesPage.consumablesAugmentRuneCheck,
         consumablesOnlyInstanceCheck = consumablesPage and consumablesPage.consumablesOnlyInstanceCheck,
@@ -177,6 +178,7 @@ function MABF:BuildRemindersShellPage(opts)
         consumablesHideWhenLFGCompleteCheck = consumablesPage and consumablesPage.consumablesHideWhenLFGCompleteCheck,
         consumablesHealthstoneCheck = consumablesPage and consumablesPage.consumablesHealthstoneCheck,
 
+        warnWellRestedCheck = buffsPage and buffsPage.warnWellRestedCheck,
         warnMissingClassBuffsCheck = buffsPage and buffsPage.warnMissingClassBuffsCheck,
         warnMissingClassBuffsText = buffsPage and buffsPage.warnMissingClassBuffsText,
         warnMissingClassBuffsResetBtn = buffsPage and buffsPage.warnMissingClassBuffsResetBtn,

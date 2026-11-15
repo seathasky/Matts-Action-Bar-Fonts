@@ -22,7 +22,7 @@ function MABF:BuildRemindersBuffsPage(opts)
     warnMissingClassBuffsText:SetTextColor(1, 1, 1)
     local warnMissingClassBuffsDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     warnMissingClassBuffsDesc:SetPoint("TOPLEFT", warnMissingClassBuffsCheck, "BOTTOMLEFT", 26, 2)
-    warnMissingClassBuffsDesc:SetText("|cff888888Tracks major class buffs for supported classes|r")
+    warnMissingClassBuffsDesc:SetText(isWoWForever and "|cff888888Any one major class buff cast by you|r" or "|cff888888Tracks major class buffs for supported classes|r")
     warnMissingClassBuffsDesc:SetScale(0.85)
     warnMissingClassBuffsCheck:SetChecked(MattActionBarFontDB.warnMissingClassBuffs)
 
@@ -78,7 +78,12 @@ function MABF:BuildRemindersBuffsPage(opts)
         return cb
     end
 
-    local buffsOnlyInInstanceCheck = CreateBuffSubCheckbox("MABFBuffsOnlyInInstanceCheck", warnMissingClassBuffsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.buffsOnlyInInstance, function(self)
+    local warnWellRestedCheck
+    if isWoWForever then
+        warnWellRestedCheck = CreateBuffSubCheckbox("MABFWarnWellRestedCheck", warnMissingClassBuffsDesc, -26, "Warn when Well-Rested is missing", MattActionBarFontDB.warnWellRested)
+    end
+
+    local buffsOnlyInInstanceCheck = CreateBuffSubCheckbox("MABFBuffsOnlyInInstanceCheck", warnWellRestedCheck or warnMissingClassBuffsDesc, 26, "Only in dungeons/raids/scenarios", MattActionBarFontDB.buffsOnlyInInstance, function(self)
         MattActionBarFontDB.buffsOnlyInInstance = self:GetChecked() and true or false
         MABF:SetupMissingBuffReminder()
     end)
@@ -110,7 +115,7 @@ function MABF:BuildRemindersBuffsPage(opts)
     buffReminderScaleSlider:SetPoint("BOTTOM", page, "BOTTOM", 0, 74)
 
     local function RefreshBuffSubOptions()
-        local enabled = warnMissingClassBuffsCheck:GetChecked() and true or false
+        local enabled = (warnMissingClassBuffsCheck:GetChecked() or (warnWellRestedCheck and warnWellRestedCheck:GetChecked())) and true or false
         local subChecks = {
             buffsOnlyInInstanceCheck,
             buffsHideInRestAreaCheck,
@@ -129,7 +134,7 @@ function MABF:BuildRemindersBuffsPage(opts)
     end
 
     local function RefreshBuffReminderScaleControl()
-        local enabled = warnMissingClassBuffsCheck:GetChecked() and true or false
+        local enabled = (warnMissingClassBuffsCheck:GetChecked() or (warnWellRestedCheck and warnWellRestedCheck:GetChecked())) and true or false
         if buffReminderScaleSlider then
             buffReminderScaleSlider:SetEnabled(enabled)
             buffReminderScaleSlider:SetAlpha(enabled and 1 or 0.6)
@@ -143,7 +148,17 @@ function MABF:BuildRemindersBuffsPage(opts)
         RefreshBuffReminderScaleControl()
     end)
 
+    if warnWellRestedCheck then
+        warnWellRestedCheck:SetScript("OnClick", function(self)
+            MattActionBarFontDB.warnWellRested = self:GetChecked() and true or false
+            MABF:SetupMissingBuffReminder()
+            RefreshBuffSubOptions()
+            RefreshBuffReminderScaleControl()
+        end)
+    end
+
     return {
+        warnWellRestedCheck = warnWellRestedCheck,
         warnMissingClassBuffsCheck = warnMissingClassBuffsCheck,
         warnMissingClassBuffsText = warnMissingClassBuffsText,
         warnMissingClassBuffsResetBtn = warnMissingClassBuffsResetBtn,

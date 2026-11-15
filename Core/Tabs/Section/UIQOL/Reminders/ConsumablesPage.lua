@@ -74,6 +74,13 @@ function MABF:BuildRemindersConsumablesPage(opts)
         MattActionBarFontDB.warnConsumableFlask = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
+    local consumablesElixirCheck
+    if isWoWForever then
+        consumablesElixirCheck = CreateConsumablesSubCheckbox("MABFConsumablesElixirCheck", consumablesFlaskCheck, 0, "Track Elixir (any one)", MattActionBarFontDB.warnConsumableElixir, function(self)
+            MattActionBarFontDB.warnConsumableElixir = self:GetChecked() and true or false
+            MABF:UpdateConsumableReminder()
+        end)
+    end
     local consumablesOilCheck
     if not isWoWForever then
         consumablesOilCheck = CreateConsumablesSubCheckbox("MABFConsumablesOilCheck", consumablesFlaskCheck, 0, "Track Weapon Oil", MattActionBarFontDB.warnConsumableOil ~= false, function(self)
@@ -88,7 +95,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
             MABF:UpdateConsumableReminder()
         end)
     end
-    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck or consumablesOilCheck or consumablesFlaskCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
+    local consumablesHealthstoneCheck = CreateConsumablesSubCheckbox("MABFConsumablesHealthstoneCheck", consumablesAugmentRuneCheck or consumablesOilCheck or consumablesElixirCheck or consumablesFlaskCheck, 0, "Track Healthstone (warlock in group)", MattActionBarFontDB.warnConsumableHealthstone, function(self)
         MattActionBarFontDB.warnConsumableHealthstone = self:GetChecked() and true or false
         MABF:UpdateConsumableReminder()
     end)
@@ -173,6 +180,9 @@ function MABF:BuildRemindersConsumablesPage(opts)
             consumablesSuppressAfterFirstPullCheck,
             consumablesHideWhenLFGCompleteCheck,
         }
+        if consumablesElixirCheck then
+            table.insert(subChecks, 3, consumablesElixirCheck)
+        end
         if consumablesOilCheck then
             table.insert(subChecks, 3, consumablesOilCheck)
         end
@@ -205,6 +215,7 @@ function MABF:BuildRemindersConsumablesPage(opts)
         trackConsumablesResetSizeBtn = trackConsumablesResetSizeBtn,
         consumablesFoodCheck = consumablesFoodCheck,
         consumablesFlaskCheck = consumablesFlaskCheck,
+        consumablesElixirCheck = consumablesElixirCheck,
         consumablesOilCheck = consumablesOilCheck,
         consumablesAugmentRuneCheck = consumablesAugmentRuneCheck,
         consumablesOnlyInstanceCheck = consumablesOnlyInstanceCheck,

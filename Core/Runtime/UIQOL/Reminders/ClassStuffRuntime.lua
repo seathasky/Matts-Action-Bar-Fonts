@@ -21,6 +21,12 @@ do
     local LIGHTNING_SHIELD_BUFF_IDS = { 192106 }
     local WATER_SHIELD_SPELL_ID = 52127
     local WATER_SHIELD_BUFF_IDS = { 52127 }
+    -- Forever uses Classic Lightning Shield ranks and different Water/Earth IDs.
+    local FOREVER_SHAMAN_SHIELDS = {
+        { spellIDs = { 324, 325, 905, 945, 8134, 10431, 10432 }, label = "Lightning Shield" },
+        { spellIDs = { 408510 }, label = "Water Shield" },
+        { spellIDs = { 408514 }, label = "Earth Shield" },
+    }
     local ELEMENTAL_ORBIT_TALENT_SPELL_ID = 383010
     local PALADIN_HOLY_SPEC_ID = 65
     local BEACON_OF_LIGHT_SPELL_ID = 53563
@@ -326,6 +332,9 @@ do
         if IsPlayerInCombat() then
             return false
         end
+        if isWoWForever and C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() then
+            return false
+        end
         return true
     end
 
@@ -356,6 +365,30 @@ do
         end
 
         if classToken == "SHAMAN" and db.warnClassShamanShields then
+            if isWoWForever then
+                local missingShield
+                for _, shield in ipairs(FOREVER_SHAMAN_SHIELDS) do
+                    local knownSpellID
+                    -- Prefer the strongest learned rank for the reminder icon.
+                    for index = #shield.spellIDs, 1, -1 do
+                        if PlayerCanCastSpell(shield.spellIDs[index]) then
+                            knownSpellID = shield.spellIDs[index]
+                            break
+                        end
+                    end
+                    if knownSpellID then
+                        if UnitHasAnyBuff("player", shield.spellIDs) then
+                            return nil -- Any one known self shield is enough on Forever.
+                        end
+                        missingShield = missingShield or {
+                            text = "Apply " .. shield.label .. "!",
+                            icon = GetSpellIcon(knownSpellID),
+                        }
+                    end
+                end
+                return missingShield
+            end
+
             local knowsEarth = PlayerCanCastSpell(EARTH_SHIELD_SPELL_ID)
             local knowsLightning = PlayerCanCastSpell(LIGHTNING_SHIELD_SPELL_ID)
             local knowsWater = PlayerCanCastSpell(WATER_SHIELD_SPELL_ID)

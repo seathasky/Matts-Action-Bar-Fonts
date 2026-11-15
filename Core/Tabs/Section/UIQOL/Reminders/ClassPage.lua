@@ -34,7 +34,7 @@ function MABF:BuildRemindersClassPage(opts)
     warnClassShamanShieldsText:SetTextColor(1, 1, 1)
     local warnClassShamanShieldsDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     warnClassShamanShieldsDesc:SetPoint("TOPLEFT", warnClassShamanShieldsCheck, "BOTTOMLEFT", 26, 2)
-    warnClassShamanShieldsDesc:SetText("|cff888888Warn when shields are missing|r")
+    warnClassShamanShieldsDesc:SetText(isWoWForever and "|cff888888Warn when no known shield is active|r" or "|cff888888Warn when shields are missing|r")
     warnClassShamanShieldsDesc:SetScale(0.85)
     warnClassShamanShieldsCheck:SetChecked(MattActionBarFontDB.warnClassShamanShields)
 

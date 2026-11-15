@@ -8,6 +8,8 @@ local isWoWForever = select(4, GetBuildInfo()) == 16001
 do
     local BUFFS_DEFAULT_ANCHOR_Y = -230
     local BUFFS_DEFAULT_ANCHOR_X = 0
+    local WELL_RESTED_SPELL_ID = 429959
+    local WELL_RESTED_ICON_ID = 133662
     local buffsDungeonCombatStarted = false
     local BUFF_GLOW_KEY = "mabf_missing_buff_glow"
     local BUFF_GLOW_COLOR = {1.0, 0.85, 0.2, 1.0}
@@ -79,6 +81,13 @@ do
             iconSpellIDs = { 19740, 19742, 20217 },
             label = "Paladin Blessing",
         }
+        -- Forever requires any one major buff supplied by the player, not
+        -- every raid buff or secondary buffs such as Thorns and Mage Armor.
+        for _, buffInfo in pairs(classBuffs) do
+            buffInfo.requiresOwnBuff = true
+        end
+        classBuffs.WARRIOR.castSpellIDs = { 6673, 5242, 6192, 11549, 11550, 11551, 25289 }
+        classBuffs.WARRIOR.buffSpellIDs = { 6673, 5242, 6192, 11549, 11550, 11551, 25289 }
     end
 
     local function IsInSupportedInstanceContent()
@@ -313,7 +322,7 @@ do
 
     local function ShouldEvaluateMissingBuffReminder()
         local db = MattActionBarFontDB
-        if not db or not db.warnMissingClassBuffs then
+        if not db or not (db.warnMissingClassBuffs or (isWoWForever and db.warnWellRested)) then
             return false
         end
         if db.buffsOnlyInInstance ~= false and not IsInSupportedInstanceContent() then
@@ -395,30 +404,43 @@ do
 
         if not ShouldEvaluateMissingBuffReminder() then
             SetMissingBuffGlow(reminderFrame, false)
+            SetMissingBuffGlow(reminderFrame.wellRestedFrame, false)
             reminderFrame:Hide()
             return
         end
 
+        local db = MattActionBarFontDB
         local buffInfo = GetCurrentClassBuff()
-        if not buffInfo or not PlayerCanCastSpell(buffInfo.castSpellIDs or buffInfo.castSpellID) then
-            SetMissingBuffGlow(reminderFrame, false)
-            reminderFrame:Hide()
-            return
-        end
+        local classMissing = db.warnMissingClassBuffs and buffInfo
+            and PlayerCanCastSpell(buffInfo.castSpellIDs or buffInfo.castSpellID)
+            and PlayerHasBuff(buffInfo.buffSpellIDs, buffInfo.buffNames, buffInfo.requiresOwnBuff) == false
+            or false
 
-        -- nil means aura ownership could not be inspected. Hide until the
-        -- existing aura events/ticker can establish that the buff is missing.
-        if PlayerHasBuff(buffInfo.buffSpellIDs, buffInfo.buffNames, buffInfo.requiresOwnBuff) ~= false then
-            SetMissingBuffGlow(reminderFrame, false)
-            reminderFrame:Hide()
-            return
+        if classMissing then
+            SetMissingBuffIcon(reminderFrame, buffInfo)
+            reminderFrame.text:SetText("Missing: " .. (buffInfo.label or "Class Buff"))
+            LayoutMissingBuffReminder(reminderFrame)
         end
+        reminderFrame.iconFrame:SetShown(classMissing)
+        reminderFrame.icon:SetShown(classMissing)
+        reminderFrame.text:SetShown(classMissing)
+        if reminderFrame.blessingIconSegments then
+            for _, segment in ipairs(reminderFrame.blessingIconSegments) do
+                segment:SetShown(classMissing and buffInfo.iconSpellIDs ~= nil)
+            end
+        end
+        SetMissingBuffGlow(reminderFrame, classMissing)
 
-        SetMissingBuffIcon(reminderFrame, buffInfo)
-        reminderFrame.text:SetText("Missing: " .. (buffInfo.label or "Class Buff"))
-        LayoutMissingBuffReminder(reminderFrame)
-        SetMissingBuffGlow(reminderFrame, true)
-        reminderFrame:Show()
+        local wellRestedFrame = reminderFrame.wellRestedFrame
+        local wellRestedMissing = isWoWForever and db.warnWellRested
+            and PlayerHasBuff({ WELL_RESTED_SPELL_ID }) == false or false
+        if wellRestedFrame then
+            wellRestedFrame:ClearAllPoints()
+            wellRestedFrame:SetPoint("CENTER", reminderFrame, "CENTER", 0, classMissing and -30 or 0)
+            wellRestedFrame:SetShown(wellRestedMissing)
+            SetMissingBuffGlow(wellRestedFrame, wellRestedMissing)
+        end
+        reminderFrame:SetShown(classMissing or wellRestedMissing)
     end
 
     function MABF:SetupMissingBuffReminder()
@@ -488,6 +510,34 @@ do
             reminderFrame.text = text
             LayoutMissingBuffReminder(reminderFrame)
 
+            if isWoWForever then
+                local row = CreateFrame("Frame", nil, reminderFrame)
+                row:SetSize(360, 26)
+                row:SetPoint("CENTER", reminderFrame, "CENTER", 0, 0)
+                local border = CreateFrame("Frame", nil, row, "BackdropTemplate")
+                border:SetSize(20, 20)
+                border:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8X8",
+                    edgeFile = "Interface\\Buttons\\WHITE8X8",
+                    edgeSize = 1,
+                })
+                border:SetBackdropColor(0, 0, 0, 0.15)
+                border:SetBackdropBorderColor(0, 0, 0, 1)
+                row.iconFrame = border
+                row.icon = row:CreateTexture(nil, "OVERLAY")
+                row.icon:SetSize(18, 18)
+                row.icon:SetPoint("CENTER", border, "CENTER", 0, 0)
+                row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                row.icon:SetTexture(WELL_RESTED_ICON_ID)
+                row.text = row:CreateFontString(nil, "OVERLAY")
+                row.text:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 16, "OUTLINE")
+                row.text:SetTextColor(1, 1, 1, 1)
+                row.text:SetText("Missing: Well-Rested")
+                LayoutMissingBuffReminder(row)
+                row:Hide()
+                reminderFrame.wellRestedFrame = row
+            end
+
             RestorePosition()
             reminderFrame:Hide()
             self._missingBuffReminderFrame = reminderFrame
@@ -511,7 +561,7 @@ do
         end
 
         local db = MattActionBarFontDB
-        if not (db and db.warnMissingClassBuffs) then
+        if not (db and (db.warnMissingClassBuffs or (isWoWForever and db.warnWellRested))) then
             self:UpdateMissingBuffReminder()
             return
         end
