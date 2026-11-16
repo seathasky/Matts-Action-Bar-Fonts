@@ -77,12 +77,10 @@ do
             castSpellID = 19740,
             castSpellIDs = blessings,
             buffSpellIDs = blessings,
-            requiresOwnBuff = true,
             iconSpellIDs = { 19740, 19742, 20217 },
             label = "Paladin Blessing",
         }
-        -- Forever requires any one major buff supplied by the player, not
-        -- every raid buff or secondary buffs such as Thorns and Mage Armor.
+        -- Any one major class buff cast by the player on themselves counts.
         for _, buffInfo in pairs(classBuffs) do
             buffInfo.requiresOwnBuff = true
         end
@@ -179,48 +177,135 @@ do
         return IsSpellKnown(spellID) or (IsPlayerSpell and IsPlayerSpell(spellID)) or false
     end
 
-    local function PlayerHasOwnBuff(spellIDs)
-        local tracked = {}
-        for _, spellID in ipairs(spellIDs) do tracked[spellID] = true end
+    local buffSpellNames = {}
+    local function GetBuffSpellName(spellID)
+        if buffSpellNames[spellID] then return buffSpellNames[spellID] end
+        local name
+        if C_Spell and C_Spell.GetSpellName then
+            name = C_Spell.GetSpellName(spellID)
+        elseif C_Spell and C_Spell.GetSpellInfo then
+            local info = C_Spell.GetSpellInfo(spellID)
+            name = info and info.name
+        elseif GetSpellInfo then
+            name = GetSpellInfo(spellID)
+        end
+        -- Retry unresolved names on the next update (spell data may still be loading).
+        if name then buffSpellNames[spellID] = name end
+        return name
+    end
 
-        -- Scan all auras rather than taking the first spell match: another
-        -- paladin's blessing must not mask one of our own on the same player.
+    local function IsOwnAura(source, auraInstanceID)
+        if issecretvalue and issecretvalue(source) then return nil end
+        if source == "player" then return true end
+        if source and UnitIsUnit then
+            local ok, same = pcall(UnitIsUnit, source, "player")
+            if ok and not (issecretvalue and issecretvalue(same)) and same then return true end
+        end
+        -- sourceUnit can be absent when the caster has no usable unit token.
+        -- A caster GUID, when available, provides an exact ownership check.
+        if not (issecretvalue and issecretvalue(auraInstanceID)) and auraInstanceID
+            and C_UnitAuras and C_UnitAuras.GetAuraCasterGUID and UnitGUID then
+            local ok, casterGUID = pcall(C_UnitAuras.GetAuraCasterGUID, "player", auraInstanceID)
+            local playerGUID = UnitGUID("player")
+            if ok and not (issecretvalue and (issecretvalue(casterGUID) or issecretvalue(playerGUID)))
+                and casterGUID and playerGUID then
+                return casterGUID == playerGUID
+            end
+        end
+        if source then return false end
+        return nil -- A present blessing with unknown ownership is not proof it is missing.
+    end
+
+    local function PlayerHasTrackedBuff(spellIDs, requiresOwnBuff)
+        local tracked = {}
+        local trackedNames = {}
+        for _, spellID in ipairs(spellIDs) do
+            tracked[spellID] = true
+            local name = GetBuffSpellName(spellID)
+            if name then trackedNames[name] = true end
+        end
+
+        -- Inspect the caster explicitly rather than relying on PLAYER filtering.
+        -- Only the player's character is scanned, never party members or targets.
+        local filter = "HELPFUL"
+        local ownershipUnknown = false
         for index = 1, 255 do
             if C_Secrets and C_Secrets.ShouldUnitAuraIndexBeSecret
-                and C_Secrets.ShouldUnitAuraIndexBeSecret("player", index, "HELPFUL") then
+                and C_Secrets.ShouldUnitAuraIndexBeSecret("player", index, filter) then
                 return nil -- Unknown until this aura becomes readable.
             end
-            local name, spellID, source
+            local name, spellID, source, auraInstanceID
             if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
-                local aura = C_UnitAuras.GetBuffDataByIndex("player", index)
+                local aura = C_UnitAuras.GetBuffDataByIndex("player", index, filter)
                 if issecretvalue and issecretvalue(aura) then return nil end
                 if not aura then break end
-                name, spellID, source = aura.name, aura.spellId, aura.sourceUnit
+                name, spellID = aura.name, aura.spellId
+                source, auraInstanceID = aura.sourceUnit, aura.auraInstanceID
             elseif C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-                local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
+                local aura = C_UnitAuras.GetAuraDataByIndex("player", index, filter)
                 if issecretvalue and issecretvalue(aura) then return nil end
                 if not aura then break end
-                name, spellID, source = aura.name, aura.spellId, aura.sourceUnit
+                name, spellID = aura.name, aura.spellId
+                source, auraInstanceID = aura.sourceUnit, aura.auraInstanceID
             elseif UnitBuff then
-                local auraName, _, _, _, _, _, caster, _, _, id = UnitBuff("player", index)
+                local auraName, _, _, _, _, _, caster, _, _, id = UnitBuff("player", index, filter)
                 name, spellID, source = auraName, id, caster
             else
                 return nil
             end
-            if issecretvalue and (issecretvalue(name) or issecretvalue(spellID) or issecretvalue(source)) then
+            if issecretvalue and (issecretvalue(name) or issecretvalue(spellID)) then
                 return nil
             end
             if not name then break end
-            if tracked[spellID] and source and (source == "player" or (UnitIsUnit and UnitIsUnit(source, "player"))) then
-                return true
+            -- Forever can use a different aura ID from the original cast/rank ID.
+            if tracked[spellID] or trackedNames[name] then
+                if not requiresOwnBuff then return true end
+                local own = IsOwnAura(source, auraInstanceID)
+                if own == true then return true end
+                if own == nil then ownershipUnknown = true end
             end
         end
+        if ownershipUnknown then return nil end
         return false
     end
 
+    -- Read-only diagnostics for checking the actual Forever payload rather than
+    -- inferring spell IDs or caster behavior from buff icons.
+    SLASH_MABFBUFFDEBUG1 = "/mabfbuffs"
+    SlashCmdList["MABFBUFFDEBUG"] = function()
+        local function readable(value)
+            if issecretvalue and issecretvalue(value) then return "<secret>" end
+            return tostring(value)
+        end
+        local function out(message) print("|cff00ff00MABF buffs:|r " .. message) end
+        if IsPlayerInCombat() or (C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()) then
+            out("Run this out of combat when auras are readable.")
+            return
+        end
+        local version, build, _, interface = GetBuildInfo()
+        out("self-cast check; client=" .. readable(version) .. " build=" .. readable(build) .. " interface=" .. readable(interface))
+        local buffInfo = GetCurrentClassBuff()
+        if buffInfo then
+            local ok, result = pcall(PlayerHasTrackedBuff, buffInfo.buffSpellIDs, true)
+            out("own buff result=" .. (ok and readable(result) or "unreadable"))
+        end
+        local reader = C_UnitAuras and (C_UnitAuras.GetBuffDataByIndex or C_UnitAuras.GetAuraDataByIndex)
+        if not reader then out("Modern aura reader unavailable."); return end
+        for index = 1, 255 do
+            local ok, aura = pcall(reader, "player", index, "HELPFUL")
+            if not ok then out("Aura " .. index .. " unreadable."); break end
+            if issecretvalue and issecretvalue(aura) then out("Aura " .. index .. " secret."); break end
+            if not aura then break end
+            out(index .. ": " .. readable(aura.name) .. " id=" .. readable(aura.spellId)
+                .. " source=" .. readable(aura.sourceUnit)
+                .. " own=" .. readable(IsOwnAura(aura.sourceUnit, aura.auraInstanceID)))
+        end
+    end
+
     local function PlayerHasBuff(spellIDs, buffNames, requiresOwnBuff)
-        if requiresOwnBuff then
-            return PlayerHasOwnBuff(spellIDs)
+        -- Forever class entries explicitly choose whether the caster matters.
+        if requiresOwnBuff ~= nil then
+            return PlayerHasTrackedBuff(spellIDs, requiresOwnBuff)
         end
         local hasSpellIDs = type(spellIDs) == "table"
         local hasNames = type(buffNames) == "table"
