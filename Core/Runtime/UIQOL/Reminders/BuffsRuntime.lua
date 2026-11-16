@@ -79,10 +79,14 @@ do
             buffSpellIDs = blessings,
             iconSpellIDs = { 19740, 19742, 20217 },
             label = "Paladin Blessing",
+            requiresOwnBuff = true,
         }
-        -- Any one major class buff cast by the player on themselves counts.
+        -- Single-buff classes accept any tracked rank from any caster.
+        -- Paladins require one of their own blessings, even with other blessings present.
         for _, buffInfo in pairs(classBuffs) do
-            buffInfo.requiresOwnBuff = true
+            if buffInfo.requiresOwnBuff == nil then
+                buffInfo.requiresOwnBuff = false
+            end
         end
         classBuffs.WARRIOR.castSpellIDs = { 6673, 5242, 6192, 11549, 11550, 11551, 25289 }
         classBuffs.WARRIOR.buffSpellIDs = { 6673, 5242, 6192, 11549, 11550, 11551, 25289 }
@@ -283,11 +287,11 @@ do
             return
         end
         local version, build, _, interface = GetBuildInfo()
-        out("self-cast check; client=" .. readable(version) .. " build=" .. readable(build) .. " interface=" .. readable(interface))
+        out("class buff check; client=" .. readable(version) .. " build=" .. readable(build) .. " interface=" .. readable(interface))
         local buffInfo = GetCurrentClassBuff()
         if buffInfo then
-            local ok, result = pcall(PlayerHasTrackedBuff, buffInfo.buffSpellIDs, true)
-            out("own buff result=" .. (ok and readable(result) or "unreadable"))
+            local ok, result = pcall(PlayerHasTrackedBuff, buffInfo.buffSpellIDs, buffInfo.requiresOwnBuff)
+            out("class buff result=" .. (ok and readable(result) or "unreadable"))
         end
         local reader = C_UnitAuras and (C_UnitAuras.GetBuffDataByIndex or C_UnitAuras.GetAuraDataByIndex)
         if not reader then out("Modern aura reader unavailable."); return end

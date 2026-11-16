@@ -22,7 +22,11 @@ function MABF:BuildRemindersBuffsPage(opts)
     warnMissingClassBuffsText:SetTextColor(1, 1, 1)
     local warnMissingClassBuffsDesc = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     warnMissingClassBuffsDesc:SetPoint("TOPLEFT", warnMissingClassBuffsCheck, "BOTTOMLEFT", 26, 2)
-    warnMissingClassBuffsDesc:SetText(isWoWForever and "|cff888888Any one major class buff cast by you on yourself|r" or "|cff888888Tracks major class buffs for supported classes|r")
+    local _, classToken = UnitClass("player")
+    local foreverBuffDescription = classToken == "PALADIN"
+        and "|cff888888Any one blessing cast by you on yourself|r"
+        or "|cff888888Any tracked rank on you counts, from any caster|r"
+    warnMissingClassBuffsDesc:SetText(isWoWForever and foreverBuffDescription or "|cff888888Tracks major class buffs for supported classes|r")
     warnMissingClassBuffsDesc:SetScale(0.85)
     warnMissingClassBuffsCheck:SetChecked(MattActionBarFontDB.warnMissingClassBuffs)
 
