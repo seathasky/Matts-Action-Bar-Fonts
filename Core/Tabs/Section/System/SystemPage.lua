@@ -12,8 +12,6 @@ function MABF:BuildSystemPage(opts)
         return nil
     end
 
-    local THEME_ACCENT = MABF:GetThemeAccentColor()
-
     local edmTitle = CreatePageTitle(pageEDM, "Edit Mode Device Manager")
 
     local edmDesc = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -116,57 +114,12 @@ function MABF:BuildSystemPage(opts)
         end
     end)
 
-    local resetDivider = pageEDM:CreateTexture(nil, "ARTWORK")
-    resetDivider:SetColorTexture(0.18, 0.18, 0.22, 1)
-    resetDivider:SetSize(260, 1)
-    resetDivider:SetPoint("TOPLEFT", minimapCheck, "BOTTOMLEFT", -2, -20)
-
-    local resetTitle = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    resetTitle:SetPoint("TOPLEFT", resetDivider, "BOTTOMLEFT", 0, -16)
-    resetTitle:SetText("Reset All Settings")
-    resetTitle:SetTextColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 1)
-    resetTitle:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 11, "")
-
-    local resetDesc = pageEDM:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    resetDesc:SetPoint("TOPLEFT", resetTitle, "BOTTOMLEFT", 0, -6)
-    resetDesc:SetText("This will restore all settings to default values")
-    resetDesc:SetTextColor(0.75, 0.75, 0.75, 1)
-    resetDesc:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 10, "")
-
-    local resetButton = CreateFrame("Button", "MABFResetButton", pageEDM, "BackdropTemplate")
-    resetButton:SetSize(150, 28)
-    resetButton:SetPoint("TOPLEFT", resetDesc, "BOTTOMLEFT", 0, -14)
-    resetButton:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    resetButton:SetBackdropColor(0.08, 0.08, 0.1, 1)
-    resetButton:SetBackdropBorderColor(0.2, 0.2, 0.24, 1)
-    local resetButtonText = resetButton:CreateFontString(nil, "OVERLAY")
-    resetButtonText:SetPoint("CENTER")
-    resetButtonText:SetFont("Interface\\AddOns\\MattActionBarFont\\CustomFonts\\Naowh.ttf", 11, "")
-    resetButtonText:SetTextColor(0.9, 0.9, 0.9, 1)
-    resetButtonText:SetText("Reset to Defaults")
-    resetButton:SetScript("OnEnter", function(self)
-        self:SetBackdropBorderColor(THEME_ACCENT[1], THEME_ACCENT[2], THEME_ACCENT[3], 0.8)
-    end)
-    resetButton:SetScript("OnLeave", function(self)
-        self:SetBackdropBorderColor(0.2, 0.2, 0.24, 1)
-    end)
-    resetButton:SetScript("OnMouseDown", function(self)
-        self:SetBackdropColor(0.06, 0.06, 0.08, 1)
-    end)
-    resetButton:SetScript("OnMouseUp", function(self)
-        self:SetBackdropColor(0.08, 0.08, 0.1, 1)
-    end)
-    resetButton:SetScript("OnClick", function()
-        StaticPopup_Show("MABF_RESET_SETTINGS")
-    end)
+    local profilesPanel = MABF:BuildProfilesPanel(pageEDM, minimapCheck, CreateMinimalDropdown)
 
     return {
         page = pageEDM,
         edmEnableCheck = edmEnableCheck,
         minimapCheck = minimapCheck,
+        profilesPanel = profilesPanel,
     }
 end

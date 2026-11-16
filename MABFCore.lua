@@ -8,6 +8,7 @@ local LCG = LibStub and LibStub("LibCustomGlow-1.0", true)
 
 -- Initialization and font scanning.
 function MABF:Init()
+    self:InitializeProfiles()
     self:ApplyDefaults()
 
     MattActionBarFontDB.fontSize = math.min(math.max(MattActionBarFontDB.fontSize, MIN_FONT_SIZE), MAX_FONT_SIZE)

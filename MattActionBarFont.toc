@@ -1,9 +1,9 @@
 ## Interface: 120100, 16001
 ## Title: Matt's Action Bar Fonts & UI QoL
 ## Notes: Action bar fonts, UI QoL and more!
-## SavedVariables: MattActionBarFontDB
+## SavedVariables: MattActionBarFontDB, MABFProfilesDB
 ## Author: Seathasky
-## Version: 8.3.9
+## Version: 8.3.10
 ## X-Curse-Project-ID: 1197784
 ## IconTexture: Interface\AddOns\MattActionBarFont\Images\mabficon.png
 ## AddonCompartmentFunc: MABF_AddonCompartment_Click
@@ -23,6 +23,7 @@ Libs/LibDBIcon-1.0.lua
 # Core bootstrap
 MABFDefaults.lua
 MABFCore.lua
+Core/System/Profiles.lua
 Core/Fonts/FontRegistry.lua
 
 # Core systems
@@ -100,6 +101,7 @@ Core/Tabs/Section/UIQOL/MerchantPage.lua
 
 # ----- System -----------------
 Core/Tabs/Section/System/QuickCmdsPage.lua
+Core/Tabs/Section/System/ProfilesPanel.lua
 Core/Tabs/Section/System/SystemPage.lua
 
 #-------------#

@@ -16,7 +16,8 @@ if ldb then
     local ldbIcon = LibStub("LibDBIcon-1.0", true)
     if ldbIcon then
         local function SetupMinimapDB()
-            MattActionBarFontDB = MattActionBarFontDB or {}
+            -- Bind the icon to this character's profile, including on first migration.
+            MABF:InitializeProfiles()
             MattActionBarFontDB.minimap = MattActionBarFontDB.minimap or {}
             ldbIcon:Register("MABF", MABF_DataObject, MattActionBarFontDB.minimap)
             if MattActionBarFontDB.minimap.hide then
